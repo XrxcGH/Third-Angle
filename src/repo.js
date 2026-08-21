@@ -139,8 +139,21 @@ function listProjectsByFacet(slug) {
  */
 const reorderProjects = transaction((orderedIds) => {
   const keys = generateNKeysBetween(null, null, orderedIds.length);
+  const now = nowIso();
+
+  /*
+   * Two phases, because sort_key carries a UNIQUE index and the rows are
+   * updated one at a time. A single pass collides the moment a new key equals
+   * the key a not-yet-updated row still holds, which is the common case when
+   * reversing an order. The parking values are unique by construction (the id
+   * is), and '~' sorts above every base62 character so they cannot be mistaken
+   * for real keys if a crash somehow lands between the phases.
+   */
+  for (const id of orderedIds) {
+    run('UPDATE project SET sort_key = ? WHERE id = ?', `~${id}`, id);
+  }
   orderedIds.forEach((id, i) => {
-    run('UPDATE project SET sort_key = ?, updated_at = ? WHERE id = ?', keys[i], nowIso(), id);
+    run('UPDATE project SET sort_key = ?, updated_at = ? WHERE id = ?', keys[i], now, id);
   });
   return orderedIds.length;
 });

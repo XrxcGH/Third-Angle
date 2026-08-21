@@ -23,7 +23,15 @@ function parseCookies(header) {
     if (i < 0) continue;
     const k = part.slice(0, i).trim();
     const v = part.slice(i + 1).trim();
-    if (k) out[k] = decodeURIComponent(v);
+    if (!k) continue;
+    // decodeURIComponent throws on a lone '%', and a cookie is attacker
+    // controlled, so an unguarded decode here 500s EVERY page for anyone
+    // carrying a malformed cookie from any app on the same host.
+    try {
+      out[k] = decodeURIComponent(v);
+    } catch {
+      out[k] = v;
+    }
   }
   return out;
 }

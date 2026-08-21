@@ -1,0 +1,26 @@
+<div style="max-width: 34rem;">
+  <p class="eyebrow">Admin</p>
+  <h1>Delete this project?</h1>
+
+  <div class="panel" style="margin-top: var(--s-4);">
+    <p style="margin:0;"><strong><%= project.title %></strong></p>
+    <p class="mono" style="font-size:.7rem; color: var(--text-muted); margin: 4px 0 0;">/work/<%= project.slug %></p>
+  </div>
+
+  <p style="margin-top: var(--s-4);">
+    This removes the project, its disciplines, metrics, links and search entries.
+    It cannot be undone from here.
+  </p>
+  <p style="color: var(--text-muted); font-size:.92rem;">
+    The change is recorded in the audit log with a full snapshot, so the content can be
+    recovered by hand if this was a mistake.
+  </p>
+
+  <div style="display:flex; gap: var(--s-2); margin-top: var(--s-5);">
+    <form method="post" action="/admin/projects/<%= project.id %>/delete">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <button class="btn btn-danger" type="submit">Delete permanently</button>
+    </form>
+    <a class="btn btn-quiet" href="/admin/projects">Keep it</a>
+  </div>
+</div>

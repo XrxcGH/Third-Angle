@@ -1,0 +1,67 @@
+<p class="eyebrow">Admin</p>
+<h1>Disciplines</h1>
+<p style="color: var(--text-muted); max-width: 62ch;">
+  The colour list is closed on purpose. An admin panel with a free colour field is how a
+  carefully built palette dies six months later, so you can add and rename disciplines
+  freely but can only choose from the eight vetted tokens.
+</p>
+
+<% if (error) { %><p class="flash error"><%= error %></p><% } %>
+
+<div class="panel" style="padding:0; margin-top: var(--s-4);">
+  <table class="admin-table">
+    <thead>
+      <tr><th>Discipline</th><th>Colour</th><th>Projects</th><th>Address</th></tr>
+    </thead>
+    <tbody>
+      <% for (const f of facets) { %>
+        <tr>
+          <td>
+            <strong><%= f.label %></strong>
+            <% if (f.blurb) { %>
+              <div style="font-size:.82rem; color: var(--text-muted); max-width:52ch;"><%= f.blurb %></div>
+            <% } %>
+          </td>
+          <td>
+            <span style="display:inline-flex; align-items:center; gap:7px;">
+              <span class="dot" style="width:11px; height:11px; border-radius:2px; background: var(--<%= f.color_token %>);"></span>
+              <span class="mono" style="font-size:.66rem;"><%= f.color_token %></span>
+            </span>
+          </td>
+          <td class="mono" style="font-size:.75rem;"><%= counts[f.slug] || 0 %></td>
+          <td class="mono" style="font-size:.7rem; color: var(--text-muted);">/disciplines/<%= f.slug %></td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<h2 style="font-size:1.15rem; margin-top: var(--s-6);">Add or rename</h2>
+<p style="color: var(--text-muted); max-width: 62ch; font-size:.92rem;">
+  Saving a name that already exists updates it. Names that differ only by case are rejected
+  by the database, which is what stops Electrical and electrical becoming two separate chips.
+</p>
+
+<form method="post" action="/admin/facets/save" class="panel" style="margin-top: var(--s-3); max-width: 42rem;">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div class="row2">
+    <div class="field">
+      <label for="label">Name</label>
+      <input id="label" name="label" type="text" required>
+    </div>
+    <div class="field">
+      <label for="color_token">Colour</label>
+      <select id="color_token" name="color_token">
+        <% for (const t of tokens) { %>
+          <option value="<%= t %>"><%= t.replace('ch-', '') %></option>
+        <% } %>
+      </select>
+    </div>
+  </div>
+  <div class="field">
+    <label for="blurb">One paragraph, for the discipline landing page</label>
+    <textarea id="blurb" name="blurb" style="min-height:5rem;"></textarea>
+    <span class="hint">A filter chip proves nothing. This paragraph is what a recruiter can be sent directly.</span>
+  </div>
+  <button class="btn" type="submit">Save discipline</button>
+</form>

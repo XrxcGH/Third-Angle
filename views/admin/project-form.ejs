@@ -1,0 +1,153 @@
+<p class="eyebrow">Admin</p>
+<h1><%= project.id ? 'Edit project' : 'New project' %></h1>
+
+<% if (error) { %><p class="flash error"><%= error %></p><% } %>
+<% if (query && query.saved) { %>
+  <p class="flash">Saved. <a href="/work/<%= project.slug %>">View it on the site</a></p>
+<% } %>
+
+<form method="post" action="/admin/projects/save" style="margin-top: var(--s-4);">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <% if (project.id) { %><input type="hidden" name="id" value="<%= project.id %>"><% } %>
+
+  <div class="panel">
+    <div class="field">
+      <label for="title">Title</label>
+      <input id="title" name="title" type="text" value="<%= project.title || '' %>" required>
+    </div>
+
+    <div class="field">
+      <label for="subtitle">One line description</label>
+      <input id="subtitle" name="subtitle" type="text" value="<%= project.subtitle || '' %>">
+      <span class="hint">This is the sentence on the card and in search results. Make it specific.</span>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="slug">Address</label>
+        <input id="slug" name="slug" type="text" value="<%= project.slug || '' %>">
+        <span class="hint">Leave blank to derive it from the title.</span>
+      </div>
+      <div class="field">
+        <label for="context">Context</label>
+        <input id="context" name="context" type="text" value="<%= project.context || '' %>"
+               list="contexts" placeholder="WRRF, FRC, Personal">
+        <datalist id="contexts">
+          <option value="WRRF"></option>
+          <option value="Groundwork Robotics"></option>
+          <option value="iD Tech"></option>
+          <option value="UCLA"></option>
+          <option value="Personal"></option>
+          <option value="Open source"></option>
+        </datalist>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="tier">Tier</label>
+        <select id="tier" name="tier">
+          <% for (const t of ['note', 'build', 'case-study']) { %>
+            <option value="<%= t %>"<%= project.tier === t ? ' selected' : '' %>><%= t %></option>
+          <% } %>
+        </select>
+        <span class="hint">Note renders 3 blocks, build 6, case study all 12. Pick the smallest that fits, so nothing is padded.</span>
+      </div>
+      <div class="field">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          <% for (const s of ['shipped', 'competed', 'in-progress', 'specification', 'archived']) { %>
+            <option value="<%= s %>"<%= project.status === s ? ' selected' : '' %>><%= s %></option>
+          <% } %>
+        </select>
+        <span class="hint">Specification is a real, respectable status. Label it rather than implying more.</span>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="role">Your role</label>
+        <input id="role" name="role" type="text" value="<%= project.role || '' %>">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="started_on">Started</label>
+          <input id="started_on" name="started_on" type="text" value="<%= project.started_on || '' %>" placeholder="2026-06">
+        </div>
+        <div class="field">
+          <label for="ended_on">Ended</label>
+          <input id="ended_on" name="ended_on" type="text" value="<%= project.ended_on || '' %>" placeholder="2026-08">
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="summary_md">Summary</label>
+      <textarea id="summary_md" name="summary_md"><%= project.summary_md || '' %></textarea>
+    </div>
+
+    <div class="field">
+      <label for="body_md">Body</label>
+      <textarea id="body_md" name="body_md" style="min-height: 14rem;"><%= project.body_md || '' %></textarea>
+      <span class="hint">Blank lines separate paragraphs. Name the constraint before the solution.</span>
+    </div>
+
+    <div style="display:flex; gap: var(--s-4); flex-wrap: wrap;">
+      <label style="display:flex; gap:8px; align-items:center;">
+        <input type="checkbox" name="published" value="1"<%= project.published ? ' checked' : '' %>> Published
+      </label>
+      <label style="display:flex; gap:8px; align-items:center;">
+        <input type="checkbox" name="featured" value="1"<%= project.featured ? ' checked' : '' %>> Featured on the home page
+      </label>
+    </div>
+  </div>
+
+  <h2 style="font-size:1.15rem; margin-top: var(--s-5);">Disciplines</h2>
+  <p style="color: var(--text-muted); max-width: 62ch;">
+    Tick every discipline this project genuinely involved, then say in one sentence what you
+    actually did for each. That sentence is what opens the project for a reviewer who arrived
+    through that discipline, which is how one record serves eight audiences without duplication.
+  </p>
+
+  <%
+    /* Handles both shapes: the edit route supplies facet_slug from the join
+       table, and a failed save re-renders whatever the form posted. */
+    const chosen = new Map((project.facets || []).map((f) => [f.facet_slug || f.slug, f]));
+  %>
+
+  <div class="facet-picker" style="margin-top: var(--s-3);">
+    <% for (const d of disciplines) { %>
+      <% const sel = chosen.get(d.slug); %>
+      <details class="facet-row"<%= sel ? ' open' : '' %>>
+        <summary>
+          <span class="dot" style="background: var(--<%= d.color_token %>);"></span>
+          <strong><%= d.label %></strong>
+        </summary>
+        <div class="inner">
+          <label style="display:flex; gap:8px; align-items:center;">
+            <input type="checkbox" name="facet" value="<%= d.slug %>"<%= sel ? ' checked' : '' %>>
+            Include this discipline
+          </label>
+          <div class="field" style="margin:0;">
+            <label for="weight_<%= d.slug %>">Weight</label>
+            <select id="weight_<%= d.slug %>" name="weight_<%= d.slug %>">
+              <% for (const w of ['primary', 'significant', 'supporting']) { %>
+                <option value="<%= w %>"<%= sel && sel.weight === w ? ' selected' : '' %>><%= w %></option>
+              <% } %>
+            </select>
+          </div>
+          <div class="field" style="margin:0;">
+            <label for="note_<%= d.slug %>">What you did, one sentence</label>
+            <input id="note_<%= d.slug %>" name="note_<%= d.slug %>" type="text"
+                   value="<%= (sel && sel.contribution_note) ? sel.contribution_note : '' %>">
+          </div>
+        </div>
+      </details>
+    <% } %>
+  </div>
+
+  <div style="display:flex; gap: var(--s-2); margin-top: var(--s-5);">
+    <button class="btn" type="submit">Save</button>
+    <a class="btn btn-quiet" href="/admin/projects">Cancel</a>
+  </div>
+</form>

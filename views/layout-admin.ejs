@@ -1,0 +1,45 @@
+<!doctype html>
+<%
+  const themeAttr = (theme === 'light' || theme === 'dark') ? ` data-theme="${theme}"` : '';
+%>
+<html lang="en"<%- themeAttr %>>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %> · Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/css/fonts.css">
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/app.css">
+<link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body class="admin">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="admin-bar">
+  <div class="wrap bar">
+    <a class="brand" href="/admin">
+      <%- include('partials/mark', { size: 26 }) %>
+      <span class="wordmark">ADMIN</span>
+    </a>
+    <% if (typeof session !== 'undefined' && session) { %>
+      <nav class="nav" aria-label="Admin">
+        <a href="/admin/projects">Projects</a>
+        <a href="/admin/facets">Disciplines</a>
+        <a href="/admin/notes">Log</a>
+        <a href="/" target="_self">View site</a>
+      </nav>
+      <form method="post" action="/admin/logout" style="margin-left:auto;">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <button class="btn btn-quiet" type="submit">Sign out</button>
+      </form>
+    <% } %>
+  </div>
+</header>
+
+<main id="main" class="wrap" style="padding-block: var(--s-5) var(--s-7);">
+<%- body %>
+</main>
+</body>
+</html>

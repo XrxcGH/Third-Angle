@@ -1,0 +1,38 @@
+<p class="eyebrow">Admin</p>
+<h1>Dashboard</h1>
+
+<div class="stat-row" style="margin-top: var(--s-4);">
+  <div class="stat"><b><%= counts.published %>/<%= counts.projects %></b><span>Published</span></div>
+  <div class="stat"><b><%= counts.facets %></b><span>Disciplines</span></div>
+  <div class="stat"><b><%= counts.media %></b><span>Media</span></div>
+  <div class="stat"><b><%= counts.notes %></b><span>Log entries</span></div>
+  <div class="stat"><b><%= counts.errors %></b><span>New errors</span></div>
+</div>
+
+<div style="display:flex; gap: var(--s-2); margin-top: var(--s-4); flex-wrap: wrap;">
+  <a class="btn" href="/admin/projects/new">New project</a>
+  <a class="btn btn-quiet" href="/admin/projects">Reorder projects</a>
+  <a class="btn btn-quiet" href="/admin/notes">Add a log entry</a>
+</div>
+
+<section style="margin-top: var(--s-6);">
+  <h2 style="font-size:1.2rem;">Recent changes</h2>
+  <div class="panel" style="margin-top: var(--s-3); padding: 0;">
+    <table class="admin-table">
+      <thead><tr><th>When</th><th>Who</th><th>What</th><th>Action</th></tr></thead>
+      <tbody>
+        <% if (!recent.length) { %>
+          <tr><td colspan="4" style="color: var(--text-muted);">Nothing yet.</td></tr>
+        <% } %>
+        <% for (const r of recent) { %>
+          <tr>
+            <td class="mono" style="font-size:.72rem;"><%= r.at.slice(0,16).replace('T',' ') %></td>
+            <td style="font-size:.85rem;"><%= r.actor || 'system' %></td>
+            <td class="mono" style="font-size:.72rem;"><%= r.table_name %> #<%= r.row_id %></td>
+            <td><span class="badge"><%= r.action %></span></td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</section>

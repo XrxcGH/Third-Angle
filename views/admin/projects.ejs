@@ -1,0 +1,55 @@
+<p class="eyebrow">Admin</p>
+<h1>Projects</h1>
+<p style="color: var(--text-muted); max-width: 60ch;">
+  Drag a row to reorder, or use the arrows, which work with no JavaScript.
+  Order here is the order on the public work index.
+</p>
+
+<p style="margin: var(--s-4) 0;"><a class="btn" href="/admin/projects/new">New project</a></p>
+
+<div class="panel" style="padding:0;">
+  <table class="admin-table" id="project-table" data-csrf="<%= csrf %>">
+    <thead>
+      <tr><th style="width:2rem;"></th><th>Title</th><th>Tier</th><th>Status</th><th>Live</th><th style="text-align:right;">Actions</th></tr>
+    </thead>
+    <tbody>
+      <% for (const p of projects) { %>
+        <tr draggable="true" data-id="<%= p.id %>">
+          <td class="drag-handle" aria-hidden="true">::</td>
+          <td>
+            <strong><%= p.title %></strong>
+            <div class="mono" style="font-size:.66rem; color: var(--text-muted);">/work/<%= p.slug %></div>
+          </td>
+          <td><span class="badge"><%= p.tier %></span></td>
+          <td><span class="badge" data-status="<%= p.status %>"><%= p.status.replace('-', ' ') %></span></td>
+          <td class="mono" style="font-size:.7rem;"><%= p.published ? 'yes' : 'draft' %></td>
+          <td>
+            <div class="actions">
+              <form method="post" action="/admin/projects/<%= p.id %>/move">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <input type="hidden" name="dir" value="up">
+                <button class="btn btn-quiet btn-sm" type="submit" aria-label="Move <%= p.title %> up">up</button>
+              </form>
+              <form method="post" action="/admin/projects/<%= p.id %>/move">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <input type="hidden" name="dir" value="down">
+                <button class="btn btn-quiet btn-sm" type="submit" aria-label="Move <%= p.title %> down">down</button>
+              </form>
+              <a class="btn btn-quiet btn-sm" href="/admin/projects/<%= p.id %>/edit">Edit</a>
+              <%
+                /* A confirm PAGE rather than an inline onsubmit handler.
+                   Inline event handlers are blocked by script-src 'self', so a
+                   confirm() here would silently never fire and the row would
+                   delete on the first click. */
+              %>
+              <a class="btn btn-danger btn-sm" href="/admin/projects/<%= p.id %>/delete">Delete</a>
+            </div>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<p aria-live="polite" id="reorder-status" class="eyebrow" style="margin-top: var(--s-3);"></p>
+<script src="/static/js/reorder.js" defer></script>

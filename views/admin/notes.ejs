@@ -1,0 +1,53 @@
+<p class="eyebrow">Admin</p>
+<h1>Build log</h1>
+<p style="color: var(--text-muted); max-width: 62ch;">
+  One field is required. This is the freshness mechanism: a site with no dated activity reads
+  as abandoned, and an entry here costs thirty seconds. The public log hides itself entirely
+  when it is empty rather than displaying a stale one.
+</p>
+
+<form method="post" action="/admin/notes/save" class="panel" style="margin-top: var(--s-4); max-width: 44rem;">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div class="row2">
+    <div class="field">
+      <label for="title">Title, optional</label>
+      <input id="title" name="title" type="text">
+    </div>
+    <div class="field">
+      <label for="project_id">Related project, optional</label>
+      <select id="project_id" name="project_id">
+        <option value="">None</option>
+        <% for (const p of projects) { %>
+          <option value="<%= p.id %>"><%= p.title %></option>
+        <% } %>
+      </select>
+    </div>
+  </div>
+  <div class="field">
+    <label for="body_md">What happened</label>
+    <textarea id="body_md" name="body_md" required></textarea>
+  </div>
+  <button class="btn" type="submit">Post entry</button>
+</form>
+
+<div class="panel" style="padding:0; margin-top: var(--s-5);">
+  <table class="admin-table">
+    <thead>
+      <tr><th style="width:7rem;">Date</th><th>Entry</th></tr>
+    </thead>
+    <tbody>
+      <% if (!notes.length) { %>
+        <tr><td colspan="2" style="color: var(--text-muted);">No entries yet.</td></tr>
+      <% } %>
+      <% for (const n of notes) { %>
+        <tr>
+          <td class="mono" style="font-size:.72rem; white-space:nowrap;"><%= n.created_at.slice(0, 10) %></td>
+          <td>
+            <% if (n.title) { %><strong><%= n.title %></strong><br><% } %>
+            <span style="font-size:.88rem; color: var(--text-muted);"><%= n.body_md.slice(0, 180) %></span>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
