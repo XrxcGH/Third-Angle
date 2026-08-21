@@ -73,9 +73,20 @@ function securityHeaders(req, res, next) {
       "base-uri 'self'",
       "form-action 'self'",
       "frame-ancestors 'none'",
-      // No inline script anywhere, which is why 'unsafe-inline' is absent.
+      // No inline script anywhere, which is why 'unsafe-inline' is absent
+      // here and why no nonce is needed.
       "script-src 'self'",
+      "script-src-attr 'none'",
+      // style-src governs stylesheets and <style> elements. Inline style
+      // ATTRIBUTES are governed by style-src-attr, which FALLS BACK to
+      // style-src when it is not stated. Omitting it therefore blocks every
+      // style="..." in the templates, and the page renders structurally
+      // correct and visually broken, with nothing in the server log.
+      // Allowing it only for attributes is a far smaller concession than
+      // 'unsafe-inline' on style-src: a style attribute cannot pull in an
+      // external resource or define a whole sheet.
       "style-src 'self'",
+      "style-src-attr 'unsafe-inline'",
       "img-src 'self' data:",
       "font-src 'self'",
       "connect-src 'self'",

@@ -337,7 +337,12 @@ function search(raw, limit = 25) {
 
 /** Rebuild one search_index row. Called inside the same transaction as a write. */
 function upsertSearchRow({ kind, ref_id, url, title, subtitle = '', body = '', tags = '', published = 1 }) {
-  const existing = get('SELECT id FROM search_index WHERE kind = ? AND ref_id = ?', kind, ref_id);
+  // IS rather than =. Discipline rows carry a NULL ref_id, and `ref_id = NULL`
+  // is NULL rather than true, so the probe never matched and every reindex
+  // appended a fresh duplicate of all eight disciplines.
+  const existing = ref_id === null || ref_id === undefined
+    ? get('SELECT id FROM search_index WHERE kind = ? AND url = ?', kind, url)
+    : get('SELECT id FROM search_index WHERE kind = ? AND ref_id IS ?', kind, ref_id);
   if (existing) {
     run(
       `UPDATE search_index
@@ -361,7 +366,14 @@ function plain(md) {
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    // HTML must go before the punctuation pass, or a stray < survives into the
+    // index and snippet() then emits it into the page. The search template has
+    // to use <%- to render the <mark> highlight, so anything the indexer stores
+    // is effectively unescaped output.
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&(?:[a-z]+|#\d+);/gi, ' ')
     .replace(/[#>*_`|-]+/g, ' ')
+    .replace(/[<>]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -387,6 +399,13 @@ function reindexProject(projectId) {
 }
 
 function reindexAll() {
+  // search_index deliberately has no foreign key to project, because it also
+  // holds rows for disciplines and static pages that have no project. So
+  // orphans have to be swept explicitly rather than cascaded.
+  run(`DELETE FROM search_index
+        WHERE kind = 'project'
+          AND ref_id IS NOT NULL
+          AND ref_id NOT IN (SELECT id FROM project)`);
   for (const p of all('SELECT id FROM project')) reindexProject(p.id);
   for (const f of all("SELECT * FROM facet WHERE kind = 'discipline'")) {
     upsertSearchRow({

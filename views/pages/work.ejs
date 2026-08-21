@@ -7,9 +7,9 @@
   </p>
 
   <div class="chips" style="margin-top: var(--s-4);">
-    <a class="chip" href="/work" aria-pressed="<%= active ? 'false' : 'true' %>">All<span class="tnum" style="color: var(--text-muted);"><%= projects.length %></span></a>
+    <a class="chip" href="/work"<%- active ? '' : ' aria-current="true"' %>>All<span class="tnum" style="color: var(--text-muted);"><%= projects.length %></span></a>
     <% for (const d of disciplines) { %>
-      <a class="chip" href="/work?d=<%= d.slug %>" aria-pressed="<%= active === d.slug ? 'true' : 'false' %>">
+      <a class="chip" href="/work?d=<%= d.slug %>"<%- active === d.slug ? ' aria-current="true"' : '' %>>
         <span class="dot" style="background: var(--<%= d.color_token %>);"></span>
         <%= d.label %>
         <% if (counts[d.slug]) { %><span class="tnum" style="color: var(--text-muted);"><%= counts[d.slug] %></span><% } %>
@@ -21,7 +21,7 @@
     <% if (active) { %><%= matchCount %> of <%= projects.length %> match<% } else { %><%= projects.length %> projects<% } %>
   </p>
 
-  <div class="grid"<%= active ? ' data-filtering' : '' %>>
+  <div class="grid"<%- active ? ' data-filtering' : '' %>>
     <% for (const p of projects) { %><%- include('../partials/card', { p }) %><% } %>
   </div>
 </section>

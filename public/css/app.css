@@ -230,10 +230,14 @@ code {
   transition: border-color var(--t-hover) var(--ease), background-color var(--t-hover) var(--ease);
 }
 .chip:hover { border-color: var(--accent); color: var(--text-strong); }
-.chip[aria-pressed="true"] {
+.chip[aria-current="true"] {
   border-color: var(--accent);
   background: var(--accent-wash);
   color: var(--text-strong);
+  /* A second, non colour channel, so the active filter survives forced-colors
+     mode and is not conveyed by colour alone. */
+  box-shadow: inset 2px 0 0 var(--accent);
+  font-weight: 600;
 }
 .chip .dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
 
@@ -307,8 +311,17 @@ code {
 }
 .grid:has(> .card:hover) > .card:not(:hover) .card-summary,
 .grid:has(> .card:focus-within) > .card:not(:focus-within) .card-summary,
-.grid[data-filtering] > .card[data-match="false"] .card-summary {
+.grid[data-filtering] > .card[data-match="false"] .card-summary,
+/* The meta row and the status badge are most of a card's ink, so leaving them
+   at full strength made the dim read as a rendering fault rather than focus. */
+.grid:has(> .card:hover) > .card:not(:hover) .card-meta,
+.grid:has(> .card:focus-within) > .card:not(:focus-within) .card-meta,
+.grid[data-filtering] > .card[data-match="false"] .card-meta,
+.grid:has(> .card:hover) > .card:not(:hover) .badge,
+.grid:has(> .card:focus-within) > .card:not(:focus-within) .badge,
+.grid[data-filtering] > .card[data-match="false"] .badge {
   color: var(--dim-text);
+  border-color: var(--dim-border);
 }
 /* Saturation drop on imagery is what makes it read as focus rather than a
    broken render. Blur is not used: it destroys legibility and is a flagged tell. */
@@ -326,6 +339,7 @@ code {
 @media (forced-colors: active) {
   /* Author colours are stripped here, so carry the state on a second channel. */
   .grid:has(> .card:hover) > .card:not(:hover),
+  .grid:has(> .card:focus-within) > .card:not(:focus-within),
   .grid[data-filtering] > .card[data-match="false"] { color: GrayText; border-color: ButtonBorder; }
   .card:hover, .card:focus-visible { border-color: Highlight; }
 }

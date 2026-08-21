@@ -59,15 +59,44 @@ app.use((req, res) => {
   });
 });
 
-/* 500. Errors are recorded in SQLite rather than sent to a paid SaaS. */
+/*
+ * 500. Errors are recorded in SQLite rather than sent to a paid SaaS.
+ *
+ * This handler must be self-sufficient. If the error was thrown INSIDE the
+ * theme or locals middleware, res.locals was never populated, and the layout
+ * dereferences theme, path and canonical. Rendering with the route's usual
+ * assumptions makes the error handler throw a second time, at which point
+ * Express falls through to its own final handler: the branded page never
+ * appears, the security headers are replaced, and in development the raw
+ * stack trace with absolute paths goes to the client.
+ *
+ * So: supply every local with a fallback, and pass a render callback so even a
+ * template failure degrades to plain text rather than a second throw.
+ */
 app.use((err, req, res, _next) => {
   console.error(err);
   repo.logError(req && req.path, err);
+
+  let disciplines = [];
+  try { disciplines = repo.listFacets('discipline'); } catch { /* database may be the thing that broke */ }
+
   res.status(500).render('pages/500', {
     title: 'Something broke',
     description: 'An error occurred.',
-    disciplines: [],
+    disciplines,
     counts: {},
+    theme: (res.locals && res.locals.theme) || 'system',
+    path: (req && req.path) || '/',
+    query: {},
+    siteUrl: (res.locals && res.locals.siteUrl) || '',
+    canonical: (res.locals && res.locals.canonical) || '',
+    year: new Date().getFullYear(),
+  }, (renderErr, html) => {
+    if (renderErr) {
+      console.error('500 template also failed:', renderErr);
+      return res.type('text/plain').send('Something broke on my end. Try again shortly.\n');
+    }
+    res.send(html);
   });
 });
 

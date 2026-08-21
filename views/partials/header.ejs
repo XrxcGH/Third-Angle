@@ -10,10 +10,10 @@
     </a>
 
     <nav class="nav" aria-label="Main">
-      <a href="/work"<%= path.startsWith('/work') ? ' aria-current="page"' : '' %>>Work</a>
-      <a href="/disciplines"<%= path.startsWith('/disciplines') ? ' aria-current="page"' : '' %>>Disciplines</a>
-      <a href="/log"<%= path.startsWith('/log') ? ' aria-current="page"' : '' %>>Log</a>
-      <a href="/search"<%= path.startsWith('/search') ? ' aria-current="page"' : '' %>>Search</a>
+      <a href="/work"<%- path.startsWith('/work') ? ' aria-current="page"' : '' %>>Work</a>
+      <a href="/disciplines"<%- path.startsWith('/disciplines') ? ' aria-current="page"' : '' %>>Disciplines</a>
+      <a href="/log"<%- path.startsWith('/log') ? ' aria-current="page"' : '' %>>Log</a>
+      <a href="/search"<%- path.startsWith('/search') ? ' aria-current="page"' : '' %>>Search</a>
     </nav>
 
     <%

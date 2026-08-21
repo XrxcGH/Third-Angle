@@ -24,6 +24,12 @@ const PROD = process.env.NODE_ENV === 'production';
 // with the environment rather than the security posture.
 const COOKIE = PROD ? '__Host-session' : 'session';
 
+/*
+ * Computed once at startup so an unknown email costs exactly the same scrypt
+ * work as a known one. The value is never a real credential.
+ */
+const DECOY_HASH = auth.hashPassword(require('node:crypto').randomBytes(32).toString('hex'));
+
 /* ------------------------------------------------------------- middleware */
 
 function loadSession(req, res, next) {
@@ -97,11 +103,18 @@ router.post('/login', form, loadSession, (req, res) => {
 
   const user = auth.findUserByEmail(email);
 
-  // Same generic message and the same work either way, so the response does
-  // not reveal whether the address exists.
+  /*
+   * Same generic message and the same work either way, so the response does
+   * not reveal whether the address exists.
+   *
+   * The decoy hash is computed ONCE at module load, not per request. Calling
+   * hashPassword here would run scrypt twice for an unknown address and once
+   * for a known one, which inverts the very timing signal this is meant to
+   * hide: unknown users would answer measurably slower.
+   */
   const ok = user
     ? auth.verifyPassword(password, user.password_hash)
-    : auth.verifyPassword(password, auth.hashPassword('decoy'));
+    : auth.verifyPassword(password, DECOY_HASH);
 
   if (!user || !ok) {
     auth.recordAttempt(email, ip, false);

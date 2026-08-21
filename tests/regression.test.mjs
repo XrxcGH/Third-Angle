@@ -71,3 +71,47 @@ test('sort keys stay unique and correctly ordered after a reorder', () => {
   const sorted = [...keys].sort();
   assert.deepEqual(keys, sorted, 'sort_key ordering is not byte-wise ascending');
 });
+
+test('reindexAll is idempotent, so disciplines do not multiply', () => {
+  // The upsert probe used `ref_id = ?`, and discipline rows carry a NULL
+  // ref_id. `ref_id = NULL` evaluates to NULL, never true, so every reindex
+  // appended a fresh copy of all eight disciplines.
+  const count = () => db.get('SELECT COUNT(*) AS n FROM search_index').n;
+  repo.reindexAll();
+  const first = count();
+  repo.reindexAll();
+  repo.reindexAll();
+  assert.equal(count(), first, 'reindexAll is appending duplicates');
+});
+
+test('reindexAll sweeps rows whose project no longer exists', () => {
+  // search_index deliberately has no foreign key, because it also indexes
+  // disciplines and static pages, so orphans must be swept explicitly.
+  db.run(
+    `INSERT INTO search_index (kind, ref_id, url, title, subtitle, body, tags, published)
+     VALUES ('project', 999999, '/work/ghost', 'Ghost', '', '', '', 1)`
+  );
+  assert.ok(db.get("SELECT id FROM search_index WHERE ref_id = 999999"), 'setup failed');
+  repo.reindexAll();
+  assert.equal(
+    db.get("SELECT id FROM search_index WHERE ref_id = 999999"),
+    undefined,
+    'orphaned search row survived a reindex'
+  );
+});
+
+test('indexed text carries no markup, because excerpts render unescaped', () => {
+  // The search template must use <%- to render the <mark> highlight, so
+  // anything the indexer stores is effectively unescaped output.
+  assert.equal(repo.plain('<p>Hello <b>there</b></p>'), 'Hello there');
+  assert.ok(!repo.plain('<script>alert(1)</script>').includes('<'));
+  assert.ok(!repo.plain('a < b and c > d').includes('<'));
+  for (const row of db.all('SELECT title, subtitle, body FROM search_index')) {
+    for (const field of ['title', 'subtitle', 'body']) {
+      assert.ok(
+        !/[<>]/.test(row[field] || ''),
+        `search_index.${field} contains angle brackets: ${String(row[field]).slice(0, 80)}`
+      );
+    }
+  }
+});
