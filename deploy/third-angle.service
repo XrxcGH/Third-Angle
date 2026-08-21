@@ -1,0 +1,56 @@
+# systemd unit. Install to /etc/systemd/system/third-angle.service
+#
+# No blue/green, deliberately. Two processes against one SQLite file creates a
+# real two writer window, and one to two seconds of restart made invisible by
+# Caddy retry is the correct trade for a portfolio. See DESIGN.md risk R6.
+
+[Unit]
+Description=Third Angle portfolio
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=app
+Group=app
+WorkingDirectory=/srv/third-angle
+Environment=NODE_ENV=production
+# Mode 0600, owned by app. Never in the repository.
+EnvironmentFile=/etc/third-angle/env
+ExecStart=/usr/bin/node server.js
+
+# Give the app time to drain in-flight requests. The SIGTERM handler closes the
+# listener, finishes open requests, then closes SQLite cleanly.
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+Restart=always
+RestartSec=2
+
+# Hardening. The process needs to read its own directory and write exactly one
+# data directory, and nothing else on the machine.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/third-angle/data
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# A runaway process must not take the box down. 12 GB total on the target.
+MemoryMax=2G
+TasksMax=256
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=third-angle
+
+[Install]
+WantedBy=multi-user.target

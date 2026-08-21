@@ -29,7 +29,7 @@ npm start          # http://localhost:3000
 ## Checks
 
 ```bash
-npm test              # 64 tests: routes, contrast, search, schema, security, auth, media, regression
+npm test              # 74 tests: routes, contrast, search, schema, security, auth, media, backup, regression
 npm run check:scope   # fails when prose outruns code
 npm run check:costs   # fails when a quoted price goes stale
 ```
@@ -52,8 +52,9 @@ src/
   routes/public.js     the public site
 views/                 EJS, layout plus pages plus partials
 public/css/tokens.css  the design system. Nothing else defines a colour.
-scripts/               seed, fonts, scope guard, cost check
-tests/                 contrast, search, schema, security
+scripts/               seed, fonts, admin, db-tool, scope guard, cost check
+deploy/                provision, systemd, Caddy, Litestream, backup, verify
+tests/                 routes, contrast, search, schema, security, auth, media, backup
 DESIGN.md              the rules, and what will bite you
 costs.yml              every price, dated and sourced
 ```
@@ -105,11 +106,27 @@ one row. The keys are case sensitive base62: never declare `sort_key` as
 | 05 | Public site | **done**, tier-gated project pages |
 | 06 | Search, feeds, colophon | search, Atom and JSON feeds, /now, attributions **done**; document library next |
 | 07 | Icons, motion, polish | pending |
-| 08 | Deploy and rehearse the restore | pending |
+| 08 | Deploy and rehearse the restore | tooling **done**; the drill is yours to run |
 | 09 | GitHub cleanup, then launch | pending |
 
 The content, not the software, is the critical path. Photographs of the physical
 work and a short video of a robot moving outrank everything on this list.
+
+## Deploying
+
+```bash
+git clone https://github.com/XrxcGH/third-angle.git
+sudo bash third-angle/deploy/provision.sh
+```
+
+Then read [RESTORE.md](RESTORE.md) and actually run the drill:
+
+```bash
+sudo third-angle-verify
+```
+
+An unrehearsed backup is a belief. The runbook has a blank where the measured
+recovery time goes, and filling it in is the point.
 
 ## Licence
 

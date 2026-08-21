@@ -1,0 +1,15 @@
+[Unit]
+Description=Third Angle nightly snapshot and restore verification
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=app
+Group=app
+EnvironmentFile=/etc/third-angle/env
+ExecStart=/usr/local/bin/third-angle-backup
+# The verification runs immediately after, so a snapshot is never trusted
+# without something having opened it and asked it questions.
+ExecStartPost=/usr/local/bin/third-angle-verify
+Nice=10
+IOSchedulingClass=idle

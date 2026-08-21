@@ -1,0 +1,29 @@
+# Litestream. Continuous replication of the SQLite file to object storage.
+#
+# Pin ABOVE 0.5.7. Releases 0.5.6 and 0.5.7 fail replication completely and
+# SILENTLY, with no error output. For a backup tool that is the worst possible
+# failure mode, which is why the liveness timer below exists as well.
+#
+# Credentials come from /etc/third-angle/env, never from this file.
+
+# Bound to localhost so the liveness check can scrape it without exposing
+# anything. A dead Litestream process stops pinging, and the missing ping is
+# what alerts. Log tailing would not catch process death.
+addr: "localhost:9090"
+
+dbs:
+  - path: /srv/third-angle/data/third-angle.db
+    replicas:
+      - type: s3
+        name: r2
+        bucket: "$R2_BUCKET"
+        path: third-angle
+        endpoint: "https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
+        region: auto
+        access-key-id: "$R2_ACCESS_KEY_ID"
+        secret-access-key: "$R2_SECRET_ACCESS_KEY"
+        # Roughly a one second recovery point objective.
+        sync-interval: 1s
+        # Enough history to walk back past a bad migration noticed the next day.
+        retention: 336h
+        snapshot-interval: 24h

@@ -1,0 +1,12 @@
+[Unit]
+Description=Nightly Third Angle backup
+
+[Timer]
+OnCalendar=*-*-* 03:17:00
+# Not on the hour: every cron on the internet fires at :00, and this box is
+# small. The odd minute also makes it obvious in a log which job ran.
+RandomizedDelaySec=600
+Persistent=true
+
+[Install]
+WantedBy=timers.target
