@@ -144,3 +144,14 @@ test('litestream config pins above the silently broken releases', () => {
 process.on('exit', () => {
   try { rmSync(work, { recursive: true, force: true }); } catch { /* best effort */ }
 });
+
+test('shell scripts are stored with LF endings, not CRLF', () => {
+  // A script checked out with CRLF fails on Linux with
+  // "bad interpreter: /usr/bin/env bash^M", which is a confusing error to
+  // meet at 1am during a restore. .gitattributes pins this; the test proves it.
+  for (const s of ['provision.sh', 'backup.sh', 'restore-verify.sh', 'alive.sh']) {
+    const text = readFileSync(path.join(ROOT, 'deploy', s), 'utf8');
+    assert.ok(!text.includes('\r\n'), `deploy/${s} contains CRLF line endings`);
+    assert.ok(text.startsWith('#!'), `deploy/${s} lost its shebang`);
+  }
+});
