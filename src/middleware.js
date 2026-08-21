@@ -74,8 +74,9 @@ function securityHeaders(req, res, next) {
       "base-uri 'self'",
       "form-action 'self'",
       "frame-ancestors 'none'",
-      // No inline script anywhere, which is why 'unsafe-inline' is absent
-      // here and why no nonce is needed.
+      // No executable inline script anywhere, which is why 'unsafe-inline' is
+      // absent and no nonce is needed. The one inline block on the page is
+      // application/ld+json, which CSP does not treat as executable script.
       "script-src 'self'",
       "script-src-attr 'none'",
       // style-src governs stylesheets and <style> elements. Inline style

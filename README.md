@@ -29,7 +29,7 @@ npm start          # http://localhost:3000
 ## Checks
 
 ```bash
-npm test              # 74 tests: routes, contrast, search, schema, security, auth, media, backup, regression
+npm test              # 84 tests: routes, seo, contrast, search, schema, security, auth, media, backup, regression
 npm run check:scope   # fails when prose outruns code
 npm run check:costs   # fails when a quoted price goes stale
 ```
@@ -105,7 +105,7 @@ one row. The keys are case sensitive base62: never declare `sort_key` as
 | 04 | Admin CRUD, reorder, media | **done** |
 | 05 | Public site | **done**, tier-gated project pages |
 | 06 | Search, feeds, colophon | search, Atom and JSON feeds, /now, attributions **done**; document library next |
-| 07 | Icons, motion, polish | pending |
+| 07 | Structured data, social cards | **done**; animated icons still to drop in |
 | 08 | Deploy and rehearse the restore | tooling **done**; the drill is yours to run |
 | 09 | GitHub cleanup, then launch | pending |
 

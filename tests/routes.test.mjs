@@ -114,8 +114,20 @@ test('the theme cookie is honoured server side, with no inline script', async ()
   const junk = await (await fetch(base + '/', { headers: { cookie: 'theme=<script>' } })).text();
   assert.ok(!junk.includes('data-theme='), 'junk theme cookie leaked into the attribute');
 
-  // The whole no-flash design depends on there being no script to run.
-  assert.ok(!/<script(?![^>]*src=)/.test(system), 'an inline script appeared');
+  /*
+   * The whole no-flash theme design depends on there being no script to RUN
+   * before first paint, which is also why the CSP needs no nonce.
+   *
+   * A `<script type="application/ld+json">` block is data, not executable
+   * script: the parser never hands it to the JavaScript engine, so it cannot
+   * affect paint. It is excluded here deliberately rather than by loosening
+   * the assertion, so a genuinely executable inline script still fails.
+   */
+  const inlineScripts = [...system.matchAll(/<script\b([^>]*)>/g)]
+    .map((m) => m[1])
+    .filter((attrs) => !/\bsrc=/.test(attrs))
+    .filter((attrs) => !/type\s*=\s*["']application\/ld\+json["']/.test(attrs));
+  assert.deepEqual(inlineScripts, [], 'an executable inline script appeared');
 });
 
 test('security headers are present on every response', async () => {

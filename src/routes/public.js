@@ -3,6 +3,7 @@
 const express = require('express');
 const repo = require('../repo');
 const { setTheme } = require('../middleware');
+const seo = require('../seo');
 
 const router = express.Router();
 
@@ -27,6 +28,12 @@ router.get('/', (req, res) => {
     featured: projects.filter((p) => p.featured).slice(0, 3),
     now: repo.getNow(),
     notes: repo.listNotes(3),
+    jsonLd: seo.jsonLd(res.locals.siteUrl),
+    ogImage: registerOg({
+      title: 'I build the machine, wire it, and write the code that runs it',
+      subtitle: 'Mechanical engineering at UCLA. Four seasons of FIRST Robotics.',
+      eyebrow: 'Eric J. Dean',
+    }),
   });
 });
 
@@ -55,6 +62,8 @@ router.get('/work', (req, res) => {
     projects: decorated,
     active,
     matchCount,
+    jsonLd: seo.jsonLd(res.locals.siteUrl, { trail: [{ name: 'Home', url: '/' }, { name: 'Work', url: '/work' }] }),
+    ogImage: registerOg({ title: 'Work', subtitle: String(projects.length) + ' projects across eight disciplines.', eyebrow: 'Eric J. Dean' }),
   });
 });
 
@@ -66,6 +75,15 @@ router.get('/work/:slug', (req, res, next) => {
     title: project.title,
     description: project.subtitle || repo.plain(project.summary_md).slice(0, 160),
     project,
+    jsonLd: seo.jsonLd(res.locals.siteUrl, {
+      project,
+      trail: [{ name: 'Home', url: '/' }, { name: 'Work', url: '/work' }, { name: project.title, url: '/work/' + project.slug }],
+    }),
+    ogImage: registerOg({
+      title: project.title,
+      subtitle: project.subtitle || '',
+      eyebrow: project.context || 'Project',
+    }),
   });
 });
 
@@ -89,6 +107,14 @@ router.get('/disciplines/:slug', (req, res, next) => {
     description: facet.blurb || `${facet.label} work.`,
     facet,
     projects,
+    jsonLd: seo.jsonLd(res.locals.siteUrl, {
+      trail: [{ name: 'Home', url: '/' }, { name: 'Disciplines', url: '/disciplines' }, { name: facet.label, url: '/disciplines/' + facet.slug }],
+    }),
+    ogImage: registerOg({
+      title: facet.label,
+      subtitle: String(projects.length) + ' project' + (projects.length === 1 ? '' : 's'),
+      eyebrow: 'Discipline',
+    }),
   });
 });
 
@@ -144,6 +170,57 @@ function safeBackPath(raw) {
   if (/[\r\n]/.test(v)) return '/';           // header splitting
   if (v.length > 512) return '/';
   return v;
+}
+
+/* ------------------------------------------------------------- OG images */
+
+/*
+ * Rendered on demand and cached on disk. The key is a hash of the content, so
+ * editing a title produces a new URL and the old card is never served stale by
+ * a platform that cached it.
+ */
+router.get('/og/:key.png', async (req, res, next) => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const sharp = require('sharp');
+  const { DATA_DIR } = require('../db');
+
+  const key = String(req.params.key || '').replace(/[^a-f0-9]/g, '');
+  if (key.length !== 16) return next();
+
+  const dir = path.join(DATA_DIR, 'og');
+  const file = path.join(dir, key + '.png');
+
+  if (!fs.existsSync(file)) {
+    const spec = ogSpecs.get(key);
+    // An unknown key means the page that would have registered it has not been
+    // rendered in this process. Fall back rather than 404, because a crawler
+    // may hit the image before it ever hits the page.
+    const svg = seo.ogSvg(spec || { title: 'Eric J. Dean', subtitle: 'Mechanical, electrical, controls and software.' });
+    fs.mkdirSync(dir, { recursive: true });
+    const png = await sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer();
+    fs.writeFileSync(file, png);
+  }
+
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  fs.createReadStream(file).pipe(res);
+});
+
+/*
+ * Content-addressed, so the map is a cache rather than state: a miss costs one
+ * regeneration from the default, never a broken image.
+ */
+const ogSpecs = new Map();
+function registerOg(spec) {
+  const key = seo.ogKey(spec);
+  if (!ogSpecs.has(key)) {
+    ogSpecs.set(key, spec);
+    // Bounded, because this is a cache and a long-running process should not
+    // grow one entry per title edit forever.
+    if (ogSpecs.size > 500) ogSpecs.delete(ogSpecs.keys().next().value);
+  }
+  return '/og/' + key + '.png';
 }
 
 /* ---------------------------------------------------- colophon and feeds */
