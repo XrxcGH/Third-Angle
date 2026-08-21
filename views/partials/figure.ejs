@@ -1,0 +1,50 @@
+<%
+  /*
+   * One piece of evidence.
+   *
+   * AVIF first, WebP second, the re-encoded original last. Explicit width and
+   * height on the img so the space is reserved before the bytes land, which is
+   * what stops the page jumping. The sizes attribute is passed in per layout
+   * slot rather than guessed here, because a wrong sizes is worse than none.
+   */
+  /* srcset arrives as a local from middleware: EJS has no require. */
+  const avif = srcset(m, 'avif');
+  const webp = srcset(m, 'webp');
+  const sizes = typeof slot === 'undefined' ? '(min-width: 900px) 700px, 100vw' : slot;
+  const eager = typeof priority !== 'undefined' && priority;
+%>
+<figure style="margin:0;">
+  <% if (m.mime.startsWith('image/')) { %>
+    <picture>
+      <% if (avif) { %><source type="image/avif" srcset="<%= avif %>" sizes="<%= sizes %>"><% } %>
+      <% if (webp) { %><source type="image/webp" srcset="<%= webp %>" sizes="<%= sizes %>"><% } %>
+      <img src="/media/<%= m.storage_key %>"
+           alt="<%= m.alt %>"
+           <% if (m.width) { %>width="<%= m.width %>" height="<%= m.height %>"<% } %>
+           loading="<%= eager ? 'eager' : 'lazy' %>"
+           decoding="<%= eager ? 'sync' : 'async' %>"
+           <% if (eager) { %>fetchpriority="high"<% } %>
+           style="width:100%; height:auto; display:block; border-radius: var(--r-card); border:1px solid var(--hairline);">
+    </picture>
+  <% } else if (m.mime === 'video/mp4') { %>
+    <%
+      /* muted and playsinline so it can autoplay-on-tap on iOS; controls
+         because a clip of a mechanism is something a reviewer will scrub. */
+    %>
+    <video src="/media/<%= m.storage_key %>" controls preload="metadata" playsinline muted
+           style="width:100%; height:auto; display:block; border-radius: var(--r-card); border:1px solid var(--hairline); background: var(--sunken);">
+      <%= m.alt %>
+    </video>
+  <% } else { %>
+    <a href="/media/<%= m.storage_key %>" class="chip"><%= m.alt || 'Download' %></a>
+  <% } %>
+
+  <% if (m.caption) { %>
+    <figcaption style="font-size:.85rem; color: var(--text-muted); margin-top: var(--s-2); line-height:1.5;">
+      <%= m.caption %>
+      <% if (m.captured_on) { %>
+        <span class="mono" style="font-size:.62rem; letter-spacing:.08em;"><%= m.captured_on %></span>
+      <% } %>
+    </figcaption>
+  <% } %>
+</figure>

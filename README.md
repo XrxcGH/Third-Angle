@@ -8,9 +8,9 @@ Server rendered Node, Express and EJS on `node:sqlite`. No build step, no native
 dependencies, no framework. Runs on a free Oracle Always Free ARM instance for
 the price of a domain name.
 
-**Status: walking skeleton, phase 02 of 09.** The public site, the facet model,
-search and the design system are built and tested. The admin panel, media
-pipeline and document library are not. See [Roadmap](#roadmap).
+**Status: phases 02 to 05 done.** The public site, facet model, search, design
+system, admin panel and media pipeline are built and tested. The document
+library, feeds and deploy tooling are not. See [Roadmap](#roadmap).
 
 ## Run it
 
@@ -29,7 +29,7 @@ npm start          # http://localhost:3000
 ## Checks
 
 ```bash
-npm test              # 28 tests: contrast, search, schema, security
+npm test              # 52 tests: contrast, search, schema, security, auth, media, regression
 npm run check:scope   # fails when prose outruns code
 npm run check:costs   # fails when a quoted price goes stale
 ```
@@ -101,9 +101,9 @@ one row. The keys are case sensitive base62: never declare `sort_key` as
 | 01 | Content capture | ongoing, and the real critical path |
 | 02 | Walking skeleton and schema | **done** |
 | 03 | Design system in code | **done** |
-| 04 | Admin CRUD and reorder | next |
-| 05 | Public site | done, minus the project detail template's full twelve blocks |
-| 06 | Search and documents | search done, document library pending |
+| 04 | Admin CRUD, reorder, media | **done** |
+| 05 | Public site | **done**, tier-gated project pages |
+| 06 | Search and documents | search done, document library next |
 | 07 | Icons, motion, polish | pending |
 | 08 | Deploy and rehearse the restore | pending |
 | 09 | GitHub cleanup, then launch | pending |

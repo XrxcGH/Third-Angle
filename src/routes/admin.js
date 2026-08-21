@@ -14,6 +14,16 @@ const repo = require('../repo');
 const auth = require('../auth');
 const { get, all, run, transaction, nowIso } = require('../db');
 const { generateKeyBetween } = require('fractional-indexing');
+const multer = require('multer');
+const media = require('../media');
+
+/* In memory, because every upload is validated and re-encoded before it ever
+   touches the disk. multer 2.2.0 or newer: earlier versions carry CVE-2026-2359
+   and leave orphaned partial files behind with diskStorage. */
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: media.MAX_BYTES, files: 10, fields: 40 },
+});
 
 const router = express.Router();
 const form = express.urlencoded({ extended: false, limit: '256kb' });
@@ -386,6 +396,82 @@ router.post('/projects/:id/move', form, requireCsrf, (req, res) => {
     repo.logChange(req.session.email, 'project', id, 'update', { moved: req.body.dir });
   }
   res.redirect(303, '/admin/projects');
+});
+
+/* ------------------------------------------------------------------ media */
+
+router.get('/media', (req, res) => {
+  res.render('admin/media', view('media', {
+    title: 'Media',
+    items: media.listMedia(),
+    projects: repo.listProjects({ includeUnpublished: true }),
+    error: typeof req.query.error === 'string' ? req.query.error : null,
+    uploaded: req.query.uploaded ? Number(req.query.uploaded) : 0,
+  }));
+});
+
+/*
+ * Capture inbox. One field, mobile first, no required metadata beyond alt
+ * text. Capture and curation are different activities, and forcing them
+ * together is why neither happens. The R2 mitigation depends on this being
+ * genuinely fast from a phone at a competition.
+ */
+router.post('/media/upload', upload.array('files', 10), requireCsrf, async (req, res) => {
+  const files = req.files || [];
+  if (!files.length) return res.redirect(303, '/admin/media?error=' + encodeURIComponent('Choose at least one file.'));
+
+  let ok = 0;
+  const errors = [];
+  for (const f of files) {
+    try {
+      const id = await media.ingest({
+        buffer: f.buffer,
+        originalName: f.originalname,
+        kind: req.body.kind,
+        // Alt text is not optional. An image with no alt is invisible to a
+        // screen reader and to a search engine, and a portfolio cannot afford
+        // either. The form marks it required; this is the server side of that.
+        alt: req.body.alt || f.originalname || 'Untitled',
+        caption: req.body.caption,
+        origin: req.body.origin,
+        capturedOn: req.body.captured_on,
+        releaseOk: req.body.release_ok ? 1 : 0,
+      });
+      if (req.body.project_id) {
+        run(
+          'INSERT OR IGNORE INTO project_media (project_id, media_id, sort_key) VALUES (?, ?, ?)',
+          Number(req.body.project_id), id,
+          repo.nextKeyFor('project_media', 'project_id = ?', Number(req.body.project_id))
+        );
+      }
+      repo.logChange(req.session.email, 'media', id, 'insert', { name: f.originalname });
+      ok += 1;
+    } catch (err) {
+      errors.push(`${f.originalname}: ${err.message}`);
+    }
+  }
+
+  const q = errors.length ? '?error=' + encodeURIComponent(errors.join(' | ')) : '?uploaded=' + ok;
+  res.redirect(303, '/admin/media' + q);
+});
+
+router.post('/media/:id/delete', form, requireCsrf, (req, res) => {
+  const id = Number(req.params.id);
+  media.deleteMedia(id);
+  repo.logChange(req.session.email, 'media', id, 'delete', null);
+  res.redirect(303, '/admin/media');
+});
+
+router.post('/media/:id/attach', form, requireCsrf, (req, res) => {
+  const mediaId = Number(req.params.id);
+  const projectId = Number(req.body.project_id);
+  if (projectId) {
+    run(
+      'INSERT OR IGNORE INTO project_media (project_id, media_id, sort_key) VALUES (?, ?, ?)',
+      projectId, mediaId, repo.nextKeyFor('project_media', 'project_id = ?', projectId)
+    );
+  }
+  res.redirect(303, '/admin/media');
 });
 
 /* ----------------------------------------------------------------- facets */

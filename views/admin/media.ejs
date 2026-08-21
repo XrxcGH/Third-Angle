@@ -1,0 +1,144 @@
+<p class="eyebrow">Admin</p>
+<h1>Media</h1>
+<p style="color: var(--text-muted); max-width: 62ch;">
+  This is the capture inbox. Upload from a phone at a competition with almost no
+  metadata, then curate later. Capture and curation are different jobs, and doing
+  them together is why neither happens.
+</p>
+
+<% if (error) { %><p class="flash error"><%= error %></p><% } %>
+<% if (uploaded) { %><p class="flash"><%= uploaded %> file<%= uploaded === 1 ? '' : 's' %> added.</p><% } %>
+
+<form method="post" action="/admin/media/upload" enctype="multipart/form-data"
+      class="panel" style="margin-top: var(--s-4); max-width: 44rem;">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+  <div class="field">
+    <label for="files">Files</label>
+    <input id="files" name="files" type="file" multiple required
+           accept="image/jpeg,image/png,image/gif,image/webp,image/avif,application/pdf,video/mp4,.glb">
+    <span class="hint">
+      JPEG, PNG, GIF, WebP, AVIF, PDF, MP4 and GLB. SVG is refused: it is markup that
+      can carry script, and no byte signature can detect it. Export a PNG instead.
+    </span>
+  </div>
+
+  <div class="field">
+    <label for="alt">Alt text</label>
+    <input id="alt" name="alt" type="text" required
+           placeholder="Crimp terminations on the 12V distribution panel, before routing">
+    <span class="hint">
+      Required, not optional. An image with no alt is invisible to a screen reader and
+      to a search engine, and a portfolio cannot afford either.
+    </span>
+  </div>
+
+  <div class="row2">
+    <div class="field">
+      <label for="kind">Kind</label>
+      <select id="kind" name="kind">
+        <% for (const k of ['photo','cad_render','drawing','schematic','harness_photo','plot','video','other']) { %>
+          <option value="<%= k %>"><%= k.replace('_', ' ') %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="field">
+      <label for="origin">Origin</label>
+      <select id="origin" name="origin">
+        <option value="original">original, I made or shot this</option>
+        <option value="generated">generated, a render or plot from my work</option>
+        <option value="third-party">third party, someone else made it</option>
+      </select>
+      <span class="hint">Only "original" satisfies the publish gate on physical projects.</span>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="field">
+      <label for="captured_on">Captured on</label>
+      <input id="captured_on" name="captured_on" type="text" placeholder="2026-08-21">
+    </div>
+    <div class="field">
+      <label for="project_id">Attach to project</label>
+      <select id="project_id" name="project_id">
+        <option value="">Not yet</option>
+        <% for (const p of projects) { %>
+          <option value="<%= p.id %>"><%= p.title %></option>
+        <% } %>
+      </select>
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="caption">Caption, optional</label>
+    <input id="caption" name="caption" type="text">
+  </div>
+
+  <label style="display:flex; gap:8px; align-items:flex-start; margin-bottom: var(--s-4);">
+    <input type="checkbox" name="release_ok" value="1" style="margin-top:4px;">
+    <span style="font-size:.9rem;">
+      No identifiable student appears here, or I hold a media release for everyone who does.
+      <span style="color: var(--text-muted);">You mentor minors, so this is a deliberate manual gate rather than an assumption.</span>
+    </span>
+  </label>
+
+  <button class="btn" type="submit">Upload</button>
+</form>
+
+<h2 style="font-size:1.15rem; margin-top: var(--s-6);"><%= items.length %> file<%= items.length === 1 ? '' : 's' %></h2>
+
+<div class="panel" style="padding:0; margin-top: var(--s-3);">
+  <table class="admin-table">
+    <thead>
+      <tr><th style="width:96px;">Preview</th><th>Alt and caption</th><th>Kind</th><th>Origin</th><th>Size</th><th style="text-align:right;">Actions</th></tr>
+    </thead>
+    <tbody>
+      <% if (!items.length) { %>
+        <tr><td colspan="6" style="color: var(--text-muted);">Nothing uploaded yet.</td></tr>
+      <% } %>
+      <% for (const m of items) { %>
+        <tr>
+          <td>
+            <% if (m.mime.startsWith('image/')) { %>
+              <img src="/media/<%= m.storage_key %>" alt="<%= m.alt %>"
+                   width="80" height="<%= m.width && m.height ? Math.round(80 * m.height / m.width) : 60 %>"
+                   loading="lazy" decoding="async"
+                   style="border-radius: var(--r-control); border:1px solid var(--hairline); display:block;">
+            <% } else { %>
+              <span class="mono" style="font-size:.6rem; color: var(--text-muted);"><%= m.mime %></span>
+            <% } %>
+          </td>
+          <td>
+            <div style="font-size:.9rem;"><%= m.alt %></div>
+            <% if (m.caption) { %><div style="font-size:.82rem; color: var(--text-muted);"><%= m.caption %></div><% } %>
+          </td>
+          <td><span class="badge"><%= m.kind.replace('_', ' ') %></span></td>
+          <td>
+            <span class="badge" style="<%= m.origin === 'original' ? 'border-color: var(--patina); color: var(--patina);' : '' %>"><%= m.origin %></span>
+          </td>
+          <td class="mono" style="font-size:.7rem; white-space:nowrap;">
+            <%= (m.bytes / 1024).toFixed(0) %> KB<% if (m.width) { %><br><%= m.width %>&times;<%= m.height %><% } %>
+          </td>
+          <td>
+            <div class="actions">
+              <form method="post" action="/admin/media/<%= m.id %>/attach" style="display:flex; gap:4px;">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <label class="visually-hidden" for="attach-<%= m.id %>">Attach to project</label>
+                <select id="attach-<%= m.id %>" name="project_id"
+                        style="font-size:.75rem; padding:4px 6px; border-radius: var(--r-control); border:1px solid var(--hairline); background: var(--surface); color: var(--text-body);">
+                  <option value="">Attach to…</option>
+                  <% for (const p of projects) { %><option value="<%= p.id %>"><%= p.title %></option><% } %>
+                </select>
+                <button class="btn btn-quiet btn-sm" type="submit">Go</button>
+              </form>
+              <form method="post" action="/admin/media/<%= m.id %>/delete">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>

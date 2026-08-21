@@ -46,6 +46,7 @@ app.use(
 );
 
 app.use(mw.redirects);
+app.use(require('./src/routes/media'));
 app.use('/admin', require('./src/routes/admin'));
 app.use(require('./src/routes/public'));
 

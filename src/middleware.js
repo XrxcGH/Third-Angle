@@ -1,6 +1,7 @@
 'use strict';
 
 const repo = require('./repo');
+const media = require('./media');
 
 /* ---- theme --------------------------------------------------------------
  * Three states, not two: 'system' (no attribute, prefers-color-scheme decides),
@@ -112,6 +113,10 @@ function redirects(req, res, next) {
 
 /* ---- view locals -------------------------------------------------------- */
 function locals(req, res, next) {
+  /* EJS templates have no `require`, so anything a view needs has to arrive
+     as a local. Passing the function rather than precomputed strings keeps the
+     ladder logic in one place. */
+  res.locals.srcset = media.srcset;
   res.locals.path = req.path;
   res.locals.query = req.query;
   res.locals.siteUrl = process.env.SITE_URL || `http://localhost:${process.env.PORT || 3000}`;

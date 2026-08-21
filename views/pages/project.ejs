@@ -1,10 +1,35 @@
+<%
+  /*
+   * Tier decides how many blocks render. R8: hollow sections come from a
+   * template asking for them, so a note is never offered twelve slots to pad.
+   *   note       header, hero evidence, summary
+   *   build      adds metrics, discipline breakdown, links
+   *   case-study everything
+   *
+   * has() renders a section or renders ABSOLUTELY NOTHING. No heading, no empty
+   * card, no "coming soon". The rule lives in one place so it cannot drift.
+   */
+  const TIERS = { note: 3, build: 6, 'case-study': 12 };
+  const depth = TIERS[project.tier] || 3;
+  const has = (content, min) => {
+    if (Array.isArray(content)) return content.length > 0;
+    const s = String(content || '').replace(/<[^>]*>/g, '').trim();
+    return s.length >= (min || 1);
+  };
+  const media = project.media || [];
+  const hero = media[0];
+  const rest = media.slice(1);
+%>
+
 <article class="wrap" style="padding-top: var(--s-6);">
 
   <p class="eyebrow">
-    <%= project.context || 'Project' %><% if (project.role) { %> &middot; <%= project.role %><% } %>
+    <%= project.context || 'Project' %><% if (project.role) { %> &middot; <%= project.role %><% } %><% if (project.started_on) { %> &middot; <%= project.started_on %><% if (project.ended_on) { %> to <%= project.ended_on %><% } %><% } %>
   </p>
   <h1><%= project.title %></h1>
-  <% if (project.subtitle) { %><p class="lede prose" style="color: var(--text-muted); margin-top: var(--s-3);"><%= project.subtitle %></p><% } %>
+  <% if (project.subtitle) { %>
+    <p class="lede prose" style="color: var(--text-muted); margin-top: var(--s-3);"><%= project.subtitle %></p>
+  <% } %>
 
   <div class="chips" style="margin-top: var(--s-4);">
     <span class="badge" data-status="<%= project.status %>"><%= project.status.replace('-', ' ') %></span>
@@ -15,50 +40,85 @@
     <% } %>
   </div>
 
-  <% if (project.metrics && project.metrics.length) { %>
+  <% if (hero) { %>
+    <%# A working image or clip outranks every other evidence type, so it sits
+        above the prose rather than in a gallery at the bottom. %>
+    <div style="margin-top: var(--s-5);">
+      <%- include('../partials/figure', { m: hero, slot: '(min-width: 900px) 1100px, 100vw', priority: true }) %>
+    </div>
+  <% } %>
+
+  <% if (depth >= 6 && has(project.metrics)) { %>
     <div class="metrics" style="margin-top: var(--s-5);">
-      <% for (const m of project.metrics) { %>
+      <% for (const mt of project.metrics) { %>
         <div class="metric">
-          <div class="metric-value"><%= m.value %><% if (m.unit) { %><span style="font-size:.6em; color:var(--text-muted);"> <%= m.unit %></span><% } %></div>
-          <div class="metric-label"><%= m.label %></div>
+          <div class="metric-value"><%= mt.value %><% if (mt.unit) { %><span style="font-size:.6em; color: var(--text-muted);"> <%= mt.unit %></span><% } %></div>
+          <div class="metric-label"><%= mt.label %></div>
         </div>
       <% } %>
     </div>
   <% } %>
 
-  <% if (project.facets.some(f => f.contribution_note)) { %>
+  <% if (has(project.summary_html, 40)) { %>
+    <section class="section prose"><%- project.summary_html %></section>
+  <% } %>
+
+  <%
+    /* The answer to how one record serves eight audiences: same page, a
+       different opening sentence depending on which door you came through. */
+    const noted = project.facets.filter((f) => has(f.contribution_note, 10));
+  %>
+  <% if (depth >= 6 && noted.length) { %>
     <section class="section">
       <p class="eyebrow">Discipline breakdown</p>
-      <h2>What this project was, per discipline</h2>
+      <h2>What this was, per discipline</h2>
       <div class="stack" style="margin-top: var(--s-4);">
-        <% for (const f of project.facets) { %>
-          <% if (f.contribution_note) { %>
-            <div style="display:grid; grid-template-columns: 170px minmax(0,1fr); gap: var(--s-4); align-items: baseline;">
-              <div class="eyebrow" style="margin:0; color: var(--<%= f.color_token %>);"><%= f.label %> &middot; <%= f.weight %></div>
-              <p style="margin:0;"><%= f.contribution_note %></p>
+        <% for (const f of noted) { %>
+          <div class="discipline-row">
+            <div class="eyebrow" style="margin:0; color: var(--<%= f.color_token %>);">
+              <%= f.label %> <span style="color: var(--text-muted);">&middot; <%= f.weight %></span>
             </div>
-          <% } %>
+            <p style="margin:0;"><%= f.contribution_note %></p>
+          </div>
         <% } %>
       </div>
     </section>
   <% } %>
 
-  <% if (project.body_html) { %>
+  <% if (has(project.body_html, 80)) { %>
     <section class="section prose"><%- project.body_html %></section>
-  <% } else if (project.summary_html) { %>
-    <section class="section prose"><%- project.summary_html %></section>
   <% } %>
 
-  <% if (project.links && project.links.length) { %>
+  <% if (rest.length) { %>
+    <section class="section">
+      <p class="eyebrow">Evidence</p>
+      <h2><%= media.length %> artefact<%= media.length === 1 ? '' : 's' %></h2>
+      <div class="figure-grid" style="margin-top: var(--s-4);">
+        <% for (const mm of rest) { %>
+          <%- include('../partials/figure', { m: mm, slot: '(min-width: 900px) 520px, 100vw' }) %>
+        <% } %>
+      </div>
+    </section>
+  <% } %>
+
+  <% if (depth >= 6 && has(project.links)) { %>
     <section class="section">
       <p class="eyebrow">Links</p>
-      <ul>
+      <ul class="stack" style="list-style:none; padding:0; margin-top: var(--s-3);">
         <% for (const l of project.links) { %>
-          <li><a href="<%= l.url %>" rel="noopener"><%= l.label %></a> <span class="mono" style="font-size:.7rem; color:var(--text-muted);"><%= l.kind %></span></li>
+          <li style="display:flex; gap: var(--s-3); align-items:baseline;">
+            <span class="mono" style="font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color: var(--text-muted); min-width:5.5rem;"><%= l.kind %></span>
+            <a href="<%= l.url %>" rel="noopener"><%= l.label %></a>
+          </li>
         <% } %>
       </ul>
     </section>
   <% } %>
 
-  <p style="margin-top: var(--s-6);"><a href="/work">Back to all work</a></p>
+  <nav style="margin-top: var(--s-7); display:flex; gap: var(--s-4); flex-wrap:wrap;">
+    <a href="/work">All work</a>
+    <% if (project.facets[0]) { %>
+      <a href="/disciplines/<%= project.facets[0].slug %>">More <%= project.facets[0].label.toLowerCase() %></a>
+    <% } %>
+  </nav>
 </article>
