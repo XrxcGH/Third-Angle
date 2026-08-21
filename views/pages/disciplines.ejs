@@ -7,8 +7,8 @@
 
   <div class="stack" style="margin-top: var(--s-5);">
     <% for (const d of disciplines) { %>
-      <a href="/disciplines/<%= d.slug %>" style="text-decoration:none; display:grid; grid-template-columns: 12px minmax(0,1fr) auto; gap: var(--s-4); align-items: baseline; padding: var(--s-3) 0; border-bottom: 1px solid var(--hairline);">
-        <span class="dot" style="width:10px; height:10px; border-radius:2px; background: var(--<%= d.color_token %>);"></span>
+      <a class="icon-host" href="/disciplines/<%= d.slug %>" style="text-decoration:none; display:grid; grid-template-columns: 28px minmax(0,1fr) auto; gap: var(--s-4); align-items: start; padding: var(--s-4) 0; border-bottom: 1px solid var(--hairline);">
+        <span style="color: var(--<%= d.color_token %>); margin-top:3px;"><%- include('../partials/icon', { name: d.slug, size: 26 }) %></span>
         <span>
           <span style="font-family: var(--f-display); font-weight:650; font-size:1.1rem; color: var(--text-strong); display:block;"><%= d.label %></span>
           <% if (d.blurb) { %><span style="color: var(--text-muted); font-size:.95rem;"><%= d.blurb %></span><% } %>

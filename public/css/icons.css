@@ -1,0 +1,134 @@
+/*
+ * Discipline icon motion.
+ *
+ * Tier 1 of the three tier system in DESIGN.md: inline SVG plus CSS, zero
+ * bytes of JavaScript, inheriting currentColor so it themes for free.
+ *
+ * Four rules, all from the motion rule in DESIGN.md:
+ *   1. Nothing animates on its own. Every transition is driven by hover or
+ *      focus on a parent .icon-host, which sidesteps WCAG 2.2.2 entirely
+ *      because nothing auto-animates past five seconds.
+ *   2. Motion is a state change, never decoration. The end state is reachable
+ *      without any of it.
+ *   3. prefers-reduced-motion drops every duration to 1ms rather than removing
+ *      the rule, so the end state still arrives, it just does not travel.
+ *   4. Properties are enumerated, never `all`, and declared on the base
+ *      selector so the return trip animates too.
+ */
+
+.ti {
+  display: block;
+  flex: none;
+  overflow: visible;
+}
+
+.ti * {
+  transition:
+    transform var(--t-group, 260ms) var(--ease, cubic-bezier(.2, 0, 0, 1)),
+    opacity var(--t-group, 260ms) var(--ease, cubic-bezier(.2, 0, 0, 1)),
+    stroke-dashoffset 420ms var(--ease, cubic-bezier(.2, 0, 0, 1));
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* ---- mechanical: the caliper jaws close on the part ---- */
+.ti-mechanical .ti-jaw-moving,
+.ti-mechanical .ti-beam2 { transform: translateX(0); }
+.icon-host:hover .ti-mechanical .ti-jaw-moving,
+.icon-host:focus-visible .ti-mechanical .ti-jaw-moving,
+.icon-host:hover .ti-mechanical .ti-beam2,
+.icon-host:focus-visible .ti-mechanical .ti-beam2 { transform: translateX(-2.5px); }
+.ti-mechanical .ti-part { opacity: .55; }
+.icon-host:hover .ti-mechanical .ti-part { opacity: 1; }
+
+/* ---- electrical: the crimp closes on the conductor ---- */
+.ti-electrical .ti-crimp { transform: scaleY(1); opacity: .5; }
+.icon-host:hover .ti-electrical .ti-crimp,
+.icon-host:focus-visible .ti-electrical .ti-crimp { transform: scaleY(.55); opacity: 1; }
+.ti-electrical .ti-barrel { transform: scaleX(1); }
+.icon-host:hover .ti-electrical .ti-barrel { transform: scaleX(.9); }
+
+/* ---- controls: the response settles onto the setpoint ---- */
+.ti-controls .ti-setpoint {
+  stroke-dasharray: 2 2.5;
+  opacity: .45;
+}
+.ti-controls .ti-axis-y,
+.ti-controls .ti-axis-x { opacity: .35; }
+.ti-controls .ti-response {
+  stroke-dasharray: 42;
+  stroke-dashoffset: 42;
+}
+.icon-host:hover .ti-controls .ti-response,
+.icon-host:focus-visible .ti-controls .ti-response { stroke-dashoffset: 0; }
+.icon-host:hover .ti-controls .ti-setpoint { opacity: .8; }
+
+/* ---- software: the branch diverges, then the far node lands ---- */
+.ti-software .ti-branch { stroke-dasharray: 22; stroke-dashoffset: 22; }
+.icon-host:hover .ti-software .ti-branch,
+.icon-host:focus-visible .ti-software .ti-branch { stroke-dashoffset: 0; }
+.ti-software .ti-n2 { opacity: 0; transform: scale(.4); }
+.icon-host:hover .ti-software .ti-n2 { opacity: 1; transform: scale(1); transition-delay: 180ms; }
+
+/* ---- fabrication: the mill descends and the cut appears ---- */
+.ti-fabrication .ti-shank,
+.ti-fabrication .ti-flute,
+.ti-fabrication .ti-helix { transform: translateY(-2px); }
+.icon-host:hover .ti-fabrication .ti-shank,
+.icon-host:hover .ti-fabrication .ti-flute,
+.icon-host:hover .ti-fabrication .ti-helix,
+.icon-host:focus-visible .ti-fabrication .ti-shank,
+.icon-host:focus-visible .ti-fabrication .ti-flute,
+.icon-host:focus-visible .ti-fabrication .ti-helix { transform: translateY(.5px); }
+.ti-fabrication .ti-helix { opacity: .45; }
+.icon-host:hover .ti-fabrication .ti-helix { opacity: .8; }
+.ti-fabrication .ti-cut { opacity: 0; }
+.icon-host:hover .ti-fabrication .ti-cut { opacity: 1; transition-delay: 140ms; }
+
+/* ---- documentation: the revision triangle is stamped on ---- */
+.ti-documentation .ti-rev { opacity: 0; transform: scale(.5); }
+.icon-host:hover .ti-documentation .ti-rev,
+.icon-host:focus-visible .ti-documentation .ti-rev { opacity: 1; transform: scale(1); }
+.ti-documentation .ti-lines { opacity: .6; }
+.icon-host:hover .ti-documentation .ti-lines { opacity: 1; }
+
+/* ---- business: the tiers rise in sequence ---- */
+.ti-business .ti-tier { transform: scaleY(.25); transform-origin: bottom; opacity: .55; }
+.icon-host:hover .ti-business .ti-tier,
+.icon-host:focus-visible .ti-business .ti-tier { transform: scaleY(1); opacity: 1; }
+.icon-host:hover .ti-business .ti-t2 { transition-delay: 70ms; }
+.icon-host:hover .ti-business .ti-t3 { transition-delay: 140ms; }
+.ti-business .ti-trend { opacity: 0; }
+.icon-host:hover .ti-business .ti-trend { opacity: 1; transition-delay: 210ms; }
+
+/* ---- teaching: the manual opens and the diagram fills in ---- */
+.ti-teaching .ti-page-l,
+.ti-teaching .ti-page-r { transform: scaleX(.92); }
+.icon-host:hover .ti-teaching .ti-page-l,
+.icon-host:hover .ti-teaching .ti-page-r,
+.icon-host:focus-visible .ti-teaching .ti-page-l,
+.icon-host:focus-visible .ti-teaching .ti-page-r { transform: scaleX(1); }
+.ti-teaching .ti-figure,
+.ti-teaching .ti-detail { opacity: 0; }
+.icon-host:hover .ti-teaching .ti-figure,
+.icon-host:focus-visible .ti-teaching .ti-figure { opacity: 1; transition-delay: 120ms; }
+.icon-host:hover .ti-teaching .ti-detail,
+.icon-host:focus-visible .ti-teaching .ti-detail { opacity: .7; transition-delay: 200ms; }
+
+/* Reduced motion: the state change still happens, because it is information.
+   Nothing travels. Delays go too, or a "reduced" icon still animates in
+   sequence, just invisibly fast, which is worse than useless. */
+@media (prefers-reduced-motion: reduce) {
+  .ti * {
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+
+/* Forced colors strips author colour, so carry nothing on colour alone. */
+@media (forced-colors: active) {
+  .ti { forced-color-adjust: auto; }
+  .ti * { opacity: 1 !important; }
+}
+
+.icon-host { display: inline-flex; align-items: center; gap: 10px; }

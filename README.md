@@ -29,7 +29,7 @@ npm start          # http://localhost:3000
 ## Checks
 
 ```bash
-npm test              # 84 tests: routes, seo, contrast, search, schema, security, auth, media, backup, regression
+npm test              # 92 tests: routes, seo, icons, contrast, search, schema, security, auth, media, backup, regression
 npm run check:scope   # fails when prose outruns code
 npm run check:costs   # fails when a quoted price goes stale
 ```
@@ -70,6 +70,9 @@ assistant at it too. The short version:
 - **`--on-accent` is never white.** White on hazard orange fails AA at 3.30:1.
 - **Dimming is a token swap, never opacity.** axe-core cannot see an opacity
   contrast failure, so an opacity dim passes the tool meant to catch it.
+- Discipline icons are drawn, not bought: a caliper, a crimp barrel, a step
+  response. Every stock pack offers a gear, a lightbulb and a rocket, all three
+  of which are banned.
 - No emoji. No em dashes.
 
 ## How a few things work
@@ -105,7 +108,7 @@ one row. The keys are case sensitive base62: never declare `sort_key` as
 | 04 | Admin CRUD, reorder, media | **done** |
 | 05 | Public site | **done**, tier-gated project pages |
 | 06 | Search, feeds, colophon | search, Atom and JSON feeds, /now, attributions **done**; document library next |
-| 07 | Structured data, social cards | **done**; animated icons still to drop in |
+| 07 | Icons, structured data, social cards | **done** |
 | 08 | Deploy and rehearse the restore | tooling **done**; the drill is yours to run |
 | 09 | GitHub cleanup, then launch | pending |
 

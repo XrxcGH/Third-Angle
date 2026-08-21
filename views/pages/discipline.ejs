@@ -1,6 +1,9 @@
 <section class="wrap" style="padding-top: var(--s-6);">
   <p class="eyebrow" style="color: var(--<%= facet.color_token %>);">Discipline</p>
-  <h1><%= facet.label %></h1>
+  <div class="icon-host" style="gap: var(--s-3); align-items: center;">
+    <span style="color: var(--<%= facet.color_token %>);"><%- include('../partials/icon', { name: facet.slug, size: 40 }) %></span>
+    <h1 style="margin:0;"><%= facet.label %></h1>
+  </div>
   <% if (facet.blurb) { %><p class="lede prose" style="color: var(--text-muted); margin-top: var(--s-3);"><%= facet.blurb %></p><% } %>
 
   <div class="section">

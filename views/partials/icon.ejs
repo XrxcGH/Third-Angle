@@ -1,0 +1,105 @@
+<%
+  /*
+   * Discipline icons.
+   *
+   * Hand drawn rather than pulled from a pack, for a reason that came straight
+   * out of the research: no stock animated icon set contains this vocabulary.
+   * Every pack offers a gear, a lightbulb and a rocket, none of which mean
+   * anything, and all three are on the ban list in DESIGN.md.
+   *
+   * These are the shop and drawing-office equivalents: caliper jaws closing on
+   * a part, a crimp barrel closing on stripped conductor, a control loop
+   * completing its feedback path, an end mill descending. An engineer
+   * recognises them and a recruiter finds them intriguing, which is the whole
+   * job of an icon here.
+   *
+   * Tier 1 of the three-tier motion system: inline SVG plus CSS. Zero bytes of
+   * JavaScript, inherits currentColor so it themes for free, and it cannot
+   * fail to load. A Lottie runtime is available as tier 2 if a genuinely
+   * illustrative moment ever needs one, but paying a WASM runtime for eight
+   * 24-pixel marks would be the tail wagging the dog.
+   *
+   * Animation is driven by a parent .icon-host on hover or focus, so the icon
+   * never animates on its own. Nothing loops, which sidesteps WCAG 2.2.2
+   * entirely, and prefers-reduced-motion drops every duration to 1ms so the
+   * end state still arrives without movement.
+   *
+   * Usage: include this partial with { name: 'electrical', size: 24 }.
+   *
+   * Note for anyone editing this comment: do NOT write a literal EJS closing
+   * delimiter in here. EJS scans for it textually and does not parse
+   * JavaScript, so a delimiter inside a comment terminates the tag early and
+   * the template fails with "could not find matching close tag", reported at
+   * the include site rather than here.
+   */
+  const s = (typeof size === 'undefined') ? 24 : size;
+  const cls = 'ti ti-' + name;
+%>
+<svg class="<%= cls %>" width="<%= s %>" height="<%= s %>" viewBox="0 0 24 24"
+     fill="none" stroke="currentColor" stroke-width="1.5"
+     stroke-linecap="round" stroke-linejoin="round"
+     aria-hidden="true" focusable="false">
+<% if (name === 'mechanical') { %>
+  <%# Vernier caliper. The jaws close on the part on hover. %>
+  <path d="M3 5v14" class="ti-jaw-fixed"/>
+  <path d="M3 12h6" class="ti-beam"/>
+  <path d="M15 5v14" class="ti-jaw-moving"/>
+  <path d="M15 12h6" class="ti-beam2"/>
+  <rect x="9" y="9" width="6" height="6" rx="0.5" class="ti-part"/>
+<% } else if (name === 'electrical') { %>
+  <%# Crimp barrel closing on stripped conductor. %>
+  <path d="M2 12h6" class="ti-conductor"/>
+  <path d="M8 8h7v8H8z" class="ti-barrel"/>
+  <path d="M11 8v8" class="ti-crimp"/>
+  <path d="M15 12h7" class="ti-lead"/>
+<% } else if (name === 'controls') { %>
+  <%# A step response overshooting and settling onto the setpoint.
+      A full block diagram was tried first and is simply too much geometry at
+      24 pixels: the feedback path collided with the plant and nothing read.
+      This says the same thing in three strokes and is legible at chip size. %>
+  <path d="M2 20V4" class="ti-axis-y"/>
+  <path d="M2 20h20" class="ti-axis-x"/>
+  <path d="M4 9h17" class="ti-setpoint"/>
+  <path d="M4 19c3.4 0 3.2-11 6-11 2 0 2 6 3.6 6 1.8 0 2-5 7.4-5" class="ti-response"/>
+<% } else if (name === 'software') { %>
+  <%# A branch diverging and merging. %>
+  <path d="M6 3v18" class="ti-trunk"/>
+  <path d="M6 8c0 3 12 1 12 4" class="ti-branch"/>
+  <circle cx="6" cy="4" r="1.6" class="ti-node ti-n1"/>
+  <circle cx="18" cy="12" r="1.6" class="ti-node ti-n2"/>
+  <circle cx="6" cy="20" r="1.6" class="ti-node ti-n3"/>
+<% } else if (name === 'fabrication') { %>
+  <%# End mill descending into stock. The cut appears once it lands. %>
+  <path d="M12 2v5" class="ti-shank"/>
+  <path d="M9.5 7h5v5l-2.5 2.2-2.5-2.2z" class="ti-flute"/>
+  <path d="M9.5 9.2h5" class="ti-helix"/>
+  <path d="M2 20h20" class="ti-stock"/>
+  <path d="M8.5 20v-2.5h7V20" class="ti-cut"/>
+<% } else if (name === 'documentation') { %>
+  <%# Drawing title block with a revision triangle. %>
+  <rect x="3" y="4" width="18" height="16" rx="0.5" class="ti-sheet"/>
+  <path d="M3 15h18" class="ti-rule1"/>
+  <path d="M13 15v5" class="ti-rule2"/>
+  <path d="M6 8h8M6 11h5" class="ti-lines"/>
+  <path d="M17 6.5l2 3.5h-4z" class="ti-rev"/>
+<% } else if (name === 'business') { %>
+  <%# Sponsor tiers: a stepped ladder that fills from the bottom. %>
+  <path d="M3 21h18" class="ti-base"/>
+  <rect x="4" y="15" width="4" height="6" class="ti-tier ti-t1"/>
+  <rect x="10" y="11" width="4" height="10" class="ti-tier ti-t2"/>
+  <rect x="16" y="6" width="4" height="15" class="ti-tier ti-t3"/>
+  <path d="M4 4l6 3 4-2 6 2" class="ti-trend"/>
+<% } else if (name === 'teaching') { %>
+  <%# An open manual with a diagram on the right page. The curriculum is the
+      artefact that outlives the session, which is the point of the icon. %>
+  <path d="M12 7v13" class="ti-spine"/>
+  <path d="M12 7c-2.4-1.6-5.4-2-8-1.6v12.4c2.6-.4 5.6 0 8 1.6" class="ti-page-l"/>
+  <path d="M12 7c2.4-1.6 5.4-2 8-1.6v12.4c-2.6-.4-5.6 0-8 1.6" class="ti-page-r"/>
+  <circle cx="16" cy="11" r="1.6" class="ti-figure"/>
+  <path d="M16 12.6v3.2M14.2 14h3.6" class="ti-detail"/>
+<% } else { %>
+  <%# Fallback: the projection mark itself, never a placeholder box. %>
+  <circle cx="12" cy="12" r="8"/>
+  <circle cx="12" cy="12" r="4"/>
+<% } %>
+</svg>

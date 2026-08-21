@@ -28,8 +28,8 @@
   </p>
   <div class="chips" style="margin-top: var(--s-4);">
     <% for (const d of disciplines) { %>
-      <a class="chip" href="/work?d=<%= d.slug %>">
-        <span class="dot" style="background: var(--<%= d.color_token %>);"></span>
+      <a class="chip icon-host" href="/work?d=<%= d.slug %>">
+        <span style="color: var(--<%= d.color_token %>); display:flex;"><%- include('../partials/icon', { name: d.slug, size: 16 }) %></span>
         <%= d.label %>
         <% if (counts[d.slug]) { %><span class="tnum" style="color: var(--text-muted);"><%= counts[d.slug] %></span><% } %>
       </a>
