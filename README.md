@@ -29,7 +29,7 @@ npm start          # http://localhost:3000
 ## Checks
 
 ```bash
-npm test              # 92 tests: routes, seo, icons, contrast, search, schema, security, auth, media, backup, regression
+npm test              # 102 tests: routes, seo, icons, documents, contrast, search, schema, security, auth, media, backup, regression
 npm run check:scope   # fails when prose outruns code
 npm run check:costs   # fails when a quoted price goes stale
 ```
@@ -88,6 +88,10 @@ non-matching cards and de-emphasises them in CSS. The page never reflows, the
 breadth stays visible, and the filter is linkable and indexable because it lives
 in the query string.
 
+**Documents are searchable to the page.** Every page of every PDF is extracted
+on upload and indexed, so a query for "retention schedule" returns the document
+and the page number, not a filename that happens to contain the word.
+
 **Search has three stages**, each paying for itself only when the one before
 finds nothing: a `unicode61` prefix match, a trigram substring match, then edit
 distance correction over the index's own vocabulary. So `harn` finds harnesses,
@@ -107,7 +111,7 @@ one row. The keys are case sensitive base62: never declare `sort_key` as
 | 03 | Design system in code | **done** |
 | 04 | Admin CRUD, reorder, media | **done** |
 | 05 | Public site | **done**, tier-gated project pages |
-| 06 | Search, feeds, colophon | search, Atom and JSON feeds, /now, attributions **done**; document library next |
+| 06 | Search, documents, feeds | **done**, including per-page PDF indexing |
 | 07 | Icons, structured data, social cards | **done** |
 | 08 | Deploy and rehearse the restore | tooling **done**; the drill is yours to run |
 | 09 | GitHub cleanup, then launch | pending |

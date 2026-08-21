@@ -1,0 +1,71 @@
+<article class="wrap" style="padding-top: var(--s-6);">
+  <p class="eyebrow">
+    Document
+    <% if (doc.project_title) { %>
+      &middot; <a href="/work/<%= doc.project_slug %>" style="color: inherit;"><%= doc.project_title %></a>
+    <% } %>
+  </p>
+  <h1><%= doc.title %></h1>
+  <% if (doc.description) { %>
+    <p class="lede prose" style="color: var(--text-muted); margin-top: var(--s-3);"><%= doc.description %></p>
+  <% } %>
+
+  <div class="metrics" style="margin-top: var(--s-5);">
+    <div class="metric">
+      <div class="metric-value"><%= doc.pages %></div>
+      <div class="metric-label">Pages</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value"><%= (doc.bytes / 1024 / 1024).toFixed(1) %><span style="font-size:.6em; color: var(--text-muted);"> MB</span></div>
+      <div class="metric-label">Size</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value"><%= doc.updated_at.slice(0, 4) %></div>
+      <div class="metric-label">Updated</div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap: var(--s-2); margin-top: var(--s-4); flex-wrap: wrap;">
+    <%
+      /* Served with Content-Disposition: attachment from the media route,
+         because a PDF rendered inline is the residual vector once every other
+         control is in place: a PDF is the one accepted type that cannot be
+         re-encoded on the way in. */
+    %>
+    <a class="chip" href="/media/<%= doc.storage_key %>">Download the PDF</a>
+    <% if (doc.project_slug) { %>
+      <a class="chip" href="/work/<%= doc.project_slug %>">The project it belongs to</a>
+    <% } %>
+  </div>
+
+  <section class="section">
+    <p class="eyebrow">Search inside this document</p>
+    <form method="get" action="/documents/<%= doc.slug %>" role="search"
+          style="display:flex; gap: var(--s-2); max-width: 32rem; margin-top: var(--s-3);">
+      <label class="visually-hidden" for="q">Search inside <%= doc.title %></label>
+      <input id="q" name="q" type="search" value="<%= q %>" autocomplete="off" spellcheck="false"
+             placeholder="retention, crimp, inspection"
+             style="flex:1; font-family: var(--f-body); font-size: 1rem; padding: 10px 12px; border-radius: var(--r-control); border:1px solid var(--hairline); background: var(--surface); color: var(--text-body);">
+      <button type="submit" style="font-family: var(--f-mono); font-size:.66rem; letter-spacing:.12em; text-transform:uppercase; padding: 10px 16px; border-radius: var(--r-control); border:1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor:pointer;">Find</button>
+    </form>
+
+    <% if (q) { %>
+      <p class="eyebrow" role="status" style="margin-top: var(--s-4);">
+        <%= hits.length %> page<%= hits.length === 1 ? '' : 's' %> mention &ldquo;<%= q %>&rdquo;
+      </p>
+      <div class="stack" style="margin-top: var(--s-3);">
+        <% for (const h of hits) { %>
+          <div style="display:grid; grid-template-columns: 5rem minmax(0,1fr); gap: var(--s-4); align-items: baseline; border-bottom:1px solid var(--hairline); padding-bottom: var(--s-3);">
+            <span class="mono tnum" style="font-size:.68rem; letter-spacing:.08em; color: var(--accent-ink);">PAGE <%= h.page_no %></span>
+            <p style="margin:0; font-size:.92rem; color: var(--text-muted);"><%= h.excerpt %>...</p>
+          </div>
+        <% } %>
+        <% if (!hits.length) { %>
+          <p style="color: var(--text-muted);">No page in this document mentions that.</p>
+        <% } %>
+      </div>
+    <% } %>
+  </section>
+
+  <p style="margin-top: var(--s-6);"><a href="/documents">All documents</a></p>
+</article>

@@ -439,3 +439,40 @@ code {
 .prose h3 { margin-top: var(--s-4); }
 .prose ul, .prose ol { padding-left: 1.2rem; }
 .prose li { margin-bottom: .4em; }
+
+/* ---------------------------------------------------------- document library */
+
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--s-3);
+  pointer-events: none;
+}
+.doc-card {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  text-decoration: none;
+  overflow: hidden;
+  transition:
+    border-color var(--t-hover) var(--ease),
+    background-color var(--t-group) var(--ease);
+}
+/* A spine rather than a page-one thumbnail. Rendering one needs a canvas
+   binding, which is a native dependency this project deliberately avoids, and
+   the first page of a governance document is a title page that tells a reader
+   nothing they cannot already see in the title. */
+.doc-card .doc-spine { background: var(--copper); display: block; }
+.doc-card .doc-body {
+  display: flex; flex-direction: column; gap: var(--s-2);
+  padding: var(--s-3) var(--s-4) var(--s-4);
+}
+.doc-card:hover, .doc-card:focus-visible { border-color: var(--accent); }
+.doc-card:hover .doc-spine { background: var(--accent); }
+.doc-grid:has(> .doc-card:hover) > .doc-card:not(:hover) { background: var(--dim-surface); border-color: var(--dim-border); }
+.doc-grid:has(> .doc-card:hover) > .doc-card:not(:hover) .card-title { color: var(--dim-title); }
+.doc-grid:has(> .doc-card:hover) > .doc-card:not(:hover) .card-summary,
+.doc-grid:has(> .doc-card:hover) > .doc-card:not(:hover) .card-meta { color: var(--dim-text); }

@@ -4,6 +4,7 @@ const express = require('express');
 const repo = require('../repo');
 const { setTheme } = require('../middleware');
 const seo = require('../seo');
+const documents = require('../documents');
 
 const router = express.Router();
 
@@ -128,6 +129,44 @@ router.get('/search', (req, res) => {
     title: q ? `Search: ${q}` : 'Search',
     description: 'Search projects, documents and disciplines.',
     q, results, fallback,
+  });
+});
+
+/* -------------------------------------------------------------- documents */
+
+router.get('/documents', (req, res) => {
+  const docs = documents.listDocuments();
+  res.render('pages/documents', {
+    ...chrome(),
+    title: 'Documents',
+    description: 'Game manuals, runbooks, governance packages and training curricula, searchable by page.',
+    docs,
+    jsonLd: seo.jsonLd(res.locals.siteUrl, {
+      trail: [{ name: 'Home', url: '/' }, { name: 'Documents', url: '/documents' }],
+    }),
+    ogImage: registerOg({
+      title: 'Documents',
+      subtitle: String(docs.length) + ' authored documents, searchable to the page.',
+      eyebrow: 'Eric J. Dean',
+    }),
+  });
+});
+
+router.get('/documents/:slug', (req, res, next) => {
+  const doc = documents.getDocument(req.params.slug);
+  if (!doc) return next();
+  const q = typeof req.query.q === 'string' ? req.query.q : '';
+  res.render('pages/document', {
+    ...chrome(),
+    title: doc.title,
+    description: doc.description || `${doc.pages} page document.`,
+    doc,
+    q,
+    hits: q ? documents.pageHits(doc.id, q, 12) : [],
+    jsonLd: seo.jsonLd(res.locals.siteUrl, {
+      trail: [{ name: 'Home', url: '/' }, { name: 'Documents', url: '/documents' }, { name: doc.title, url: '/documents/' + doc.slug }],
+    }),
+    ogImage: registerOg({ title: doc.title, subtitle: doc.description || '', eyebrow: 'Document' }),
   });
 });
 
@@ -387,6 +426,7 @@ router.get('/sitemap.xml', (req, res) => {
   ];
   for (const p of repo.listProjects()) urls.push({ loc: `/work/${p.slug}`, mod: p.updated_at, pri: '0.8' });
   for (const f of repo.listFacets('discipline')) urls.push({ loc: `/disciplines/${f.slug}`, pri: '0.6' });
+  for (const d of documents.listDocuments()) urls.push({ loc: `/documents/${d.slug}`, mod: d.updated_at, pri: '0.6' });
 
   res.type('application/xml').send(
     `<?xml version="1.0" encoding="UTF-8"?>\n` +

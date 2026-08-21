@@ -16,6 +16,7 @@ const { get, all, run, transaction, nowIso } = require('../db');
 const { generateKeyBetween } = require('fractional-indexing');
 const multer = require('multer');
 const media = require('../media');
+const documents = require('../documents');
 
 /* In memory, because every upload is validated and re-encoded before it ever
    touches the disk. multer 2.2.0 or newer: earlier versions carry CVE-2026-2359
@@ -167,6 +168,8 @@ router.get('/', (req, res) => {
     published: get('SELECT COUNT(*) AS n FROM project WHERE published = 1').n,
     facets: get("SELECT COUNT(*) AS n FROM facet WHERE kind = 'discipline'").n,
     media: get('SELECT COUNT(*) AS n FROM media').n,
+    documents: get('SELECT COUNT(*) AS n FROM document').n,
+    pages: get('SELECT COUNT(*) AS n FROM document_page').n,
     notes: get('SELECT COUNT(*) AS n FROM note').n,
     errors: get('SELECT COUNT(*) AS n FROM app_error WHERE seen = 0').n,
   };
@@ -472,6 +475,51 @@ router.post('/media/:id/attach', form, requireCsrf, (req, res) => {
     );
   }
   res.redirect(303, '/admin/media');
+});
+
+/* -------------------------------------------------------------- documents */
+
+router.get('/documents', (req, res) => {
+  res.render('admin/documents', view('documents', {
+    title: 'Documents',
+    docs: documents.listDocuments({ includePrivate: true }),
+    projects: repo.listProjects({ includeUnpublished: true }),
+    error: typeof req.query.error === 'string' ? req.query.error : null,
+    uploaded: req.query.uploaded ? Number(req.query.uploaded) : 0,
+  }));
+});
+
+router.post('/documents/upload', upload.array('files', 5), requireCsrf, async (req, res) => {
+  const files = req.files || [];
+  if (!files.length) return res.redirect(303, '/admin/documents?error=' + encodeURIComponent('Choose at least one PDF.'));
+
+  let ok = 0;
+  const errors = [];
+  for (const f of files) {
+    try {
+      await documents.ingest({
+        buffer: f.buffer,
+        originalName: f.originalname,
+        // With several files the per-file title field cannot apply to all of
+        // them, so only a single upload takes the typed title.
+        title: files.length === 1 ? req.body.title : '',
+        description: files.length === 1 ? req.body.description : '',
+        projectId: req.body.project_id ? Number(req.body.project_id) : null,
+        visibility: req.body.visibility,
+        actor: req.session.email,
+      });
+      ok += 1;
+    } catch (err) {
+      errors.push(`${f.originalname}: ${err.message}`);
+    }
+  }
+  const q = errors.length ? '?error=' + encodeURIComponent(errors.join(' | ')) : '?uploaded=' + ok;
+  res.redirect(303, '/admin/documents' + q);
+});
+
+router.post('/documents/:id/delete', form, requireCsrf, (req, res) => {
+  documents.remove(Number(req.params.id), req.session.email);
+  res.redirect(303, '/admin/documents');
 });
 
 /* ----------------------------------------------------------------- facets */

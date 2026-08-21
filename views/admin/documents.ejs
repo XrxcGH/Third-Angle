@@ -1,0 +1,101 @@
+<p class="eyebrow">Admin</p>
+<h1>Documents</h1>
+<p style="color: var(--text-muted); max-width: 62ch;">
+  Every page of every PDF is extracted and indexed on upload, so a search for a
+  term returns the document and the page it is on. That is what makes this a
+  library rather than a folder.
+</p>
+
+<% if (error) { %><p class="flash error"><%= error %></p><% } %>
+<% if (uploaded) { %><p class="flash"><%= uploaded %> document<%= uploaded === 1 ? '' : 's' %> added and indexed.</p><% } %>
+
+<form method="post" action="/admin/documents/upload" enctype="multipart/form-data"
+      class="panel" style="margin-top: var(--s-4); max-width: 44rem;">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+  <div class="field">
+    <label for="files">PDFs</label>
+    <input id="files" name="files" type="file" multiple required accept="application/pdf,.pdf">
+    <span class="hint">
+      PDF only, so the library has one viewer rather than several. Convert Word
+      documents first. Large decks take a few seconds to index.
+    </span>
+  </div>
+
+  <div class="field">
+    <label for="title">Title</label>
+    <input id="title" name="title" type="text" placeholder="Leave blank to use the filename">
+    <span class="hint">Applies only when uploading a single file.</span>
+  </div>
+
+  <div class="field">
+    <label for="description">Description</label>
+    <input id="description" name="description" type="text"
+           placeholder="What it covers, and who it was written for">
+  </div>
+
+  <div class="row2">
+    <div class="field">
+      <label for="project_id">Belongs to project</label>
+      <select id="project_id" name="project_id">
+        <option value="">None</option>
+        <% for (const p of projects) { %><option value="<%= p.id %>"><%= p.title %></option><% } %>
+      </select>
+    </div>
+    <div class="field">
+      <label for="visibility">Visibility</label>
+      <select id="visibility" name="visibility">
+        <option value="public">Public</option>
+        <option value="private">Private, admin only</option>
+      </select>
+      <span class="hint">Private documents are excluded from search and the public list.</span>
+    </div>
+  </div>
+
+  <button class="btn" type="submit">Upload and index</button>
+</form>
+
+<h2 style="font-size:1.15rem; margin-top: var(--s-6);"><%= docs.length %> document<%= docs.length === 1 ? '' : 's' %></h2>
+
+<div class="panel" style="padding:0; margin-top: var(--s-3);">
+  <table class="admin-table">
+    <thead>
+      <tr><th>Title</th><th>Indexed</th><th>Size</th><th>Project</th><th>Visible</th><th style="text-align:right;">Actions</th></tr>
+    </thead>
+    <tbody>
+      <% if (!docs.length) { %>
+        <tr><td colspan="6" style="color: var(--text-muted);">Nothing uploaded yet.</td></tr>
+      <% } %>
+      <% for (const d of docs) { %>
+        <tr>
+          <td>
+            <strong><%= d.title %></strong>
+            <div class="mono" style="font-size:.66rem; color: var(--text-muted);">/documents/<%= d.slug %></div>
+          </td>
+          <td class="mono tnum" style="font-size:.75rem; white-space:nowrap;">
+            <%= d.indexed_pages %>/<%= d.pages %>
+            <% if (d.indexed_pages < d.pages) { %>
+              <div style="font-size:.62rem; color: var(--text-muted); text-transform:none; letter-spacing:0;">
+                <%= d.pages - d.indexed_pages %> image only
+              </div>
+            <% } %>
+          </td>
+          <td class="mono tnum" style="font-size:.72rem; white-space:nowrap;"><%= (d.bytes / 1024 / 1024).toFixed(1) %> MB</td>
+          <td style="font-size:.85rem;"><%= d.project_title || '' %></td>
+          <td>
+            <span class="badge" style="<%= d.visibility === 'public' ? 'border-color: var(--patina); color: var(--patina);' : '' %>"><%= d.visibility %></span>
+          </td>
+          <td>
+            <div class="actions">
+              <a class="btn btn-quiet btn-sm" href="/documents/<%= d.slug %>">View</a>
+              <form method="post" action="/admin/documents/<%= d.id %>/delete">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
