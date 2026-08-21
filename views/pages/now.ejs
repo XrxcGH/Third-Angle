@@ -1,0 +1,29 @@
+<section class="wrap prose" style="padding-top: var(--s-6);">
+  <p class="eyebrow">Now</p>
+  <h1>What I am working on</h1>
+
+  <% if (now && now.body_html) { %>
+    <div class="rail" style="margin-top: var(--s-4);"><%- now.body_html %></div>
+    <p class="eyebrow" style="margin-top: var(--s-3);">
+      Updated <time datetime="<%= now.updated_at %>"><%= now.updated_at.slice(0,10) %></time>
+    </p>
+  <% } else { %>
+    <p style="color: var(--text-muted);">Nothing recorded here yet.</p>
+  <% } %>
+
+  <% if (notes.length) { %>
+    <section class="section">
+      <h2 style="font-size:1.2rem;">Recently</h2>
+      <div class="stack" style="margin-top: var(--s-3);">
+        <% for (const n of notes) { %>
+          <div style="border-bottom:1px solid var(--hairline); padding-bottom: var(--s-3);">
+            <p class="eyebrow" style="margin-bottom:4px;"><time datetime="<%= n.created_at %>"><%= n.created_at.slice(0,10) %></time></p>
+            <% if (n.title) { %><strong><%= n.title %></strong><% } %>
+            <div><%- n.body_html %></div>
+          </div>
+        <% } %>
+      </div>
+      <p style="margin-top: var(--s-4);"><a href="/log">Full build log</a></p>
+    </section>
+  <% } %>
+</section>

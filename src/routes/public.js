@@ -146,6 +146,133 @@ function safeBackPath(raw) {
   return v;
 }
 
+/* ---------------------------------------------------- colophon and feeds */
+
+const FONTS = [
+  { name: 'TASA Orbiter', role: 'Display', file: 'TASA-Orbiter-OFL.txt',
+    copyright: 'Copyright 2025 The TASA Typeface Collection Project Authors. Commissioned for the Taiwan Space Agency rebrand.',
+    url: 'https://github.com/localremotetw/TASA-Typeface-Collection' },
+  { name: 'Literata', role: 'Body', file: 'Literata-OFL.txt',
+    copyright: 'Copyright 2017 The Literata Project Authors.',
+    url: 'https://github.com/googlefonts/literata' },
+  { name: 'Martian Mono', role: 'Data and code', file: 'Martian-Mono-OFL.txt',
+    copyright: 'Copyright 2021 The Martian Mono Project Authors, Evil Martians.',
+    url: 'https://github.com/evilmartians/mono' },
+];
+
+router.get('/attributions', (req, res) => {
+  res.render('pages/attributions', {
+    ...chrome(),
+    title: 'Attributions',
+    description: 'Typefaces, software, privacy and method for this site.',
+    fonts: FONTS,
+  });
+});
+
+/* The OFL requires the notice travel with the fonts, so it is served as text. */
+router.get('/licenses/:file', (req, res, next) => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const allowed = new Set(FONTS.map((f) => f.file));
+  if (!allowed.has(req.params.file)) return next();
+  const abs = path.join(__dirname, '..', '..', 'licenses', req.params.file);
+  if (!fs.existsSync(abs)) return next();
+  res.type('text/plain; charset=utf-8').send(fs.readFileSync(abs, 'utf8'));
+});
+
+/* A "now" page in Derek Sivers's sense. One field, editable in under a minute,
+   and it is a large part of what stops the site reading as abandoned. */
+router.get('/now', (req, res) => {
+  res.render('pages/now', {
+    ...chrome(),
+    title: 'Now',
+    description: 'What Eric Dean is working on at the moment.',
+    now: repo.getNow(),
+    notes: repo.listNotes(5),
+  });
+});
+
+/*
+ * Atom, because it is the format with a real specification and unambiguous
+ * date handling. JSON Feed alongside it from the same query, because it costs
+ * twenty lines and some readers prefer it.
+ */
+function feedItems() {
+  const notes = repo.listNotes(30).map((n) => ({
+    id: `note-${n.id}`,
+    url: `/log#${n.slug}`,
+    title: n.title || `Log entry, ${n.created_at.slice(0, 10)}`,
+    html: n.body_html,
+    updated: n.created_at,
+  }));
+  const projects = repo.listProjects().slice(0, 20).map((p) => ({
+    id: `project-${p.id}`,
+    url: `/work/${p.slug}`,
+    title: p.title,
+    html: p.summary_html || `<p>${p.subtitle || ''}</p>`,
+    updated: p.updated_at,
+  }));
+  return [...notes, ...projects]
+    .sort((a, b) => String(b.updated).localeCompare(String(a.updated)))
+    .slice(0, 40);
+}
+
+const xmlEscape = (s) => String(s || '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+
+router.get('/feed.xml', (req, res) => {
+  const site = res.locals.siteUrl;
+  const items = feedItems();
+  const updated = items.length ? new Date(items[0].updated).toISOString() : new Date().toISOString();
+  /* Built as an array of lines rather than concatenated template literals:
+     an XML document is line oriented and this stays readable. */
+  const lines = [
+    '<?xml version="1.0" encoding="utf-8"?>',
+    '<feed xmlns="http://www.w3.org/2005/Atom">',
+    '  <title>Eric J. Dean</title>',
+    '  <subtitle>Mechanical, electrical, controls and software.</subtitle>',
+    `  <link href="${xmlEscape(site)}/feed.xml" rel="self"/>`,
+    `  <link href="${xmlEscape(site)}/"/>`,
+    `  <id>${xmlEscape(site)}/</id>`,
+    `  <updated>${updated}</updated>`,
+    '  <author><name>Eric J. Dean</name></author>',
+  ];
+
+  for (const i of items) {
+    lines.push(
+      '  <entry>',
+      `    <title>${xmlEscape(i.title)}</title>`,
+      `    <link href="${xmlEscape(site + i.url)}"/>`,
+      `    <id>${xmlEscape(site)}/${xmlEscape(i.id)}</id>`,
+      `    <updated>${new Date(i.updated).toISOString()}</updated>`,
+      `    <content type="html">${xmlEscape(i.html)}</content>`,
+      '  </entry>'
+    );
+  }
+
+  lines.push('</feed>', '');
+  res.type('application/atom+xml; charset=utf-8').send(lines.join('\n'));
+});
+
+router.get('/feed.json', (req, res) => {
+  const site = res.locals.siteUrl;
+  res.type('application/feed+json').json({
+    version: 'https://jsonfeed.org/version/1.1',
+    title: 'Eric J. Dean',
+    home_page_url: site + '/',
+    feed_url: site + '/feed.json',
+    authors: [{ name: 'Eric J. Dean', url: 'https://github.com/XrxcGH' }],
+    items: feedItems().map((i) => ({
+      id: site + '/' + i.id,
+      url: site + i.url,
+      title: i.title,
+      content_html: i.html,
+      date_modified: new Date(i.updated).toISOString(),
+    })),
+  });
+});
+
 /* ------------------------------------------------------------ machine bits */
 
 router.get('/robots.txt', (req, res) => {

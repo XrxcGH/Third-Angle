@@ -101,28 +101,42 @@ app.use((err, req, res, _next) => {
   });
 });
 
-const PORT = Number(process.env.PORT) || 3000;
-const server = app.listen(PORT, () => {
-  console.log(`Third Angle listening on http://localhost:${PORT}`);
-});
-
 /*
- * SIGTERM drain. This is the whole of the deploy story: blue/green was
- * declined deliberately, because two processes against one SQLite file creates
- * a real two writer window. One to two seconds of restart, made invisible by
- * Caddy retry, is the correct trade for a portfolio. See DESIGN.md risk R6.
+ * Only bind a port when this file is run directly.
+ *
+ * Requiring server.js used to start listening as a side effect, which meant
+ * the app could not be imported by a test without fighting the dev server for
+ * port 3000. Exporting the app and gating the listen is what makes the route
+ * suite able to exercise the real middleware stack in process.
  */
-function shutdown(signal) {
-  return () => {
+function start(port = Number(process.env.PORT) || 3000) {
+  const server = app.listen(port, () => {
+    console.log(`Third Angle listening on http://localhost:${server.address().port}`);
+  });
+
+  /*
+   * SIGTERM drain. This is the whole of the deploy story: blue/green was
+   * declined deliberately, because two processes against one SQLite file
+   * creates a real two writer window. One to two seconds of restart, made
+   * invisible by Caddy retry, is the correct trade for a portfolio. See
+   * DESIGN.md risk R6.
+   */
+  const shutdown = (signal) => () => {
     console.log(`${signal} received, draining.`);
     server.close(() => {
       try { db.db.close(); } catch { /* already closed */ }
       process.exit(0);
     });
+    // If a connection refuses to close, do not hang the deploy forever.
     setTimeout(() => process.exit(1), 10_000).unref();
   };
+  process.on('SIGTERM', shutdown('SIGTERM'));
+  process.on('SIGINT', shutdown('SIGINT'));
+
+  return server;
 }
-process.on('SIGTERM', shutdown('SIGTERM'));
-process.on('SIGINT', shutdown('SIGINT'));
+
+if (require.main === module) start();
 
 module.exports = app;
+module.exports.start = start;
