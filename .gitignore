@@ -1,0 +1,10 @@
+node_modules/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/uploads/
+data/backups/
+.env
+*.log
+public/fonts/*.woff2
+.DS_Store

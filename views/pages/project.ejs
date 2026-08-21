@@ -1,0 +1,64 @@
+<article class="wrap" style="padding-top: var(--s-6);">
+
+  <p class="eyebrow">
+    <%= project.context || 'Project' %><% if (project.role) { %> &middot; <%= project.role %><% } %>
+  </p>
+  <h1><%= project.title %></h1>
+  <% if (project.subtitle) { %><p class="lede prose" style="color: var(--text-muted); margin-top: var(--s-3);"><%= project.subtitle %></p><% } %>
+
+  <div class="chips" style="margin-top: var(--s-4);">
+    <span class="badge" data-status="<%= project.status %>"><%= project.status.replace('-', ' ') %></span>
+    <% for (const f of project.facets) { %>
+      <a class="chip" href="/disciplines/<%= f.slug %>">
+        <span class="dot" style="background: var(--<%= f.color_token %>);"></span><%= f.label %>
+      </a>
+    <% } %>
+  </div>
+
+  <% if (project.metrics && project.metrics.length) { %>
+    <div class="metrics" style="margin-top: var(--s-5);">
+      <% for (const m of project.metrics) { %>
+        <div class="metric">
+          <div class="metric-value"><%= m.value %><% if (m.unit) { %><span style="font-size:.6em; color:var(--text-muted);"> <%= m.unit %></span><% } %></div>
+          <div class="metric-label"><%= m.label %></div>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+
+  <% if (project.facets.some(f => f.contribution_note)) { %>
+    <section class="section">
+      <p class="eyebrow">Discipline breakdown</p>
+      <h2>What this project was, per discipline</h2>
+      <div class="stack" style="margin-top: var(--s-4);">
+        <% for (const f of project.facets) { %>
+          <% if (f.contribution_note) { %>
+            <div style="display:grid; grid-template-columns: 170px minmax(0,1fr); gap: var(--s-4); align-items: baseline;">
+              <div class="eyebrow" style="margin:0; color: var(--<%= f.color_token %>);"><%= f.label %> &middot; <%= f.weight %></div>
+              <p style="margin:0;"><%= f.contribution_note %></p>
+            </div>
+          <% } %>
+        <% } %>
+      </div>
+    </section>
+  <% } %>
+
+  <% if (project.body_html) { %>
+    <section class="section prose"><%- project.body_html %></section>
+  <% } else if (project.summary_html) { %>
+    <section class="section prose"><%- project.summary_html %></section>
+  <% } %>
+
+  <% if (project.links && project.links.length) { %>
+    <section class="section">
+      <p class="eyebrow">Links</p>
+      <ul>
+        <% for (const l of project.links) { %>
+          <li><a href="<%= l.url %>" rel="noopener"><%= l.label %></a> <span class="mono" style="font-size:.7rem; color:var(--text-muted);"><%= l.kind %></span></li>
+        <% } %>
+      </ul>
+    </section>
+  <% } %>
+
+  <p style="margin-top: var(--s-6);"><a href="/work">Back to all work</a></p>
+</article>

@@ -1,0 +1,34 @@
+<header class="site-header">
+  <div class="wrap bar">
+
+    <a class="brand" href="/">
+      <%- include('mark', { size: 34 }) %>
+      <span>
+        <span class="wordmark">ERIC DEAN</span>
+        <span class="sub">Third Angle</span>
+      </span>
+    </a>
+
+    <nav class="nav" aria-label="Main">
+      <a href="/work"<%= path.startsWith('/work') ? ' aria-current="page"' : '' %>>Work</a>
+      <a href="/disciplines"<%= path.startsWith('/disciplines') ? ' aria-current="page"' : '' %>>Disciplines</a>
+      <a href="/log"<%= path.startsWith('/log') ? ' aria-current="page"' : '' %>>Log</a>
+      <a href="/search"<%= path.startsWith('/search') ? ' aria-current="page"' : '' %>>Search</a>
+    </nav>
+
+    <%
+      /* A real form, so the control works with JavaScript disabled and the
+         page needs no inline script. Three states, never two. */
+    %>
+    <form class="theme-form" method="post" action="/theme">
+      <input type="hidden" name="back" value="<%= path %>">
+      <span class="visually-hidden" id="theme-label">Colour theme</span>
+      <% for (const opt of ['system', 'light', 'dark']) { %>
+        <button type="submit" name="theme" value="<%= opt %>"
+                aria-pressed="<%= theme === opt ? 'true' : 'false' %>"
+                aria-describedby="theme-label"><%= opt === 'system' ? 'Auto' : opt %></button>
+      <% } %>
+    </form>
+
+  </div>
+</header>

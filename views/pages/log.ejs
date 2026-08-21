@@ -1,0 +1,18 @@
+<section class="wrap" style="padding-top: var(--s-6);">
+  <p class="eyebrow">Build log</p>
+  <h1>What is happening now</h1>
+
+  <% if (!notes.length) { %>
+    <p style="color: var(--text-muted); margin-top: var(--s-4);">No entries yet.</p>
+  <% } else { %>
+    <div class="stack-lg" style="margin-top: var(--s-5);">
+      <% for (const n of notes) { %>
+        <article style="border-bottom: 1px solid var(--hairline); padding-bottom: var(--s-4);">
+          <p class="eyebrow"><time datetime="<%= n.created_at %>"><%= new Date(n.created_at).toISOString().slice(0,10) %></time><% if (n.project_title) { %> &middot; <%= n.project_title %><% } %></p>
+          <% if (n.title) { %><h2 style="font-size:1.2rem;"><%= n.title %></h2><% } %>
+          <div class="prose"><%- n.body_html %></div>
+        </article>
+      <% } %>
+    </div>
+  <% } %>
+</section>

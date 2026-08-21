@@ -1,0 +1,159 @@
+# Single source of truth for every price in this project. Risk R9.
+#
+# Prices age, and a number quoted in prose ages invisibly. Every figure the
+# proposal or the site shows renders from this file, so a number cannot exist
+# in two places and disagree.
+#
+# `evidence` must be the exact string as it appears on the vendor page.
+# `volatile: true` shortens the staleness window from 180 days to 90.
+#
+# Check with: npm run check:costs
+
+items:
+  - name: Compute and disk
+    vendor: Oracle Cloud Infrastructure
+    product: Always Free, VM.Standard.A1.Flex, 2 OCPU / 12 GB, arm64
+    amount_usd: 0
+    period: year
+    source_url: https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm
+    verified_on: 2026-08-21
+    volatile: true
+    evidence: "For Always Free tenancies, this is equivalent to 2 OCPUs and 12 GB of memory."
+    note: >
+      Halved from 4 OCPU / 24 GB on 15 June 2026 with no announcement. Treat the
+      box as disposable and the backup as the system of record. Re-read this page
+      every 15 June.
+
+  - name: Domain
+    vendor: Cloudflare Registrar
+    product: one .com, at registry cost
+    amount_usd: 10.46
+    period: year
+    source_url: https://developers.cloudflare.com/registrar/
+    verified_on: 2026-08-21
+    volatile: true
+    evidence: "you only pay what is charged by registries and ICANN"
+    note: >
+      Derived, not read: Cloudflare publishes the at-cost commitment but no .com
+      figure. 10.26 Verisign registry fee plus 0.20 ICANN transaction fee. The
+      registry fee rises to 10.97 on 1 November 2026 at 04:00 UTC. Register, then
+      immediately renew nine more years before that timestamp, which locks about
+      104.60 once. Confirm the quoted total at checkout.
+
+  - name: Media storage
+    vendor: Cloudflare
+    product: R2 Standard, free tier
+    amount_usd: 0
+    period: year
+    source_url: https://developers.cloudflare.com/r2/pricing/
+    verified_on: 2026-08-21
+    volatile: true
+    evidence: "10 GB-month"
+    note: Zero egress. The whole document set is well under this.
+
+  - name: Animated icons
+    vendor: Lordicon
+    product: Free plan
+    amount_usd: 0
+    period: year
+    source_url: https://lordicon.com/pricing
+    verified_on: 2026-08-21
+    volatile: true
+    evidence: "Attribution needed"
+    note: >
+      Commercial use permitted with a visible credit, which goes on /attributions
+      alongside the OFL font notices. PRO at 96/year buys removal of that one line
+      and nothing else. Do NOT use the Academic licence: it grants the full library
+      but explicitly prohibits commercial projects.
+
+  - name: Email, inbound
+    vendor: Cloudflare
+    product: Email Routing
+    amount_usd: 0
+    period: year
+    source_url: https://developers.cloudflare.com/email-routing/limits/
+    verified_on: 2026-08-21
+    volatile: true
+    evidence: "200 email rules per domain"
+    note: Requires the zone to use Cloudflare nameservers, which the registrar choice already satisfies.
+
+  - name: Email, outbound
+    vendor: Zoho
+    product: Mail Forever Free
+    amount_usd: 0
+    period: year
+    source_url: https://www.zoho.com/mail/zohomail-pricing.html
+    verified_on: 2026-08-21
+    volatile: true
+    evidence: "IMAP/POP/Active Sync not included"
+    note: >
+      No desktop client and no SMTP relay, from day one rather than as a later
+      upgrade. Also offered only in select data centres, so confirm at signup
+      before publishing the address. Do NOT architect around Gmail Send-as: Google
+      removes third-party Send as in January 2027. Pre-approved escape hatch is
+      Purelymail at about 10/year or Migadu Micro at 19/year.
+
+  - name: Analytics
+    vendor: Cloudflare
+    product: Web Analytics
+    amount_usd: 0
+    period: year
+    source_url: https://www.cloudflare.com/web-analytics/
+    verified_on: 2026-08-21
+    volatile: false
+    evidence: "privacy-first analytics"
+    note: Cookieless, so no consent banner obligation and no pageview cap.
+
+  - name: Uptime monitoring
+    vendor: UptimeRobot
+    product: Free
+    amount_usd: 0
+    period: year
+    source_url: https://uptimerobot.com/pricing/
+    verified_on: 2026-08-21
+    volatile: true
+    evidence: "50 monitors"
+    note: Three monitors, one of them a keyword check asserting a real project title renders.
+
+  - name: Backup heartbeats
+    vendor: Healthchecks.io
+    product: Hobbyist
+    amount_usd: 0
+    period: year
+    source_url: https://healthchecks.io/pricing/
+    verified_on: 2026-08-21
+    volatile: true
+    evidence: "20 checks"
+    note: Five checks used of twenty.
+
+  - name: CI
+    vendor: GitHub
+    product: Actions, private repository, Free plan
+    amount_usd: 0
+    period: year
+    source_url: https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions
+    verified_on: 2026-08-21
+    volatile: false
+    evidence: "2,000 minutes per month"
+    note: >
+      Private rather than public deliberately. On a PUBLIC repo, scheduled
+      workflows auto-disable after 60 days without activity, which would silently
+      stop backup verification during exactly the quiet periods that matter.
+
+fallback_host:
+  name: Hetzner CAX11
+  amount_usd: 91.08
+  period: year
+  source_url: https://www.hetzner.com/cloud/
+  verified_on: 2026-08-21
+  note: >
+    2 vCPU, 4 GB, arm64, 6.99/month plus 0.60 for the primary IPv4, excluding VAT.
+    Chosen over cheaper x86 because arm64 matches the Ampere target, so one
+    provisioning script covers both. Prices come from Hetzner's price-adjustment
+    document rather than a live order page, so confirm now rather than during an
+    emergency.
+
+totals:
+  year_one_usd: 10.46
+  subsequent_years_usd: 0
+  note: Zero after year one only if the ten-year domain renewal is prepaid before 1 November 2026.

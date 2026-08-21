@@ -1,0 +1,404 @@
+/* Third Angle, component layer. Every colour comes from tokens.css. No literals. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text-body);
+  font-family: var(--f-body);
+  font-weight: var(--w-body);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------------------------------------------------- type */
+
+h1, h2, h3, h4 {
+  font-family: var(--f-display);
+  color: var(--text-strong);
+  text-wrap: balance;
+  margin: 0;
+  font-weight: var(--w-head);
+}
+h1 { font-size: clamp(1.75rem, 1.2rem + 2.4vw, 2.5rem); line-height: 1.08; letter-spacing: -.022em; }
+h2 { font-size: 1.625rem; line-height: 1.16; letter-spacing: -.016em; }
+h3 { font-size: 1.3125rem; line-height: 1.25; letter-spacing: -.010em; }
+h4 { font-size: 1.0625rem; line-height: 1.35; letter-spacing: -.004em; }
+
+.display-1 {
+  font-family: var(--f-display);
+  font-weight: var(--w-strong);
+  font-size: clamp(2.625rem, 1.2rem + 6.2vw, 5rem);
+  line-height: .94;
+  letter-spacing: -.036em;
+  color: var(--text-strong);
+  text-wrap: balance;
+  margin: 0;
+}
+
+p { margin: 0 0 1.05em; }
+.lede { font-size: 1.1875rem; line-height: 1.60; letter-spacing: -.002em; }
+
+a { color: var(--accent-ink); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { color: var(--accent); }
+
+strong { font-weight: 600; color: var(--text-strong); }
+
+/* Mono is a real information channel, never decoration. Ligatures off on
+   identifiers so a part number containing -- or != can still be retyped. */
+.mono, code {
+  font-family: var(--f-mono);
+  font-variant-ligatures: none;
+  font-stretch: 82%;
+  letter-spacing: .02em;
+}
+code {
+  font-size: .78em;
+  background: var(--sunken);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-control);
+  padding: .1em .35em;
+  color: var(--text-strong);
+}
+
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: .68rem;
+  font-stretch: 80%;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 var(--s-2);
+}
+
+/* Anything with digits that line up in a column. */
+.tnum, td.num, .metric-value {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* ---------------------------------------------------------- a11y */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-control);
+  box-shadow: 0 0 0 4px var(--canvas);
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--accent);
+  color: var(--on-accent);
+  padding: var(--s-3) var(--s-4);
+  z-index: 100;
+  font-family: var(--f-mono);
+  font-size: .75rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.skip-link:focus { left: 0; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Focused cards must never tuck under the sticky header, WCAG 2.4.11. */
+[id] { scroll-margin-top: calc(var(--header-h, 64px) + var(--s-2)); }
+
+/* ---------------------------------------------------------- layout */
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 48px); }
+.prose { max-width: 68ch; }
+
+.stack   { display: flex; flex-direction: column; gap: var(--s-4); }
+.stack-lg{ display: flex; flex-direction: column; gap: var(--s-6); }
+
+.section { padding-top: var(--s-6); margin-top: var(--s-6); border-top: 1px solid var(--hairline); }
+.section:first-of-type { border-top: 0; margin-top: 0; }
+
+.scroll-x { overflow-x: auto; }
+
+/* ---------------------------------------------------------- header */
+
+.site-header {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--canvas);
+  border-bottom: 1px solid var(--hairline);
+}
+.site-header .bar {
+  display: flex; align-items: center; gap: var(--s-4);
+  min-height: 64px;
+}
+.brand {
+  display: inline-flex; align-items: center; gap: var(--s-3);
+  text-decoration: none; color: var(--text-strong);
+  margin-right: auto;
+}
+.brand svg { display: block; flex: none; }
+.brand .wordmark {
+  font-family: var(--f-display);
+  font-weight: var(--w-strong);
+  letter-spacing: -.02em;
+  font-size: 1.0625rem;
+  line-height: 1;
+}
+.brand .sub {
+  font-family: var(--f-mono);
+  font-size: .56rem;
+  font-stretch: 78%;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 3px;
+  display: block;
+}
+
+.nav { display: flex; gap: var(--s-4); align-items: center; flex-wrap: wrap; }
+.nav a {
+  font-family: var(--f-mono);
+  font-size: .66rem;
+  font-stretch: 80%;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--text-muted);
+}
+.nav a:hover, .nav a[aria-current="page"] { color: var(--text-strong); }
+
+/* Theme control is a real form, so it works with JavaScript disabled. */
+.theme-form { display: flex; gap: 2px; border: 1px solid var(--hairline); border-radius: var(--r-control); padding: 2px; }
+.theme-form button {
+  font-family: var(--f-mono); font-size: .58rem; letter-spacing: .1em; text-transform: uppercase;
+  background: none; border: 0; border-radius: 2px; cursor: pointer;
+  color: var(--text-muted); padding: 4px 7px; font-stretch: 80%;
+}
+.theme-form button[aria-pressed="true"] { background: var(--sunken); color: var(--text-strong); }
+.theme-form button:hover { color: var(--text-strong); }
+
+/* ---------------------------------------------------------- hero */
+
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; gap: var(--s-5); }
+@media (min-width: 900px) {
+  /* Asymmetric, content left weighted. Not a centred hero. */
+  .hero { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); align-items: end; }
+}
+.hero .lede { color: var(--text-muted); max-width: 46ch; margin-top: var(--s-4); }
+
+.titleblock {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  font-family: var(--f-mono);
+  font-size: .62rem;
+  font-stretch: 78%;
+  letter-spacing: .04em;
+}
+.titleblock div {
+  display: flex; justify-content: space-between; gap: var(--s-4);
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--hairline);
+}
+.titleblock div:last-child { border-bottom: 0; }
+.titleblock dt, .titleblock .k { color: var(--text-muted); text-transform: uppercase; letter-spacing: .1em; }
+.titleblock dd, .titleblock .v { color: var(--text-strong); text-align: right; margin: 0; }
+
+/* ---------------------------------------------------------- facet chips */
+
+.chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-control);
+  padding: 5px 10px;
+  background: var(--surface);
+  font-family: var(--f-mono);
+  font-size: .62rem;
+  font-stretch: 80%;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-strong);
+  text-decoration: none;
+  transition: border-color var(--t-hover) var(--ease), background-color var(--t-hover) var(--ease);
+}
+.chip:hover { border-color: var(--accent); color: var(--text-strong); }
+.chip[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  color: var(--text-strong);
+}
+.chip .dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+
+/* ---------------------------------------------------------- work grid */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--s-3);
+  /* Hovering the gutter must not dim the whole grid. */
+  pointer-events: none;
+}
+.card {
+  pointer-events: auto;
+  display: flex; flex-direction: column; gap: var(--s-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  padding: var(--s-3) var(--s-4) var(--s-4);
+  text-decoration: none;
+  /* Declared on the base selector so the return trip animates too.
+     Properties enumerated, never `all`. */
+  transition:
+    border-color var(--t-hover) var(--ease),
+    background-color var(--t-group) var(--ease),
+    box-shadow var(--t-hover) var(--ease),
+    color var(--t-group) var(--ease);
+}
+.card .card-title {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  line-height: 1.25;
+  color: var(--text-strong);
+  transition: color var(--t-group) var(--ease), font-weight var(--t-group) var(--ease);
+}
+.card .card-meta {
+  font-family: var(--f-mono);
+  font-size: .58rem;
+  font-stretch: 80%;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex; flex-wrap: wrap; gap: 4px 10px;
+}
+.card .card-summary { font-size: .9375rem; line-height: 1.55; color: var(--text-body); margin: 0; }
+
+.card:hover, .card:focus-visible {
+  border-color: var(--accent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/*
+ * Highlight and dim.
+ * Token swap, not opacity. See DESIGN.md rule 3 and tests/contrast.test.mjs.
+ * Both a :hover and a :focus-within branch so keyboard traversal gets identical
+ * emphasis, and a [data-filtering] branch so search and facet filtering reuse it.
+ */
+.grid:has(> .card:hover) > .card:not(:hover),
+.grid:has(> .card:focus-within) > .card:not(:focus-within),
+.grid[data-filtering] > .card[data-match="false"] {
+  background: var(--dim-surface);
+  border-color: var(--dim-border);
+  color: var(--dim-text);
+}
+.grid:has(> .card:hover) > .card:not(:hover) .card-title,
+.grid:has(> .card:focus-within) > .card:not(:focus-within) .card-title,
+.grid[data-filtering] > .card[data-match="false"] .card-title {
+  color: var(--dim-title);
+  font-weight: 500;
+}
+.grid:has(> .card:hover) > .card:not(:hover) .card-summary,
+.grid:has(> .card:focus-within) > .card:not(:focus-within) .card-summary,
+.grid[data-filtering] > .card[data-match="false"] .card-summary {
+  color: var(--dim-text);
+}
+/* Saturation drop on imagery is what makes it read as focus rather than a
+   broken render. Blur is not used: it destroys legibility and is a flagged tell. */
+.grid:has(> .card:hover) > .card:not(:hover) img,
+.grid[data-filtering] > .card[data-match="false"] img {
+  filter: saturate(.30) contrast(.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The state change still happens. It is information, not decoration.
+     Nothing moves. */
+  .card, .card-title, .chip { transition-duration: 1ms !important; }
+}
+
+@media (forced-colors: active) {
+  /* Author colours are stripped here, so carry the state on a second channel. */
+  .grid:has(> .card:hover) > .card:not(:hover),
+  .grid[data-filtering] > .card[data-match="false"] { color: GrayText; border-color: ButtonBorder; }
+  .card:hover, .card:focus-visible { border-color: Highlight; }
+}
+
+/* ---------------------------------------------------------- metrics */
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1px;
+  background: var(--hairline);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+.metric { background: var(--surface); padding: var(--s-3) var(--s-4); }
+.metric-value {
+  font-family: var(--f-display);
+  font-weight: var(--w-strong);
+  font-size: 1.5rem;
+  line-height: 1.05;
+  color: var(--text-strong);
+  letter-spacing: -.02em;
+}
+.metric-label {
+  font-family: var(--f-mono);
+  font-size: .56rem;
+  font-stretch: 80%;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 5px;
+}
+
+/* ---------------------------------------------------------- misc */
+
+.badge {
+  display: inline-block;
+  font-family: var(--f-mono);
+  font-size: .56rem;
+  font-stretch: 80%;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-control);
+  padding: 3px 7px;
+  color: var(--text-muted);
+}
+.badge[data-status="specification"] { border-color: var(--copper); color: var(--copper); }
+.badge[data-status="shipped"], .badge[data-status="competed"] { border-color: var(--patina); color: var(--patina); }
+.badge[data-status="in-progress"] { border-color: var(--accent); color: var(--accent-ink); }
+
+.rail { border-left: 2px solid var(--accent); padding-left: var(--s-4); }
+
+.site-footer {
+  margin-top: var(--s-7);
+  border-top: 1px solid var(--hairline);
+  padding: var(--s-5) 0 var(--s-6);
+  font-family: var(--f-mono);
+  font-size: .6rem;
+  font-stretch: 80%;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap;
+}
+.site-footer a { color: var(--text-muted); }
+
+/* Resume and print. Also gives a browser generated PDF for free. */
+@media print {
+  .site-header, .site-footer, .skip-link, .theme-form, .chips { display: none !important; }
+  body { background: #fff; color: #000; font-size: 11pt; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; word-break: break-all; }
+  .card, .section { page-break-inside: avoid; }
+  @page { margin: 0.6in; }
+}

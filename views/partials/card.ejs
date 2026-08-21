@@ -1,0 +1,21 @@
+<%
+  /* One card. `match` is optional: when the work index is filtered, non
+     matching cards stay in the DOM and are de-emphasised by CSS rather than
+     removed, so the page never reflows. */
+  const m = (typeof p.match === 'undefined') ? true : p.match;
+%>
+<a class="card" href="/work/<%= p.slug %>" data-match="<%= m ? 'true' : 'false' %>">
+  <span class="card-meta">
+    <span class="badge" data-status="<%= p.status %>"><%= p.status.replace('-', ' ') %></span>
+    <% if (p.context) { %><span><%= p.context %></span><% } %>
+  </span>
+  <span class="card-title"><%= p.title %></span>
+  <% if (p.subtitle) { %><p class="card-summary"><%= p.subtitle %></p><% } %>
+  <span class="card-meta">
+    <% for (const f of (p.facets || []).slice(0, 4)) { %>
+      <span style="display:inline-flex; align-items:center; gap:5px;">
+        <span class="dot" style="width:7px; height:7px; border-radius:2px; background: var(--<%= f.color_token %>);"></span><%= f.label %>
+      </span>
+    <% } %>
+  </span>
+</a>

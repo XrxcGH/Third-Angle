@@ -1,0 +1,15 @@
+<section class="wrap" style="padding-top: var(--s-6);">
+  <p class="eyebrow" style="color: var(--<%= facet.color_token %>);">Discipline</p>
+  <h1><%= facet.label %></h1>
+  <% if (facet.blurb) { %><p class="lede prose" style="color: var(--text-muted); margin-top: var(--s-3);"><%= facet.blurb %></p><% } %>
+
+  <div class="section">
+    <p class="eyebrow"><%= projects.length %> project<%= projects.length === 1 ? '' : 's' %>, strongest first</p>
+    <div class="grid" style="margin-top: var(--s-4);">
+      <% for (const p of projects) { %><%- include('../partials/card', { p }) %><% } %>
+    </div>
+    <% if (!projects.length) { %><p style="color: var(--text-muted);">Nothing published here yet.</p><% } %>
+  </div>
+
+  <p style="margin-top: var(--s-6);"><a href="/disciplines">All disciplines</a></p>
+</section>

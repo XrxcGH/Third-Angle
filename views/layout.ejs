@@ -1,0 +1,40 @@
+<!doctype html>
+<%
+  /* theme is 'system' | 'light' | 'dark'. 'system' emits NO attribute, so
+     prefers-color-scheme decides. Rendered server side from a cookie, so there
+     is no flash of the wrong theme and no inline script. */
+  const themeAttr = (theme === 'light' || theme === 'dark') ? ` data-theme="${theme}"` : '';
+  const SITE = 'Eric J. Dean';
+  const pageTitle = (!title || title === SITE) ? SITE : `${title} · ${SITE}`;
+%>
+<html lang="en"<%- themeAttr %>>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= pageTitle %></title>
+<% if (description) { %><meta name="description" content="<%= description %>"><% } %>
+<link rel="canonical" href="<%= canonical %>">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="<%= pageTitle %>">
+<% if (description) { %><meta property="og:description" content="<%= description %>"><% } %>
+<meta property="og:url" content="<%= canonical %>">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/css/fonts.css">
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<%- include('partials/header') %>
+
+<main id="main">
+<%- body %>
+</main>
+
+<%- include('partials/footer') %>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<section class="wrap" style="padding-top: var(--s-6);">
+  <p class="eyebrow">Disciplines</p>
+  <h1>Eight doors into the same body of work</h1>
+  <p class="prose lede" style="color: var(--text-muted);">
+    Each of these is a page a recruiter can be sent directly, not a filter chip that proves nothing.
+  </p>
+
+  <div class="stack" style="margin-top: var(--s-5);">
+    <% for (const d of disciplines) { %>
+      <a href="/disciplines/<%= d.slug %>" style="text-decoration:none; display:grid; grid-template-columns: 12px minmax(0,1fr) auto; gap: var(--s-4); align-items: baseline; padding: var(--s-3) 0; border-bottom: 1px solid var(--hairline);">
+        <span class="dot" style="width:10px; height:10px; border-radius:2px; background: var(--<%= d.color_token %>);"></span>
+        <span>
+          <span style="font-family: var(--f-display); font-weight:650; font-size:1.1rem; color: var(--text-strong); display:block;"><%= d.label %></span>
+          <% if (d.blurb) { %><span style="color: var(--text-muted); font-size:.95rem;"><%= d.blurb %></span><% } %>
+        </span>
+        <span class="mono tnum" style="font-size:.7rem; color: var(--text-muted);"><%= counts[d.slug] || 0 %></span>
+      </a>
+    <% } %>
+  </div>
+</section>
