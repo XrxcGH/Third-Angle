@@ -37,6 +37,22 @@ npm run check:scope   # fails when prose outruns code
 npm run check:costs   # fails when a quoted price goes stale
 ```
 
+### Looking at it without a server
+
+```
+npm start          # one terminal
+npm run preview    # another; writes data/preview.html
+```
+
+`data/preview.html` is every public page in one file: the HTML the server
+actually produced, with the stylesheets, the three fonts, and every image
+inlined, and a hash router so the navigation works. It opens on any machine
+with no server, no network, and no build step, which is what makes it useful
+for showing somebody the site or checking a change on a phone. Search and the
+contact form need the server, so in the file they say so instead of failing
+quietly.
+
+
 Each of those exists because of a specific documented failure, not because a
 checklist said to add tests. `npm test` currently catches, among other things, a
 dim state that fails WCAG while looking fine, an FTS5 syntax error triggered by
