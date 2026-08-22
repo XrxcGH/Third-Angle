@@ -13,7 +13,7 @@
  *
  *   Title Case   anything that names something: headings, navigation, button
  *                and link labels, table headers, form labels, dropdown options,
- *                status badges, album and album-like titles.
+ *                status badges, and short titles generally.
  *
  *   Sentence case  anything that reads as a sentence: body prose, hints under
  *                a field, empty states, flash messages, alt text, placeholders.

@@ -112,6 +112,16 @@ function migrate() {
   db.exec('CREATE INDEX IF NOT EXISTS media_album ON media(album_slug)');
   db.exec('CREATE INDEX IF NOT EXISTS document_role ON document(doc_role, sort_key)');
   db.exec('CREATE INDEX IF NOT EXISTS message_mail_status ON message(mail_status, created_at DESC)');
+
+  /*
+   * The personal wall is one wall. Any albums left over from when it was a set
+   * of them are folded into it, keeping every photograph. Idempotent, and a
+   * no-op once there is nothing to fold. Required here rather than at the top
+   * of the file because repo.js requires this module.
+   */
+  try {
+    require('./repo').ensurePersonalWall();
+  } catch { /* a database this old has no album table yet; schema.sql just made it */ }
 }
 
 /* ---- thin query helpers -------------------------------------------------

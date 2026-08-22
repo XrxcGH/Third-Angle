@@ -150,6 +150,15 @@ came to appear as three different strings on three screens. A test enforces it.
 
 ## The photo collage
 
+**One wall, no categories.** `/personal` is a single stream of every photograph
+that is on the wall, full window width, newest capture first, and it scrolls.
+There are no albums, no sections and no filters, because a wall broken into
+"sport", "travel" and "family" asks the reader to pick a category before they
+have seen a photograph, and it forces a filing decision on every upload. The
+database keeps one album row, `personal`, purely so `media.album_slug` still has
+a foreign key to point at; nothing in the interface exposes it, and the only
+control anywhere is on the wall or off it.
+
 The layout is not computed on the server, and that is the design.
 
 A server deciding row breaks has to assume a viewport width it does not know,
@@ -262,4 +271,4 @@ branch has to exist in JavaScript. See risk R4 in the proposal.
   Chrome checks `frame-src` for a PDF `<object>` as well. Both have to open for
   the inline reader, and both close again when it is switched off.
 - A `<select>` sizes itself to its longest option. In a table cell that lets one
-  long album title set the width of a whole column.
+  long project title set the width of a whole column.

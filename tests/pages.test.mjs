@@ -95,17 +95,17 @@ test('an extreme aspect ratio is clamped for layout and kept for the image', () 
 });
 
 test('a photograph with no dimensions cannot break a row', () => {
-  // albumPhotos filters these out in SQL, and the tile falls back to square
+  // personalPhotos filters these out in SQL, and the tile falls back to square
   // rather than to NaN if one ever reaches here.
   const t = collage.tile({ id: 4, width: null, height: null, storage_key: 'k', mime: 'image/webp' });
   assert.equal(Number.isFinite(t.aspect), true);
   assert.equal(t.aspect, 1);
 });
 
-test('the row height falls as the album grows', () => {
+test('the row height falls as the wall grows', () => {
   const heights = [2, 6, 15, 60].map(collage.rowHeight);
   for (let i = 1; i < heights.length; i++) {
-    assert.ok(heights[i] < heights[i - 1], 'a longer album must use a shorter row');
+    assert.ok(heights[i] < heights[i - 1], 'a longer wall must use a shorter row');
   }
 });
 
@@ -254,9 +254,11 @@ test('the contact form exists once, as a partial', () => {
   }
 });
 
-test('the personal page renders albums and never a stored order', () => {
+test('the personal page is one full-width wall with no stored order', () => {
   const src = read('views', 'pages', 'personal.ejs');
-  assert.match(src, /class="collage"/);
+  // One wall, at the window width rather than the reading measure.
+  assert.match(src, /class="collage collage-full"/);
+  assert.equal(/album/i.test(src), false, 'the personal page must not mention albums');
   assert.match(src, /--ar: <%= t\.aspect %>/);
   // Focusable, or the wall cannot be explored from a keyboard.
   assert.match(src, /tabindex="0"/);

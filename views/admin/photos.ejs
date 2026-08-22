@@ -1,0 +1,95 @@
+<p class="eyebrow">Admin</p>
+<h1>Photos</h1>
+<p class="measure" style="color: var(--text-muted);">
+  The personal page is one wall. Putting a photograph on it is what publishes
+  it, and that is the only decision here: there is no folder to choose and no
+  arranging step, because the wall packs itself from the shape of each
+  photograph and re-packs when one is added. Order is newest first, by the date
+  the photograph was taken.
+</p>
+
+<% if (saved) { %><p class="flash" role="status" style="margin-top: var(--s-4);">Saved.</p><% } %>
+
+<div class="btn-row" style="margin-top: var(--s-4);">
+  <a class="btn btn-quiet" href="/personal">View the Wall</a>
+  <a class="btn btn-quiet" href="/admin/media">Upload Photographs</a>
+</div>
+
+<%# ------------------------------------------------------------ on the wall %>
+<section style="margin-top: var(--s-6);">
+  <h2 style="font-size:1.15rem;">
+    <%= onWall.length %> Photograph<%= onWall.length === 1 ? '' : 's' %> on the Wall
+  </h2>
+
+  <% if (!onWall.length) { %>
+    <p style="color: var(--text-muted); margin-top: var(--s-3);">
+      None yet, so <span class="mono">/personal</span> is empty. Add some from
+      the list below.
+    </p>
+  <% } else { %>
+    <%
+      /* A contact sheet at a fixed size, deliberately not the public collage.
+         This view is for identifying one photograph and taking it off again,
+         and a justified wall makes the small ones hard to hit. */
+    %>
+    <div class="panel" style="margin-top: var(--s-3);">
+      <div style="display:flex; flex-wrap:wrap; gap: var(--s-3);">
+        <% for (const ph of onWall) { %>
+          <form method="post" action="/admin/media/<%= ph.id %>/wall" style="width:112px;">
+            <input type="hidden" name="_csrf" value="<%= csrf %>">
+            <input type="hidden" name="on" value="0">
+            <input type="hidden" name="back" value="photos">
+            <img src="/media/<%= ph.storage_key %>" alt="<%= ph.alt %>"
+                 width="112" height="84" loading="lazy" decoding="async"
+                 style="width:112px; height:84px; object-fit:cover; display:block;
+                        border-radius: var(--r-control); border:1px solid var(--hairline);">
+            <span class="mono tnum" style="display:block; margin-top:4px; font-size:.62rem; color: var(--text-muted);">
+              <%= ph.width %>&times;<%= ph.height %>
+            </span>
+            <button class="btn btn-quiet btn-sm" type="submit" style="width:100%; margin-top:4px;">Take Off</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</section>
+
+<%# ----------------------------------------------------------- off the wall %>
+<section style="margin-top: var(--s-6);">
+  <h2 style="font-size:1.15rem;">
+    <%= off.length %> Photograph<%= off.length === 1 ? '' : 's' %> Not on the Wall
+  </h2>
+  <% if (!off.length) { %>
+    <p style="color: var(--text-muted); margin-top: var(--s-3);">
+      Every photograph in the library is on the wall.
+    </p>
+  <% } else { %>
+    <p class="measure" style="color: var(--text-muted); font-size:.92rem;">
+      In the library and on no page of their own, so nothing on the public site
+      shows them. Tick the ones that belong on the wall.
+    </p>
+    <form class="panel" method="post" action="/admin/photos/add" style="margin-top: var(--s-3);">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div style="display:flex; flex-wrap:wrap; gap: var(--s-3);">
+        <% for (const m of off) { %>
+          <label style="width:112px; cursor:pointer;">
+            <img src="/media/<%= m.storage_key %>" alt="<%= m.alt %>"
+                 width="112" height="84" loading="lazy" decoding="async"
+                 style="width:112px; height:84px; object-fit:cover; display:block;
+                        border-radius: var(--r-control); border:1px solid var(--hairline);">
+            <span style="display:flex; gap:6px; align-items:center; margin-top:5px; font-size:.78rem;">
+              <input type="checkbox" name="media_id" value="<%= m.id %>">
+              <span class="mono tnum" style="font-size:.62rem; color: var(--text-muted);">
+                <%= m.width %>&times;<%= m.height %>
+              </span>
+            </span>
+          </label>
+        <% } %>
+      </div>
+
+      <button class="btn" type="submit" style="margin-top: var(--s-4);">
+        Put the Selected Photographs on the Wall
+      </button>
+    </form>
+  <% } %>
+</section>

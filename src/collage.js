@@ -78,7 +78,7 @@ function tile(m) {
 }
 
 /**
- * Prepare an album for rendering.
+ * Prepare the wall for rendering.
  *
  * Sorting is by capture date, newest first, done in SQL. Nothing here reorders:
  * a collage that reshuffles on every visit makes it impossible to point someone
@@ -91,9 +91,9 @@ function layout(photos) {
     count: tiles.length,
     /*
      * The sum of the aspect ratios is how many "square tiles wide" the whole
-     * album is. It is what decides a sensible row height: an album of eight
+     * wall is. It is what decides a sensible row height: a wall of eight
      * photographs should not be laid out at the same row height as one of two
-     * hundred, or the short album becomes a single strip of stamps.
+     * hundred, or the short wall becomes a single strip of stamps.
      */
     aspectSum: round(tiles.reduce((n, t) => n + t.aspect, 0)),
     portrait: tiles.filter((t) => t.aspect < 1).length,
@@ -102,9 +102,9 @@ function layout(photos) {
 }
 
 /**
- * Row height for an album, in px, as a starting point for the CSS clamp.
+ * Row height for the wall, in px, as a starting point for the CSS clamp.
  *
- * Few photographs means a taller row, so a small album reads as a feature
+ * Few photographs means a taller row, so a small wall reads as a feature
  * rather than a filmstrip. Many means shorter, so the wall does not become a
  * scroll. The value is only a basis: flexbox still stretches every row to the
  * real width, so this changes proportion, never whether the layout fits.

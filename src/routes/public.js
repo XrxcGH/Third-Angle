@@ -321,27 +321,27 @@ router.get('/education', (req, res) => {
 
 router.get('/personal', (req, res) => {
   /*
-   * Every published album, each rendered from whatever is in it right now.
-   * Uploading a photograph to an album IS publishing it: there is no separate
-   * arrangement step, because a collage that has to be re-laid out by hand is
-   * a collage that stops being added to.
+   * One wall, undivided.
+   *
+   * Every photograph on it, in one collage, at the full width of the window.
+   * There is no grouping and no section per subject: a wall split into
+   * categories is a stack of short galleries, and it turns every upload into a
+   * decision about which bucket a photograph belongs in. The only question here
+   * is whether a photograph is on the wall, which is one switch in the admin.
    */
-  const albums = repo.listAlbums().map((a) => {
-    const photos = repo.albumPhotos(a.slug);
-    return { ...a, ...collage.layout(photos), rowHeight: collage.rowHeight(photos.length) };
-  }).filter((a) => a.count > 0);
+  const photos = repo.personalPhotos();
 
   res.render('pages/personal', {
     ...chrome(),
-    title: 'Beyond The Bench',
-    description: 'Sport, travel, family and the rest of it. The parts of a person a project record leaves out.',
-    albums,
-    totalPhotos: albums.reduce((n, a) => n + a.count, 0),
+    title: 'Beyond the Bench',
+    description: 'Sport, travel, family, animals and the rest of it. The parts of a person a project record leaves out.',
+    ...collage.layout(photos),
+    rowHeight: collage.rowHeight(photos.length),
     jsonLd: seo.jsonLd(res.locals.siteUrl, {
       trail: [{ name: 'Home', url: '/' }, { name: 'Personal', url: '/personal' }],
     }),
     ogImage: registerOg({
-      title: 'Beyond The Bench',
+      title: 'Beyond the Bench',
       subtitle: 'Sport, travel, family and the rest of it.',
       eyebrow: 'Eric J. Dean',
     }),
@@ -772,7 +772,7 @@ router.get('/sitemap.xml', (req, res) => {
    * an empty page is a promise to a crawler that the page does not keep, and
    * the empty state here is the normal state until photographs are uploaded.
    */
-  if (repo.listAlbums().some((a) => a.photo_count > 0)) urls.push({ loc: '/personal', pri: '0.5' });
+  if (repo.countOnWall() > 0) urls.push({ loc: '/personal', pri: '0.5' });
   for (const p of repo.listProjects()) urls.push({ loc: `/work/${p.slug}`, mod: p.updated_at, pri: '0.8' });
   for (const f of repo.listFacets('discipline')) urls.push({ loc: `/disciplines/${f.slug}`, pri: '0.6' });
   for (const d of documents.listDocuments()) urls.push({ loc: `/documents/${d.slug}`, mod: d.updated_at, pri: '0.6' });

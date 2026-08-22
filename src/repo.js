@@ -658,59 +658,84 @@ function deleteActivity(id) {
   run('DELETE FROM activity WHERE id = ?', Number(id));
 }
 
-/* ----------------------------------------------------------------- albums */
+/* ------------------------------------------------------------ personal wall
+ *
+ * One wall, not a set of albums.
+ *
+ * This started as albums with a title and a blurb each, and the personal page
+ * rendered a section per album. That is categorisation, and categorisation is
+ * the thing that makes a photo wall stop being added to: every upload becomes a
+ * decision about which bucket it belongs in, and the page becomes a stack of
+ * short sections rather than a wall.
+ *
+ * So there is exactly one question about a photograph: is it on the wall or is
+ * it not. `media.album_slug` is that flag. It stays a foreign key to a single
+ * album row rather than becoming a boolean column, because rebuilding a STRICT
+ * table to drop a constraint is a worse trade than one lookup row that never
+ * changes.
+ */
 
-function listAlbums({ includeUnpublished = false } = {}) {
-  return all(
-    `SELECT a.*, (SELECT COUNT(*) FROM media m WHERE m.album_slug = a.slug) AS photo_count
-       FROM album a ${includeUnpublished ? '' : 'WHERE a.published = 1'} ORDER BY a.sort_key`
-  );
-}
+const PERSONAL_ALBUM = 'personal';
 
-function getAlbum(slug, { includeUnpublished = false } = {}) {
-  return get(
-    `SELECT * FROM album WHERE slug = ? ${includeUnpublished ? '' : 'AND published = 1'}`,
-    slug
+/**
+ * Guarantee the single album row, and fold any others into it.
+ *
+ * Idempotent, and a no-op once there is nothing to fold, so it costs two cheap
+ * reads on every boot rather than a destructive write.
+ */
+function ensurePersonalWall() {
+  run(
+    `INSERT INTO album (slug, title, blurb, published, sort_key)
+     VALUES (?, 'Personal', NULL, 1, 'a0')
+     ON CONFLICT(slug) DO NOTHING`,
+    PERSONAL_ALBUM
   );
+  const strays = get('SELECT COUNT(*) AS n FROM album WHERE slug != ?', PERSONAL_ALBUM).n;
+  if (!strays) return 0;
+  // A photograph that was in any album is on the wall. Nothing is dropped.
+  run('UPDATE media SET album_slug = ? WHERE album_slug IS NOT NULL AND album_slug != ?',
+    PERSONAL_ALBUM, PERSONAL_ALBUM);
+  run('DELETE FROM album WHERE slug != ?', PERSONAL_ALBUM);
+  return strays;
 }
 
 /**
- * Every photo in an album, newest capture first.
+ * Every photograph on the wall, newest capture first.
  *
  * Only rows with real dimensions come back. The collage packs by aspect ratio,
  * and a row with no width or height has no ratio: including it would make the
  * layout fall back to a guess for that one tile and visibly break the row.
  */
-function albumPhotos(slug) {
+function personalPhotos() {
   return all(
     `SELECT id, storage_key, alt, caption, width, height, captured_on, created_at, mime
        FROM media
-      WHERE album_slug = ? AND width IS NOT NULL AND height IS NOT NULL AND width > 0 AND height > 0
-      ORDER BY COALESCE(captured_on, created_at) DESC, id DESC`,
-    slug
+      WHERE album_slug IS NOT NULL
+        AND mime LIKE 'image/%'
+        AND width IS NOT NULL AND height IS NOT NULL AND width > 0 AND height > 0
+      ORDER BY COALESCE(captured_on, created_at) DESC, id DESC`
   );
 }
 
-function saveAlbum(slug, fields) {
-  const existing = get('SELECT slug FROM album WHERE slug = ?', slug);
-  if (existing) {
-    run('UPDATE album SET title=?, blurb=?, published=? WHERE slug=?',
-      fields.title, fields.blurb || null, fields.published ? 1 : 0, slug);
-  } else {
-    run('INSERT INTO album (slug, title, blurb, published, sort_key) VALUES (?,?,?,?,?)',
-      slug, fields.title, fields.blurb || null, fields.published ? 1 : 0, nextKeyFor('album'));
-  }
-  return slug;
+/** Photographs in the library that are not on the wall. */
+function offWallPhotos(limit = 200) {
+  return all(
+    `SELECT id, storage_key, alt, width, height, created_at
+       FROM media
+      WHERE album_slug IS NULL AND mime LIKE 'image/%'
+      ORDER BY created_at DESC LIMIT ?`,
+    limit
+  );
 }
 
-function deleteAlbum(slug) {
-  // media.album_slug is ON DELETE SET NULL, so the photos survive and simply
-  // stop being in an album. Deleting an album must never delete photographs.
-  run('DELETE FROM album WHERE slug = ?', slug);
+function countOnWall() {
+  return get("SELECT COUNT(*) AS n FROM media WHERE album_slug IS NOT NULL AND mime LIKE 'image/%'").n;
 }
 
-function setMediaAlbum(mediaId, albumSlug) {
-  run('UPDATE media SET album_slug = ? WHERE id = ?', albumSlug || null, Number(mediaId));
+/** The only write. `on` decides whether a photograph appears on /personal. */
+function setOnWall(mediaId, on) {
+  if (on) ensurePersonalWall();
+  run('UPDATE media SET album_slug = ? WHERE id = ?', on ? PERSONAL_ALBUM : null, Number(mediaId));
 }
 
 module.exports = {
@@ -724,6 +749,6 @@ module.exports = {
   listSchools, getSchool, saveSchool, deleteSchool,
   listCourses, coursesByTerm, coursesByStatus, courseCounts, saveCourse, deleteCourse,
   listActivities, saveActivity, deleteActivity,
-  listAlbums, getAlbum, albumPhotos, saveAlbum, deleteAlbum, setMediaAlbum,
+  ensurePersonalWall, personalPhotos, offWallPhotos, countOnWall, setOnWall, PERSONAL_ALBUM,
   COURSE_STATUS, ACTIVITY_KINDS, SCHOOL_KINDS, termSortValue,
 };

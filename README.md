@@ -125,6 +125,11 @@ page cannot be framed, so what renders is a card built from the record this site
 already holds. LinkedIn's own badge is available as a switch in the admin,
 because it is a real third party connection and should be a decision.
 
+**The photo wall is one wall.** `/personal` drops every photograph in together
+at the full width of the window and scrolls; there are no albums, sections or
+filters to maintain, and the only decision on an upload is whether it is on the
+wall. `/admin/photos` is that one switch.
+
 **The photo collage packs itself.** Each tile carries its aspect ratio and
 flexbox does the rest, so every row fills the width exactly, adding a photograph
 re-packs everything below it, and there is nothing to rearrange by hand.

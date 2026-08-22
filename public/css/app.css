@@ -571,7 +571,14 @@ code {
  */
 
 .collage {
-  --row-h: 220px;
+  /*
+   * Two properties, not one, and the reason is that the page sets the base
+   * inline. An inline custom property beats every stylesheet rule, so a media
+   * query that redefines --row-h directly is dead code the moment the template
+   * writes one. The template sets --row-h-base; the breakpoints below scale it.
+   */
+  --row-h-base: 220px;
+  --row-h: var(--row-h-base);
   --collage-gap: 6px;
   /*
    * How much of its natural width a tile claims as its flex-basis.
@@ -585,7 +592,16 @@ code {
    * carrying more tiles than they should and the crop gets heavy.
    */
   --tile-fit: .78;
-  --tile-hover: 3.4;
+  /*
+   * How much of a row's spare width a hovered tile claims.
+   *
+   * Measured rather than guessed: at 3.4 a hovered tile grew by 39% at 1440px
+   * and by 6% in a tightly packed row, which is not an expansion anybody would
+   * notice. At 10 the same tiles grow by up to 2.8x. Higher still changes very
+   * little, because a tile can never take more than the whole of its row's
+   * spare width, and that is the real ceiling.
+   */
+  --tile-hover: 10;
   display: flex;
   flex-wrap: wrap;
   gap: var(--collage-gap);
@@ -609,8 +625,14 @@ code {
    * take a share of the slack and stop, so it reads as the end of a wall rather
    * than as a row that failed to load. Every other row still fills exactly,
    * because a row only reaches the filler once it is the last one.
+   *
+   * 2 rather than 5, paired with the max-width on .collage-item below. The
+   * filler is what decides how much of the tail is empty, and the cap is what
+   * stops a last row of one photograph from being stretched across the window
+   * to hide it. Without the cap this number has to be timid; with it, it does
+   * not.
    */
-  flex-grow: 5;
+  flex-grow: 2;
   flex-basis: 0;
   height: 0;
   min-width: 0;
@@ -633,8 +655,27 @@ code {
      the return trip animates too. See DESIGN.md, Motion. */
   transition:
     flex-grow var(--t-group) var(--ease),
+    transform var(--t-group) var(--ease),
     border-color var(--t-hover) var(--ease),
     box-shadow var(--t-hover) var(--ease);
+}
+
+/*
+ * No tile is ever stretched past 1.8x its natural width at the row height.
+ *
+ * Only the last row can ever want that much, and this is what stops a single
+ * leftover photograph from being smeared across the window to hide the tail.
+ *
+ * A full row must still fill exactly, so the cap has to be provably out of
+ * reach for one. Aspect ratios are clamped at 2.40 in src/collage.js, so a row
+ * wanting more than 1.8x needs the tile that broke it to have a natural width
+ * above 0.73 of the container, which at the tallest row a container of this
+ * width uses cannot happen above about 730px. Hence the floor: below it the
+ * cap is simply off, and there the row holds two or three tiles anyway, so the
+ * filler is what bounds the stretch.
+ */
+@media (min-width: 760px) {
+  .collage-item { max-width: calc(var(--ar) * var(--row-h) * 1.8); }
 }
 
 .collage-item img {
@@ -664,6 +705,17 @@ code {
 .collage-item:hover,
 .collage-item:focus-visible {
   flex-grow: calc(var(--ar) * var(--tile-hover));
+  /* The resting cap above is about the last row, not about the interaction.
+     Leaving it on would quietly limit how far a tile can open up. */
+  max-width: none;
+  /*
+   * A row that the browser packed to the pixel has no spare width, and in one
+   * flex-grow can do nothing at all. This is the floor under the interaction:
+   * a small lift that does not depend on the row having room, and that costs
+   * no layout because a transform is not laid out. Where there is room, the
+   * width growth above does the visible work and this is barely noticed.
+   */
+  transform: scale(1.05);
   border-color: var(--accent);
   box-shadow: inset 0 0 0 1px var(--accent);
   z-index: 2;
@@ -690,10 +742,29 @@ code {
 .collage-item:hover figcaption,
 .collage-item:focus-visible figcaption { opacity: 1; }
 
-/* A taller row on a large monitor. The row height is only a basis: flexbox
-   still fills the width exactly at every size, so this changes proportion and
-   never whether the wall fits. */
-@media (min-width: 1400px) { .collage { --row-h: 260px; } }
+/*
+ * The full width of the window, not the reading measure.
+ *
+ * Photographs are not prose. .wrap caps text at 1180px so a line stays
+ * readable, which is exactly the wrong constraint for a wall of images: it
+ * leaves two empty columns on a large monitor and makes every photograph
+ * smaller than the screen can show. The gap is the only inset.
+ */
+.collage-full {
+  padding-inline: var(--collage-gap);
+  /* The gap between rows is the same as the gap between tiles, so the wall
+     reads as one surface rather than as a set of strips. */
+  padding-block: 0;
+}
+
+/*
+ * A taller row on a large monitor. The row height is only a basis: flexbox
+ * still fills the width exactly at every size, so this changes proportion and
+ * never whether the wall fits. It rises with the viewport because a full width
+ * wall on a 1920px monitor at a 260px row height is a filmstrip.
+ */
+@media (min-width: 1400px) { .collage { --row-h: calc(var(--row-h-base) * 1.35); } }
+@media (min-width: 1800px) { .collage { --row-h: calc(var(--row-h-base) * 1.55); } }
 
 /*
  * Narrow screens get a different layout, not a squeezed version of this one.
@@ -734,6 +805,11 @@ code {
    two, which is what a photo grid is expected to look like. */
 @media (max-width: 359px) {
   .collage { column-count: 1; }
+}
+/* Three columns once there is room for them, which there is sooner now the
+   wall is not inside the 1180px measure. */
+@media (min-width: 560px) and (max-width: 700px) {
+  .collage { column-count: 3; }
 }
 
 @media (prefers-reduced-motion: reduce) {

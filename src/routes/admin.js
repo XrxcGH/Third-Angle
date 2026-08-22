@@ -342,7 +342,7 @@ router.get('/', (req, res) => {
     errors: get('SELECT COUNT(*) AS n FROM app_error WHERE seen = 0').n,
     messages: contact.unreadCount(),
     undelivered: contact.undeliveredCount(),
-    photos: get("SELECT COUNT(*) AS n FROM media WHERE album_slug IS NOT NULL").n,
+    photos: repo.countOnWall(),
     courses: get('SELECT COUNT(*) AS n FROM course').n,
   };
   res.render('admin/dashboard', view('dashboard', {
@@ -601,7 +601,6 @@ router.get('/media', (req, res) => {
     title: 'Media',
     items: media.listMedia(),
     projects: repo.listProjects({ includeUnpublished: true }),
-    albums: repo.listAlbums({ includeUnpublished: true }),
     error: typeof req.query.error === 'string' ? req.query.error : null,
     uploaded: req.query.uploaded ? Number(req.query.uploaded) : 0,
   }));
@@ -659,11 +658,14 @@ router.post('/media/:id/delete', form, requireCsrf, (req, res) => {
   res.redirect(303, '/admin/media');
 });
 
-/* Put one photograph into an album, or take it out of every album. The
-   personal page renders albums, so this is what publishes a photograph. */
-router.post('/media/:id/album', form, requireCsrf, (req, res) => {
-  repo.setMediaAlbum(Number(req.params.id), req.body.album_slug || null);
-  res.redirect(303, req.body.back === 'albums' ? '/admin/albums' : '/admin/media');
+/* On or off the personal wall. The wall is what publishes a photograph, and
+   it is one wall rather than a set of albums, so this is a boolean. */
+router.post('/media/:id/wall', form, requireCsrf, (req, res) => {
+  const id = Number(req.params.id);
+  const on = req.body.on === '1';
+  repo.setOnWall(id, on);
+  repo.logChange(req.session.email, 'media', id, 'update', { wall: on });
+  res.redirect(303, req.body.back === 'photos' ? '/admin/photos?saved=1' : '/admin/media');
 });
 
 router.post('/media/:id/attach', form, requireCsrf, (req, res) => {
@@ -907,49 +909,38 @@ router.post('/education/activity/:id/delete', form, requireCsrf, (req, res) => {
   res.redirect(303, '/admin/education');
 });
 
-/* ----------------------------------------------------------------- albums */
+/* ----------------------------------------------------------------- photos */
 
-router.get('/albums', (req, res) => {
-  const albums = repo.listAlbums({ includeUnpublished: true }).map((a) => ({
-    ...a,
-    photos: repo.albumPhotos(a.slug),
-  }));
-  res.render('admin/albums', view('albums', {
-    title: 'Photo Albums',
-    albums,
-    /* Photographs that are in the library but in no album. They are the ones
-       that will not appear anywhere on the personal page, which is exactly the
-       thing that is invisible without a list like this. */
-    unfiled: all(
-      `SELECT id, storage_key, alt, width, height, created_at FROM media
-        WHERE album_slug IS NULL AND mime LIKE 'image/%'
-        ORDER BY created_at DESC LIMIT 60`
-    ),
+/*
+ * The personal page is one wall, not a set of albums, so this screen asks one
+ * question per photograph: on the wall or off it. There is no ordering control
+ * and no folder to pick, because the wall orders itself by capture date and
+ * packs itself from the shape of each photograph.
+ */
+router.get('/photos', (req, res) => {
+  res.render('admin/photos', view('photos', {
+    title: 'Photos',
+    onWall: repo.personalPhotos(),
+    /* In the library and not on the wall, so they appear nowhere on the
+       personal page. This list exists because that is the one state nothing
+       else on the site would show you. */
+    off: repo.offWallPhotos(),
     saved: Boolean(req.query.saved),
   }));
 });
 
-router.post('/albums/save', form, requireCsrf, (req, res) => {
-  const slug = slugify(req.body.slug || req.body.title);
-  if (!slug || !String(req.body.title || '').trim()) return res.redirect(303, '/admin/albums');
-  repo.saveAlbum(slug, req.body);
-  repo.logChange(req.session.email, 'album', 0, 'update', { slug });
-  res.redirect(303, '/admin/albums?saved=1');
+/* Put several on the wall at once, from the off-wall list. */
+router.post('/photos/add', form, requireCsrf, (req, res) => {
+  const ids = [].concat(req.body.media_id || []).map(Number).filter(Boolean);
+  for (const id of ids) repo.setOnWall(id, true);
+  if (ids.length) {
+    repo.logChange(req.session.email, 'media', ids[0], 'update', { wall: true, count: ids.length });
+  }
+  res.redirect(303, '/admin/photos?saved=1');
 });
 
-router.post('/albums/:slug/delete', form, requireCsrf, (req, res) => {
-  /* Deleting an album never deletes photographs: media.album_slug is
-     ON DELETE SET NULL, so they return to the unfiled list. */
-  repo.deleteAlbum(req.params.slug);
-  repo.logChange(req.session.email, 'album', 0, 'delete', { slug: req.params.slug });
-  res.redirect(303, '/admin/albums');
-});
-
-router.post('/albums/assign', form, requireCsrf, (req, res) => {
-  const ids = [].concat(req.body.media_id || []).filter(Boolean);
-  for (const id of ids) repo.setMediaAlbum(id, req.body.album_slug || null);
-  res.redirect(303, '/admin/albums?saved=1');
-});
+/* The albums screen is gone. Keep the URL working rather than 404 a bookmark. */
+router.get('/albums', (req, res) => res.redirect(301, '/admin/photos'));
 
 /* --------------------------------------------------------------- messages */
 
