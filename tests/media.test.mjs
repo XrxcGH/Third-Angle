@@ -135,3 +135,22 @@ test('a specification is exempt from the evidence gate by design', () => {
   if (!p) return;
   assert.deepEqual(media.publishBlockers(p.id), [], 'specification was wrongly gated');
 });
+
+test('the publish gate is actually INVOKED by the save path, not just defined', () => {
+  // This is the failure mode the gate itself is vulnerable to. A blocker
+  // function that is exported and unit tested but never called is worse than
+  // no gate at all, because it looks closed. Assert the call site exists.
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const admin = fs.readFileSync(
+    path.join(path.dirname(path.dirname(new URL(import.meta.url).pathname.slice(1))), 'src', 'routes', 'admin.js'),
+    'utf8'
+  );
+  assert.match(admin, /publishBlockers\(/, 'nothing calls publishBlockers');
+  // And it must gate the published flag specifically, not merely be referenced.
+  assert.match(
+    admin,
+    /published[\s\S]{0,80}publishBlockers/,
+    'publishBlockers is called but not tied to the published transition'
+  );
+});

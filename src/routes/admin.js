@@ -325,6 +325,36 @@ router.post('/projects/save', form, requireCsrf, (req, res) => {
   }
   try {
     const id = saveProject(req.body, req.session.email);
+
+    /*
+     * The evidence gate. Risk R2.
+     *
+     * Checked AFTER the write rather than before, for a specific reason: a new
+     * project has no media yet, so a pre-check would refuse to let you create
+     * a mechanical project at all. Instead the work is always saved, and only
+     * the transition to PUBLISHED is refused. Nothing typed is ever lost.
+     *
+     * The gate has to be invoked here to mean anything. A blocker function
+     * that is defined, exported and unit tested but never called is worse than
+     * no gate at all, because it looks closed.
+     */
+    const blockers = req.body.published ? media.publishBlockers(id) : [];
+    if (blockers.length) {
+      run('UPDATE project SET published = 0 WHERE id = ?', id);
+      repo.reindexProject(id);
+      const row = get('SELECT * FROM project WHERE id = ?', id);
+      row.facets = all(
+        'SELECT facet_slug, weight, contribution_note FROM project_facet WHERE project_id = ?',
+        id
+      );
+      return res.render('admin/project-form', view('project-form', {
+        title: `Edit: ${row.title}`,
+        project: row,
+        disciplines: repo.listFacets('discipline'),
+        error: `Saved as a draft. ${blockers.join(' ')} Upload evidence on the media page, or set the status to specification if it genuinely is one.`,
+      }));
+    }
+
     res.redirect(303, `/admin/projects/${id}/edit?saved=1`);
   } catch (err) {
     res.status(400).render('admin/project-form', view('project-form', {
