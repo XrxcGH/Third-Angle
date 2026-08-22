@@ -1,10 +1,8 @@
 <section class="wrap pad-top">
-  <p class="eyebrow">Professional</p>
-  <h1>The Public Record</h1>
+  <p class="eyebrow"><%= c('professional.eyebrow') %></p>
+  <h1><%= c('professional.heading') %></h1>
   <p class="lede prose" style="color: var(--text-muted);">
-    Repositories and profile, read here rather than somewhere else. The GitHub
-    data below is fetched by this server and cached, so nothing on this page
-    calls out to anyone while you read it.
+    <%= c('professional.lede') %>
   </p>
 
   <div class="profile-grid" style="margin-top: var(--s-5);">
@@ -20,7 +18,7 @@
                56px square would be a poor trade. */
           %>
           <img src="/avatar/github.png" width="56" height="56" loading="lazy" decoding="async"
-               alt="GitHub profile picture for <%= gh.profile.login %>">
+               alt="<%= c('professional.gh.avatar.alt') %> <%= gh.profile.login %>">
           <span>
             <span class="profile-name" id="gh-heading"><%= gh.profile.name %></span>
             <a class="mono" style="font-size:.75rem;" href="<%= gh.profile.url %>" rel="me noopener">
@@ -36,26 +34,26 @@
         <div class="metrics" style="margin-bottom: var(--s-4);">
           <div class="metric">
             <div class="metric-value tnum"><%= gh.profile.publicRepos %></div>
-            <div class="metric-label">Public Repositories</div>
+            <div class="metric-label"><%= c('professional.gh.metric.repos') %></div>
           </div>
           <div class="metric">
             <div class="metric-value tnum"><%= gh.totalStars %></div>
-            <div class="metric-label">Stars</div>
+            <div class="metric-label"><%= c('professional.gh.metric.stars') %></div>
           </div>
           <div class="metric">
             <div class="metric-value tnum"><%= gh.profile.followers %></div>
-            <div class="metric-label">Followers</div>
+            <div class="metric-label"><%= c('professional.gh.metric.followers') %></div>
           </div>
           <% if (gh.profile.createdAt) { %>
             <div class="metric">
               <div class="metric-value tnum"><%= gh.profile.createdAt.slice(0, 4) %></div>
-              <div class="metric-label">Since</div>
+              <div class="metric-label"><%= c('professional.gh.metric.since') %></div>
             </div>
           <% } %>
         </div>
 
         <% if (gh.languages.length) { %>
-          <p class="eyebrow" style="margin-bottom: var(--s-2);">Languages by Repository</p>
+          <p class="eyebrow" style="margin-bottom: var(--s-2);"><%= c('professional.gh.languages') %></p>
           <div class="chips" style="margin-bottom: var(--s-4);">
             <% for (const l of gh.languages.slice(0, 6)) { %>
               <span class="chip"><%= l.language %> <span class="tnum" style="color: var(--text-muted);"><%= l.share %>%</span></span>
@@ -64,17 +62,16 @@
         <% } %>
 
       <% } else { %>
-        <h2 id="gh-heading" style="margin-bottom: var(--s-2);">GitHub</h2>
+        <h2 id="gh-heading" style="margin-bottom: var(--s-2);"><%= c('professional.gh.heading') %></h2>
         <p style="color: var(--text-muted); font-size:.95rem;">
           <% if (!settings.github_live) { %>
-            Live GitHub data is switched off in the admin, and nothing has been cached yet.
+            <%= c('professional.gh.off') %>
           <% } else { %>
-            The GitHub data has not been fetched yet. It loads on the next request,
-            or immediately from the admin.
+            <%= c('professional.gh.pending') %>
           <% } %>
         </p>
         <p style="margin-bottom:0;">
-          <a href="https://github.com/<%= gh.username %>" rel="me noopener">github.com/<%= gh.username %></a>
+          <a href="<%= c('site.github.url') %>" rel="me noopener">github.com/<%= gh.username %></a>
         </p>
       <% } %>
     </section>
@@ -86,7 +83,7 @@
           <%- include('../partials/icon', { name: 'business', size: 34 }) %>
         </span>
         <span>
-          <span class="profile-name" id="li-heading">LinkedIn</span>
+          <span class="profile-name" id="li-heading"><%= c('professional.li.name') %></span>
           <a class="mono" style="font-size:.75rem;" href="<%= linkedin.url %>" rel="me noopener">
             linkedin.com/in/<%= linkedin.handle %>
           </a>
@@ -111,7 +108,7 @@
              data-theme="light" data-type="VERTICAL" data-vanity="<%= linkedin.handle %>"
              data-version="v1" style="margin-bottom: var(--s-3);">
           <a class="badge-base__link LI-simple-link" href="<%= linkedin.url %>" rel="noopener">
-            View the Full Profile on LinkedIn
+            <%= c('professional.li.badge.link') %>
           </a>
         </div>
         <script src="https://platform.linkedin.com/badges/js/profile.js" async defer type="text/javascript"></script>
@@ -119,18 +116,18 @@
 
       <div class="titleblock" style="margin-bottom: var(--s-4);">
         <% for (const s of schools.slice(0, 2)) { %>
-          <div><span class="k"><%= s.kind === 'high-school' ? 'School' : 'University' %></span><span class="v"><%= s.name %></span></div>
+          <div><span class="k"><%= s.kind === 'high-school' ? c('professional.li.school.k') : c('professional.li.university.k') %></span><span class="v"><%= s.name %></span></div>
           <% if (s.credential) { %>
-            <div><span class="k">Credential</span><span class="v"><%= s.credential %></span></div>
+            <div><span class="k"><%= c('professional.li.credential.k') %></span><span class="v"><%= s.credential %></span></div>
           <% } %>
         <% } %>
-        <div><span class="k">Based</span><span class="v">Half Moon Bay, CA</span></div>
-        <div><span class="k">Seeking</span><span class="v">Summer 2027 Internship</span></div>
+        <div><span class="k"><%= c('professional.li.based.k') %></span><span class="v"><%= c('professional.li.based.v') %></span></div>
+        <div><span class="k"><%= c('professional.li.seeking.k') %></span><span class="v"><%= c('professional.li.seeking.v') %></span></div>
       </div>
 
       <div class="btn-row">
-        <a class="btn" href="<%= linkedin.url %>" rel="me noopener">Open LinkedIn</a>
-        <a class="btn btn-quiet" href="/resume">Read the Resume</a>
+        <a class="btn" href="<%= linkedin.url %>" rel="me noopener"><%= c('professional.li.cta') %></a>
+        <a class="btn btn-quiet" href="/resume"><%= c('professional.li.cta2') %></a>
       </div>
     </section>
   </div>
@@ -138,11 +135,10 @@
   <%# ---------------------------------------------------------- repositories %>
   <% if (gh.top.length) { %>
     <section class="section">
-      <p class="eyebrow">Repositories</p>
-      <h2>Most Recent Work on GitHub</h2>
+      <p class="eyebrow"><%= c('professional.repos.eyebrow') %></p>
+      <h2><%= c('professional.repos.heading') %></h2>
       <p class="measure" style="color: var(--text-muted); font-size:.95rem;">
-        Ranked by stars, then by the most recent push. Forks and archived
-        repositories sink rather than disappear.
+        <%= c('professional.repos.note') %>
       </p>
 
       <div class="repo-list" style="margin-top: var(--s-4);">
@@ -154,11 +150,11 @@
               <% if (r.language) { %>
                 <span><span class="repo-lang-dot" aria-hidden="true"></span><%= r.language %></span>
               <% } %>
-              <% if (r.stars) { %><span class="tnum"><%= r.stars %> star<%= r.stars === 1 ? '' : 's' %></span><% } %>
-              <% if (r.forks) { %><span class="tnum"><%= r.forks %> fork<%= r.forks === 1 ? '' : 's' %></span><% } %>
-              <% if (r.pushedAt) { %><span>Pushed <%= r.pushedAt.slice(0, 10) %></span><% } %>
-              <% if (r.fork) { %><span class="badge">Fork</span><% } %>
-              <% if (r.archived) { %><span class="badge">Archived</span><% } %>
+              <% if (r.stars) { %><span class="tnum"><%= r.stars %> <%= c('professional.repo.stars') %><%= r.stars === 1 ? '' : 's' %></span><% } %>
+              <% if (r.forks) { %><span class="tnum"><%= r.forks %> <%= c('professional.repo.forks') %><%= r.forks === 1 ? '' : 's' %></span><% } %>
+              <% if (r.pushedAt) { %><span><%= c('professional.repo.pushed') %> <%= r.pushedAt.slice(0, 10) %></span><% } %>
+              <% if (r.fork) { %><span class="badge"><%= c('professional.repo.fork') %></span><% } %>
+              <% if (r.archived) { %><span class="badge"><%= c('professional.repo.archived') %></span><% } %>
             </span>
           </a>
         <% } %>
@@ -166,14 +162,14 @@
 
       <p style="margin-top: var(--s-4);">
         <a href="https://github.com/<%= gh.username %>?tab=repositories" rel="noopener">
-          All <%= gh.profile ? gh.profile.publicRepos : gh.repos.length %> repositories on GitHub
+          <%= c('professional.repos.all.pre') %> <%= gh.profile ? gh.profile.publicRepos : gh.repos.length %> <%= c('professional.repos.all') %>
         </a>
       </p>
 
       <p class="eyebrow" style="margin-top: var(--s-4);">
         <% if (gh.fetchedAt) { %>
-          Fetched <time datetime="<%= gh.fetchedAt %>"><%= gh.fetchedAt.slice(0, 16).replace('T', ' ') %></time> UTC<%
-            if (gh.refreshing) { %> &middot; refreshing<% } %>
+          <%= c('professional.repos.fetched') %> <time datetime="<%= gh.fetchedAt %>"><%= gh.fetchedAt.slice(0, 16).replace('T', ' ') %></time> <%= c('professional.repos.utc') %><%
+            if (gh.refreshing) { %> &middot; <%= c('professional.repos.refreshing') %><% } %>
         <% } %>
       </p>
     </section>
@@ -181,16 +177,15 @@
 
   <%# --------------------------------------------------------------- contact %>
   <section class="section" id="contact">
-    <p class="eyebrow">Contact</p>
-    <h2>Get in Touch</h2>
+    <p class="eyebrow"><%= c('professional.contact.eyebrow') %></p>
+    <h2><%= c('professional.contact.heading') %></h2>
     <% if (sent) { %>
       <p class="lede measure" style="color: var(--text-muted); margin-top: var(--s-3);">
-        That reached me. I read everything and reply to anything that is not automated.
+        <%= c('contact.sent.lede') %>
       </p>
     <% } else { %>
       <p class="measure" style="color: var(--text-muted);">
-        This goes straight to my inbox and is kept here as well, so a mail
-        problem never loses a message.
+        <%= c('professional.contact.note') %>
       </p>
       <div style="max-width: 46rem;">
         <%- include('../partials/contact-form', { formId: 'pro', stamp, errors, values }) %>

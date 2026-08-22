@@ -200,6 +200,10 @@ code {
  * other rule on the page ran the full width, which reads as a rendering fault.
  * The section keeps its full width and the cap moves to the text inside it.
  */
+/* A section whose dividing line has been switched off in the admin. The
+   spacing stays: the rule is the decoration, the gap is the structure. */
+.section.no-rule { border-top: 0; }
+
 .section.prose { max-width: none; }
 .section.prose > * { max-width: 68ch; }
 

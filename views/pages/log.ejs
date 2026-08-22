@@ -1,9 +1,9 @@
 <section class="wrap pad-top">
-  <p class="eyebrow">Build log</p>
-  <h1>What Is Happening Now</h1>
+  <p class="eyebrow"><%= c('log.eyebrow') %></p>
+  <h1><%= c('log.heading') %></h1>
 
   <% if (!notes.length) { %>
-    <p style="color: var(--text-muted); margin-top: var(--s-4);">No entries yet.</p>
+    <p style="color: var(--text-muted); margin-top: var(--s-4);"><%= c('log.empty') %></p>
   <% } else { %>
     <div class="stack-lg" style="margin-top: var(--s-5);">
       <% for (const n of notes) { %>

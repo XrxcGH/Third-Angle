@@ -363,6 +363,20 @@ CREATE TABLE IF NOT EXISTS setting (
   updated_at TEXT NOT NULL
 ) STRICT;
 
+-- ------------------------------------------------------------------ content
+
+-- Overrides for the fixed copy on the public site: headings, ledes, button
+-- labels, empty states, the two site-wide images, and the rules between
+-- sections. ONLY overrides live here. Every slot's default is in
+-- src/content.js, so an unedited slot has no row, adding a slot needs no
+-- migration, and "reset to default" is a DELETE rather than a second copy of a
+-- string somebody has to keep in step.
+CREATE TABLE IF NOT EXISTS content (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+
 -- ---------------------------------------------------------------- education
 
 -- One row per institution. Separate from the resume page prose because the

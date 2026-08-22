@@ -70,8 +70,8 @@
   %>
   <% if (depth >= 6 && noted.length) { %>
     <section class="section">
-      <p class="eyebrow">Discipline breakdown</p>
-      <h2>What This Was, per Discipline</h2>
+      <p class="eyebrow"><%= c('project.breakdown.eyebrow') %></p>
+      <h2><%= c('project.breakdown.heading') %></h2>
       <div class="stack" style="margin-top: var(--s-4);">
         <% for (const f of noted) { %>
           <div class="discipline-row">
@@ -98,8 +98,8 @@
 
   <% if (rest.length) { %>
     <section class="section">
-      <p class="eyebrow">Evidence</p>
-      <h2><%= media.length %> artefact<%= media.length === 1 ? '' : 's' %></h2>
+      <p class="eyebrow"><%= c('project.evidence.eyebrow') %></p>
+      <h2><%= media.length %> <%= c('project.evidence.noun') %><%= media.length === 1 ? '' : 's' %></h2>
       <div class="figure-grid" style="margin-top: var(--s-4);">
         <% for (const mm of rest) { %>
           <%- include('../partials/figure', { m: mm, slot: '(min-width: 900px) 520px, 100vw' }) %>
@@ -110,7 +110,7 @@
 
   <% if (depth >= 6 && has(project.links)) { %>
     <section class="section">
-      <p class="eyebrow">Links</p>
+      <p class="eyebrow"><%= c('project.links.eyebrow') %></p>
       <ul class="stack" style="list-style:none; padding:0; margin-top: var(--s-3);">
         <% for (const l of project.links) { %>
           <li style="display:flex; gap: var(--s-3); align-items:baseline;">
@@ -123,13 +123,13 @@
   <% } %>
 
   <nav style="margin-top: var(--s-7); display:flex; gap: var(--s-4); flex-wrap:wrap;">
-    <a href="/work">All Work</a>
+    <a href="/work"><%= c('project.back') %></a>
     <% if (project.facets[0]) { %>
       <%
         /* Not toLowerCase(). The labels carry acronyms, and lower-casing
            "Mechanical and CAD" produced "More mechanical and cad". */
       %>
-      <a href="/disciplines/<%= project.facets[0].slug %>">More <%= project.facets[0].label %></a>
+      <a href="/disciplines/<%= project.facets[0].slug %>"><%= c('project.more') %> <%= project.facets[0].label %></a>
     <% } %>
   </nav>
 </article>

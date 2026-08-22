@@ -27,6 +27,7 @@
     <% if (typeof session !== 'undefined' && session) { %>
       <% const here = (p) => (path === p || path.startsWith(p + '/')) ? ' aria-current="page"' : ''; %>
       <nav class="nav" aria-label="Admin">
+        <a href="/admin/content"<%- here('/admin/content') %>>Content</a>
         <a href="/admin/projects"<%- here('/admin/projects') %>>Projects</a>
         <a href="/admin/media"<%- here('/admin/media') %>>Media</a>
         <a href="/admin/documents"<%- here('/admin/documents') %>>Documents</a>

@@ -1,20 +1,20 @@
 <section class="wrap pad-top">
-  <p class="eyebrow">Search</p>
-  <h1>Find Anything</h1>
+  <p class="eyebrow"><%= c('search.eyebrow') %></p>
+  <h1><%= c('search.heading') %></h1>
 
   <form method="get" action="/search" role="search" class="searchbar" style="margin-top: var(--s-4);">
-    <label class="visually-hidden" for="q">Search Projects, Documents and Disciplines</label>
+    <label class="visually-hidden" for="q"><%= c('search.label') %></label>
     <input class="input" id="q" name="q" type="search" value="<%= q %>"
-           placeholder="swerve, CAN bus, governance, MegaTag2"
+           placeholder="<%= c('search.placeholder') %>"
            autocomplete="off" spellcheck="false">
-    <button class="btn" type="submit">Search</button>
+    <button class="btn" type="submit"><%= c('search.button') %></button>
   </form>
 
   <% if (q) { %>
     <p class="eyebrow" role="status" style="margin-top: var(--s-4);">
-      <%= results.length %> result<%= results.length === 1 ? '' : 's' %> for &ldquo;<%= q %>&rdquo;<%
-        if (fallback && fallback.kind === 'corrected') { %> &middot; showing results for &ldquo;<%= fallback.term %>&rdquo;<%
-        } else if (fallback && fallback.kind === 'near') { %> &middot; showing near matches<% } %>
+      <%= results.length %> <%= c('search.results.for') %><%= results.length === 1 ? '' : 's' %> <%= c('search.results.forword') %> &ldquo;<%= q %>&rdquo;<%
+        if (fallback && fallback.kind === 'corrected') { %> &middot; <%= c('search.results.corrected') %> &ldquo;<%= fallback.term %>&rdquo;<%
+        } else if (fallback && fallback.kind === 'near') { %> &middot; <%= c('search.results.near') %><% } %>
     </p>
 
     <div class="stack" style="margin-top: var(--s-3);">
@@ -27,7 +27,7 @@
         </a>
       <% } %>
       <% if (!results.length) { %>
-        <p style="color: var(--text-muted);">Nothing matched. Try a discipline name, a part, or a tool.</p>
+        <p style="color: var(--text-muted);"><%= c('search.empty') %></p>
       <% } %>
     </div>
   <% } %>

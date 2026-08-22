@@ -1,8 +1,8 @@
 <section class="wrap pad-page-lg">
-  <p class="eyebrow">404</p>
-  <h1>That Page Does Not Exist</h1>
+  <p class="eyebrow"><%= c('errors.404.eyebrow') %></p>
+  <h1><%= c('errors.404.heading') %></h1>
   <p class="prose lede" style="color: var(--text-muted);">
-    It may have moved. The work index is the best place to start.
+    <%= c('errors.404.body') %>
   </p>
-  <p style="margin-top: var(--s-4);"><a href="/work">All Work</a> &middot; <a href="/">Home</a></p>
+  <p style="margin-top: var(--s-4);"><a href="/work"><%= c('errors.back.work') %></a> &middot; <a href="/"><%= c('site.home.link') %></a></p>
 </section>

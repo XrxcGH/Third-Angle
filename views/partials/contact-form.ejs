@@ -37,28 +37,28 @@
 
   <div class="row2">
     <div class="field">
-      <label for="<%= f('name') %>">Your Name</label>
+      <label for="<%= f('name') %>"><%= c('form.name') %></label>
       <input id="<%= f('name') %>" name="name" type="text" required maxlength="120"
              autocomplete="name" value="<%= values.name %>">
     </div>
     <div class="field">
-      <label for="<%= f('email') %>">Email</label>
+      <label for="<%= f('email') %>"><%= c('form.email') %></label>
       <input id="<%= f('email') %>" name="email" type="email" required maxlength="200"
              autocomplete="email" value="<%= values.email %>">
-      <span class="hint">Only used to reply. Nothing else, ever.</span>
+      <span class="hint"><%= c('form.email.hint') %></span>
     </div>
   </div>
 
   <div class="field">
-    <label for="<%= f('subject') %>">Subject</label>
+    <label for="<%= f('subject') %>"><%= c('form.subject') %></label>
     <input id="<%= f('subject') %>" name="subject" type="text" maxlength="200" value="<%= values.subject %>">
   </div>
 
   <div class="field">
-    <label for="<%= f('message') %>">Message</label>
+    <label for="<%= f('message') %>"><%= c('form.message') %></label>
     <textarea id="<%= f('message') %>" name="message" required minlength="10" maxlength="5000"
               style="min-height: 10rem;"><%= values.message %></textarea>
   </div>
 
-  <button class="btn" type="submit">Send</button>
+  <button class="btn" type="submit"><%= c('form.send') %></button>
 </form>

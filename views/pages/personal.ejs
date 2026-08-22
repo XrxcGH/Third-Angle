@@ -1,18 +1,15 @@
 <section class="wrap pad-top">
-  <p class="eyebrow">Personal</p>
-  <h1>Beyond the Bench</h1>
+  <p class="eyebrow"><%= c('personal.eyebrow') %></p>
+  <h1><%= c('personal.heading') %></h1>
   <p class="lede prose" style="color: var(--text-muted);">
-    Sport, travel, family, animals and the rest of it. A record of projects is
-    an honest account of what someone has built and a poor account of who built
-    it.
+    <%= c('personal.lede') %>
   </p>
 </section>
 
 <% if (!count) { %>
   <section class="wrap">
     <p style="color: var(--text-muted); margin-top: var(--s-5);">
-      Nothing here yet. Upload photographs in the admin and put them on the
-      wall; they appear here immediately, with no arranging.
+      <%= c('personal.empty') %>
     </p>
   </section>
 <% } else { %>
@@ -54,8 +51,7 @@
 
   <section class="wrap">
     <p class="eyebrow" style="margin-top: var(--s-5);">
-      <%= count %> photograph<%= count === 1 ? '' : 's' %>.
-      Hover or focus one to open it up.
+      <%= count %> <%= c('personal.photograph.noun') %><%= count === 1 ? '' : 's' %>. <%= c('personal.footnote') %>
     </p>
   </section>
 <% } %>

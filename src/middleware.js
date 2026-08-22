@@ -187,6 +187,12 @@ function locals(req, res, next) {
     if (b < 1024 * 1024) return `${Math.round(b / 1024)} KB`;
     return `${(b / 1048576).toFixed(1)} MB`;
   };
+  /*
+   * The four content helpers. Every fixed string on the public site comes
+   * through one of these, so nothing on a page is a literal that would need a
+   * deploy to change. See src/content.js.
+   */
+  Object.assign(res.locals, require('./content').helpers());
   res.locals.path = req.path;
   res.locals.query = req.query;
   res.locals.siteUrl = process.env.SITE_URL || `http://localhost:${process.env.PORT || 3000}`;

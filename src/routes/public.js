@@ -10,6 +10,7 @@ const github = require('../github');
 const settings = require('../settings');
 const collage = require('../collage');
 const mailer = require('../mailer');
+const content = require('../content');
 
 const router = express.Router();
 
@@ -26,10 +27,8 @@ router.get('/', (req, res) => {
   const projects = repo.listProjects();
   res.render('pages/home', {
     ...chrome(),
-    title: 'Eric J. Dean',
-    description:
-      'Mechanical design, electrical, controls, software, fabrication, documentation and business. ' +
-      'One engineer, several projections.',
+    title: content.value('home.meta.title'),
+    description: content.value('home.meta.description'),
     projects,
     featured: projects.filter((p) => p.featured).slice(0, 3),
     now: repo.getNow(),
@@ -63,8 +62,8 @@ router.get('/work', (req, res) => {
 
   res.render('pages/work', {
     ...chrome(),
-    title: 'Work',
-    description: 'Projects across mechanical, electrical, controls, software, fabrication, documentation and business.',
+    title: content.value('work.meta.title'),
+    description: content.value('work.meta.description'),
     projects: decorated,
     active,
     matchCount,
@@ -98,8 +97,8 @@ router.get('/work/:slug', (req, res, next) => {
 router.get('/disciplines', (req, res) => {
   res.render('pages/disciplines', {
     ...chrome(),
-    title: 'Disciplines',
-    description: 'Eight disciplines, each with the work that proves it.',
+    title: content.value('disciplines.meta.title'),
+    description: content.value('disciplines.meta.description'),
   });
 });
 
@@ -131,8 +130,8 @@ router.get('/search', (req, res) => {
   const { results, fallback } = q ? repo.search(q) : { results: [], fallback: null };
   res.render('pages/search', {
     ...chrome(),
-    title: q ? `Search: ${q}` : 'Search',
-    description: 'Search projects, documents and disciplines.',
+    title: q ? `${content.value('search.meta.title')}: ${q}` : content.value('search.meta.title'),
+    description: content.value('search.meta.description'),
     q, results, fallback,
   });
 });
@@ -241,9 +240,8 @@ router.get('/professional', (req, res) => {
 
   res.render('pages/professional', {
     ...chrome(),
-    title: 'Professional Profile',
-    description:
-      'GitHub repositories and professional profile for Eric J. Dean, read without leaving the site.',
+    title: content.value('professional.meta.title'),
+    description: content.value('professional.meta.description'),
     gh,
     settings: cfg,
     linkedin: LINKEDIN,
@@ -301,8 +299,8 @@ router.get('/education', (req, res) => {
 
   res.render('pages/education', {
     ...chrome(),
-    title: 'Education',
-    description: 'Coursework, activities and awards at UCLA and Archbishop Riordan High School.',
+    title: content.value('education.meta.title'),
+    description: content.value('education.meta.description'),
     schools,
     totals,
     unattached: repo.listActivities(null),
@@ -333,8 +331,8 @@ router.get('/personal', (req, res) => {
 
   res.render('pages/personal', {
     ...chrome(),
-    title: 'Beyond the Bench',
-    description: 'Sport, travel, family, animals and the rest of it. The parts of a person a project record leaves out.',
+    title: content.value('personal.meta.title'),
+    description: content.value('personal.meta.description'),
     ...collage.layout(photos),
     rowHeight: collage.rowHeight(photos.length),
     jsonLd: seo.jsonLd(res.locals.siteUrl, {
@@ -353,8 +351,8 @@ router.get('/personal', (req, res) => {
 function contactView(res, extra) {
   return {
     ...chrome(),
-    title: 'Contact',
-    description: 'Get in touch with Eric J. Dean.',
+    title: content.value('contact.meta.title'),
+    description: content.value('contact.meta.description'),
     stamp: contact.issueStamp(),
     errors: [],
     values: { name: '', email: '', subject: '', message: '' },
@@ -415,8 +413,8 @@ router.get('/documents', (req, res) => {
 
   res.render('pages/documents', {
     ...chrome(),
-    title: 'Documents',
-    description: 'Game manuals, runbooks, governance packages and training curricula, searchable by page.',
+    title: content.value('documents.meta.title'),
+    description: content.value('documents.meta.description'),
     docs,
     pinned,
     others,
@@ -513,8 +511,8 @@ router.get('/documents/:slug', (req, res, next) => {
 router.get('/log', (req, res) => {
   res.render('pages/log', {
     ...chrome(),
-    title: 'Build log',
-    description: 'Short dated entries from work in progress.',
+    title: content.value('log.meta.title'),
+    description: content.value('log.meta.description'),
     notes: repo.listNotes(50),
   });
 });
@@ -617,8 +615,8 @@ const FONTS = [
 router.get('/attributions', (req, res) => {
   res.render('pages/attributions', {
     ...chrome(),
-    title: 'Attributions',
-    description: 'Typefaces, software, privacy and method for this site.',
+    title: content.value('attributions.meta.title'),
+    description: content.value('attributions.meta.description'),
     fonts: FONTS,
   });
 });
@@ -639,8 +637,8 @@ router.get('/licenses/:file', (req, res, next) => {
 router.get('/now', (req, res) => {
   res.render('pages/now', {
     ...chrome(),
-    title: 'Now',
-    description: 'What Eric Dean is working on at the moment.',
+    title: content.value('now.meta.title'),
+    description: content.value('now.meta.description'),
     now: repo.getNow(),
     notes: repo.listNotes(5),
   });

@@ -19,6 +19,7 @@ const media = require('../media');
 const documents = require('../documents');
 const contact = require('../contact');
 const mailer = require('../mailer');
+const content = require('../content');
 const markup = require('../markup');
 const settings = require('../settings');
 const github = require('../github');
@@ -344,6 +345,7 @@ router.get('/', (req, res) => {
     undelivered: contact.undeliveredCount(),
     photos: repo.countOnWall(),
     courses: get('SELECT COUNT(*) AS n FROM course').n,
+    content: content.editedCount(),
   };
   res.render('admin/dashboard', view('dashboard', {
     title: 'Admin',
@@ -907,6 +909,62 @@ router.post('/education/activity', form, requireCsrf, (req, res) => {
 router.post('/education/activity/:id/delete', form, requireCsrf, (req, res) => {
   repo.deleteActivity(req.params.id);
   res.redirect(303, '/admin/education');
+});
+
+/* ---------------------------------------------------------------- content */
+
+/*
+ * One screen for every fixed string on the public site.
+ *
+ * A page at a time, because 150 fields in one form is not an editing surface,
+ * and because the unit somebody thinks in is "the education page", not "the
+ * content model". The dropdown is a GET form with a real submit button rather
+ * than an onchange handler: there is no JavaScript on this site, in the admin
+ * either.
+ */
+router.get('/content', (req, res) => {
+  const wanted = String(req.query.page || '');
+  const page = content.PAGES.find((p) => p.slug === wanted) || content.PAGES[0];
+  res.render('admin/content', view('content', {
+    title: 'Content',
+    pages: content.PAGES,
+    page,
+    slots: content.forPage(page.slug),
+    /* Only images, and only ones with dimensions: an image slot that pointed at
+       a PDF would render a broken tag on every page of the site. */
+    images: all(
+      `SELECT id, storage_key, alt, width, height FROM media
+        WHERE mime LIKE 'image/%' ORDER BY created_at DESC LIMIT 200`
+    ),
+    edited: content.editedCount(),
+    saved: Boolean(req.query.saved),
+  }));
+});
+
+router.post('/content', form, requireCsrf, (req, res) => {
+  const page = content.PAGES.find((p) => p.slug === String(req.body.page || ''));
+  if (!page) return res.redirect(303, '/admin/content');
+
+  /*
+   * Iterate the registry, not the body. A checkbox that is off sends nothing at
+   * all, so a loop over what arrived cannot tell "unchecked" from "not on this
+   * form", and every flag would be stuck on forever.
+   */
+  let changed = 0;
+  for (const slot of content.forPage(page.slug)) {
+    if (req.body[`r:${slot.key}`]) {
+      if (slot.edited) { content.reset(slot.key); changed += 1; }
+      continue;
+    }
+    const raw = slot.kind === 'flag'
+      ? Boolean(req.body[`c:${slot.key}`])
+      : String(req.body[`c:${slot.key}`] ?? '');
+    const now = slot.kind === 'flag' ? (slot.value === '1') : slot.value;
+    if (raw !== now) { content.set(slot.key, raw); changed += 1; }
+  }
+
+  if (changed) repo.logChange(req.session.email, 'content', 0, 'update', { page: page.slug, changed });
+  res.redirect(303, `/admin/content?page=${page.slug}&saved=1`);
 });
 
 /* ----------------------------------------------------------------- photos */

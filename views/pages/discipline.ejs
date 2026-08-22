@@ -1,5 +1,5 @@
 <section class="wrap pad-top">
-  <p class="eyebrow" style="color: var(--<%= facet.color_token %>);">Discipline</p>
+  <p class="eyebrow" style="color: var(--<%= facet.color_token %>);"><%= c('discipline.eyebrow') %></p>
   <div class="icon-host" style="gap: var(--s-3); align-items: center;">
     <span style="color: var(--<%= facet.color_token %>);"><%- include('../partials/icon', { name: facet.slug, size: 40 }) %></span>
     <h1 style="margin:0;"><%= facet.label %></h1>
@@ -7,12 +7,12 @@
   <% if (facet.blurb) { %><p class="lede prose" style="color: var(--text-muted); margin-top: var(--s-3);"><%= facet.blurb %></p><% } %>
 
   <div class="section">
-    <p class="eyebrow"><%= projects.length %> project<%= projects.length === 1 ? '' : 's' %>, strongest first</p>
+    <p class="eyebrow"><%= projects.length %> <%= c('discipline.noun') %><%= projects.length === 1 ? '' : 's' %> <%= c('discipline.sort') %></p>
     <div class="grid" style="margin-top: var(--s-4);">
       <% for (const p of projects) { %><%- include('../partials/card', { p }) %><% } %>
     </div>
-    <% if (!projects.length) { %><p style="color: var(--text-muted);">Nothing published here yet.</p><% } %>
+    <% if (!projects.length) { %><p style="color: var(--text-muted);"><%= c('discipline.empty') %></p><% } %>
   </div>
 
-  <p style="margin-top: var(--s-6);"><a href="/disciplines">All Disciplines</a></p>
+  <p style="margin-top: var(--s-6);"><a href="/disciplines"><%= c('discipline.back') %></a></p>
 </section>

@@ -6,31 +6,30 @@
 %>
 <section class="wrap pad-top">
  <div style="max-width: 46rem;">
-  <p class="eyebrow">Contact</p>
+  <p class="eyebrow"><%= c('contact.eyebrow') %></p>
 
   <% if (sent) { %>
-    <h1>Message Sent</h1>
+    <h1><%= c('contact.sent.heading') %></h1>
     <p class="lede" style="color: var(--text-muted); margin-top: var(--s-3);">
-      That reached me. I read everything and reply to anything that is not automated.
+      <%= c('contact.sent.lede') %>
     </p>
     <p style="margin-top: var(--s-4);">
-      <a href="/work">Back to the Work</a> &middot; <a href="/">Home</a>
+      <a href="/work"><%= c('contact.back.work') %></a> &middot; <a href="/"><%= c('site.home.link') %></a>
     </p>
 
   <% } else { %>
-    <h1>Get in Touch</h1>
+    <h1><%= c('contact.heading') %></h1>
     <p class="lede prose" style="color: var(--text-muted); margin-top: var(--s-3);">
-      Available for summer 2027 internships in mechanical design, controls, electrical or
-      embedded work, in the Bay Area or Los Angeles. Also happy to talk about FIRST, or
-      about anything on this site.
+      <%= c('contact.lede') %>
     </p>
 
     <%- include('../partials/contact-form', { formId: 'main', stamp, errors, values }) %>
 
     <p style="margin-top: var(--s-5); color: var(--text-muted); font-size:.92rem;">
-      There is no tracking on this form, no third party script and no captcha.
-      It is checked on the server instead. If you would rather not use a form,
-      <a href="https://linkedin.com/in/edean07" rel="me noopener">LinkedIn</a> works too.
+      <%= c('contact.note') %>
+      <%= c('contact.note.pre') %>
+      <a href="<%= c('site.linkedin.url') %>" rel="me noopener"><%= c('site.footer.linkedin') %></a>
+      <%= c('contact.note.post') %>
     </p>
   <% } %>
  </div>

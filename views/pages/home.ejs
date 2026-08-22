@@ -1,31 +1,28 @@
 <section class="wrap hero">
   <div>
-    <p class="eyebrow">Mechanical &middot; Electrical &middot; Controls &middot; Software</p>
-    <h1 class="display-1">I build the machine, wire it, write the code that runs it, and the document that explains it.</h1>
-    <p class="lede">
-      Mechanical engineering at UCLA. Four seasons of FIRST Robotics Competition, first as a founding
-      team captain and now as a mentor. Currently interning at the Western Region Robotics Forum and
-      founding Groundwork Robotics.
-    </p>
+    <p class="eyebrow"><%= c('home.eyebrow') %></p>
+    <h1 class="display-1"><%= c('home.headline') %></h1>
+    <p class="lede"><%= c('home.lede') %></p>
   </div>
 
+  <%
+    /* Five rows, every one of them editable, key and value. A titleblock is a
+       drawing convention: it says what the thing is before you read it, so it
+       has to be able to say something different when the answer changes. */
+  %>
   <div class="titleblock">
-    <div><span class="k">Discipline</span><span class="v">Mechanical Engineering</span></div>
-    <div><span class="k">School</span><span class="v">UCLA, BS 2029</span></div>
-    <div><span class="k">Based</span><span class="v">Half Moon Bay, CA</span></div>
-    <div><span class="k">Seeking</span><span class="v">Summer 2027 Internship</span></div>
-    <div><span class="k">Code</span><span class="v">github.com/XrxcGH</span></div>
+    <% for (const n of [1, 2, 3, 4, 5]) { %>
+      <% if (c(`home.tb${n}.k`) || c(`home.tb${n}.v`)) { %>
+        <div><span class="k"><%= c(`home.tb${n}.k`) %></span><span class="v"><%= c(`home.tb${n}.v`) %></span></div>
+      <% } %>
+    <% } %>
   </div>
 </section>
 
-<section class="wrap section">
-  <p class="eyebrow">Disciplines</p>
-  <h2>One Record, Several Projections</h2>
-  <p class="prose">
-    A competition robot is mechanical and electrical and controls and software at the same time.
-    Rather than splitting one project across several pages, each carries weighted disciplines and
-    opens with a different sentence depending on which door you came through.
-  </p>
+<section class="wrap section<%= cf('home.disciplines.rule') ? '' : ' no-rule' %>">
+  <p class="eyebrow"><%= c('home.disciplines.eyebrow') %></p>
+  <h2><%= c('home.disciplines.heading') %></h2>
+  <div class="prose"><%- cr('home.disciplines.body') %></div>
   <div class="chips" style="margin-top: var(--s-4);">
     <% for (const d of disciplines) { %>
       <a class="chip icon-host" href="/work?d=<%= d.slug %>">
@@ -37,18 +34,18 @@
   </div>
 </section>
 
-<section class="wrap section">
-  <p class="eyebrow">Selected work</p>
-  <h2>Work</h2>
+<section class="wrap section<%= cf('home.work.rule') ? '' : ' no-rule' %>">
+  <p class="eyebrow"><%= c('home.work.eyebrow') %></p>
+  <h2><%= c('home.work.heading') %></h2>
   <div class="grid" style="margin-top: var(--s-4);">
     <% for (const p of projects.slice(0, 6)) { %><%- include('../partials/card', { p }) %><% } %>
   </div>
-  <p style="margin-top: var(--s-4);"><a href="/work">All Work</a></p>
+  <p style="margin-top: var(--s-4);"><a href="/work"><%= c('home.work.link') %></a></p>
 </section>
 
 <% if (now && now.body_html) { %>
-<section class="wrap section">
-  <p class="eyebrow">Now</p>
+<section class="wrap section<%= cf('home.now.rule') ? '' : ' no-rule' %>">
+  <p class="eyebrow"><%= c('home.now.eyebrow') %></p>
   <div class="prose rail"><%- now.body_html %></div>
 </section>
 <% } %>

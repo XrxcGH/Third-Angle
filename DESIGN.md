@@ -148,6 +148,26 @@ template must never print `status`, `tier`, `kind`, `weight`, `origin` or
 `visibility` directly, or with its own `.replace()`: that is how `case-study`
 came to appear as three different strings on three screens. A test enforces it.
 
+## Editable content
+
+Every fixed string on the public site is a slot: a key, a default in
+`src/content.js`, and an optional override row. Templates call `c()`, `cr()`,
+`cf()` and `ci()`; none of them hold copy.
+
+- **The default lives in code, the override lives in the database.** A slot that
+  has never been edited has no row, so adding one needs no migration, a better
+  default reaches every unedited site, and reset is a `DELETE` rather than a
+  second copy of a string somebody has to keep in step.
+- **The key set is closed.** `c('typo.key')` throws. An unknown key that
+  rendered an empty string would produce a page with a missing heading that
+  still looks deliberate, which is the worst available failure.
+- **A required slot cannot be emptied.** Headings and page titles restore their
+  default when submitted blank. A blank `<h1>` is not a design choice; it is a
+  page with no name in a search result.
+- **Two tests, both directions.** Every key a template asks for must be
+  registered, and every registered key must be asked for somewhere. Either kind
+  of drift is silent otherwise.
+
 ## The photo collage
 
 **One wall, no categories.** `/personal` is a single stream of every photograph

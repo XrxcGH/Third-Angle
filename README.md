@@ -125,6 +125,16 @@ page cannot be framed, so what renders is a card built from the record this site
 already holds. LinkedIn's own badge is available as a switch in the admin,
 because it is a real third party connection and should be a decision.
 
+**Nothing on the public site is a string in a template.** Every heading, lede,
+button label, empty state, menu item, the two site-wide images, and the rules
+between sections is a slot with a default in `src/content.js` and an optional
+override in the database. `/admin/content` is one screen: pick a page from the
+dropdown, and every field on that page is there to edit, with a reset beside
+anything that has been changed. Two tests keep the registry and the templates in
+step in both directions, so a key nobody registered fails loudly instead of
+rendering an empty heading, and a field that no longer reaches a page is caught
+rather than left in the editor changing nothing.
+
 **The photo wall is one wall.** `/personal` drops every photograph in together
 at the full width of the window and scrolls; there are no albums, sections or
 filters to maintain, and the only decision on an upload is whether it is on the
