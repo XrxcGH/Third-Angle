@@ -157,20 +157,55 @@
   <% } %>
 
   <%# -------------------------------------------------- everything unattached %>
+  <%
+    /* Everything that belongs to no institution. Split by kind, because a
+       mentorship somebody is still doing and a medal from 2023 are different
+       claims: one is a commitment, the other is a result, and a single bullet
+       list makes them look like the same thing. */
+    const loose = unattached.filter((a) => a.kind === 'activity');
+    const looseAwards = unattached.filter((a) => a.kind !== 'activity');
+  %>
   <% if (unattached.length) { %>
     <section class="section">
       <p class="eyebrow"><%= c('education.unattached.eyebrow') %></p>
-      <h2><%= c('education.unattached.heading') %></h2>
-      <ul class="stack measure" style="margin-top: var(--s-3); padding-left: 1.2rem;">
-        <% for (const a of unattached) { %>
-          <li>
-            <strong><%= a.title %></strong><% if (a.detail) { %>. <%= a.detail %><% } %>
-            <% if (a.ended_on || a.started_on) { %>
-              <span class="mono" style="font-size:.66rem; color: var(--text-muted);"><%= a.ended_on || a.started_on %></span>
-            <% } %>
-          </li>
-        <% } %>
-      </ul>
+
+      <% if (loose.length) { %>
+        <h2><%= c('education.unattached.heading') %></h2>
+        <div class="stack" style="margin-top: var(--s-4);">
+          <% for (const a of loose) { %>
+            <div class="discipline-row">
+              <div>
+                <span style="font-family: var(--f-display); font-weight: var(--w-med); color: var(--text-strong);"><%= a.title %></span>
+                <% if (a.role) { %>
+                  <span class="eyebrow" style="margin:0; display:block;"><%= a.role %></span>
+                <% } %>
+              </div>
+              <p style="margin:0;">
+                <%= a.detail || '' %>
+                <% if (a.started_on || a.ended_on) { %>
+                  <span class="mono" style="font-size:.66rem; color: var(--text-muted); white-space:nowrap;">
+                    <%= a.started_on || '' %><% if (a.ended_on && a.ended_on !== a.started_on) { %> to <%= a.ended_on %><% } %>
+                  </span>
+                <% } %>
+              </p>
+            </div>
+          <% } %>
+        </div>
+      <% } %>
+
+      <% if (looseAwards.length) { %>
+        <h3 style="margin-top: var(--s-5);"><%= c('education.unattached.awards') %></h3>
+        <ul class="stack measure" style="margin-top: var(--s-3); padding-left: 1.2rem;">
+          <% for (const a of looseAwards) { %>
+            <li>
+              <strong><%= a.title %></strong><% if (a.detail) { %> <%= a.detail %><% } %>
+              <% if (a.ended_on || a.started_on) { %>
+                <span class="mono" style="font-size:.66rem; color: var(--text-muted);"><%= a.ended_on || a.started_on %></span>
+              <% } %>
+            </li>
+          <% } %>
+        </ul>
+      <% } %>
     </section>
   <% } %>
 

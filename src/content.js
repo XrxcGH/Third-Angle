@@ -276,7 +276,8 @@ const SLOTS = [
   ['education.activities', 'education', 'line', 'Activities'],
   ['education.awards', 'education', 'line', 'Awards and Certifications'],
   ['education.unattached.eyebrow', 'education', 'line', 'Beyond the Classroom'],
-  ['education.unattached.heading', 'education', 'line', 'Certifications and Recognition'],
+  ['education.unattached.heading', 'education', 'line', 'Mentoring, Volunteering, and Sport'],
+  ['education.unattached.awards', 'education', 'line', 'Awards, Medals, and Certifications'],
   ['education.cta.resume', 'education', 'line', 'Read the Resume'],
   ['education.cta.work', 'education', 'line', 'See the Work'],
 
