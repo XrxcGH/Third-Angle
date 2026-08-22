@@ -9,3 +9,4 @@ data/backups/
 public/fonts/*.woff2
 .DS_Store
 data/og/
+data/resume/

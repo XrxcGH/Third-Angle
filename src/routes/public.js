@@ -5,6 +5,7 @@ const repo = require('../repo');
 const { setTheme } = require('../middleware');
 const seo = require('../seo');
 const documents = require('../documents');
+const contact = require('../contact');
 
 const router = express.Router();
 
@@ -130,6 +131,104 @@ router.get('/search', (req, res) => {
     description: 'Search projects, documents and disciplines.',
     q, results, fallback,
   });
+});
+
+/* ----------------------------------------------------------------- resume */
+
+/*
+ * An HTML resume page as well as the PDF, because a PDF alone is nearly
+ * invisible for a name search, and a recruiter should never have to download
+ * a file to read one page. Both are public: gating a student resume behind an
+ * email form costs exactly the reviewer you want.
+ */
+router.get('/resume', (req, res, next) => {
+  const page = repo.getPage('resume');
+  if (!page) return next();
+  res.render('pages/page', {
+    ...chrome(),
+    title: page.title,
+    description: page.subtitle || 'Resume for Eric J. Dean.',
+    page,
+    pdf: '/resume/Eric_Dean_Resume.pdf',
+    jsonLd: seo.jsonLd(res.locals.siteUrl, {
+      trail: [{ name: 'Home', url: '/' }, { name: 'Resume', url: '/resume' }],
+    }),
+    ogImage: registerOg({ title: 'Resume', subtitle: page.subtitle || '', eyebrow: 'Eric J. Dean' }),
+  });
+});
+
+router.get('/about', (req, res, next) => {
+  const page = repo.getPage('about');
+  if (!page) return next();
+  res.render('pages/page', {
+    ...chrome(),
+    title: page.title,
+    description: page.subtitle || '',
+    page,
+    pdf: null,
+    jsonLd: seo.jsonLd(res.locals.siteUrl, {
+      trail: [{ name: 'Home', url: '/' }, { name: 'About', url: '/about' }],
+    }),
+    ogImage: registerOg({ title: page.title, subtitle: page.subtitle || '', eyebrow: 'Eric J. Dean' }),
+  });
+});
+
+/*
+ * A stable URL for the PDF, which is the whole point: this address can go on a
+ * resume, in an email signature and in an application form, and keep working
+ * after the file behind it is replaced.
+ */
+router.get('/resume/:file', (req, res, next) => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const { DATA_DIR } = require('../db');
+  if (!/^[A-Za-z0-9_.-]+\.pdf$/.test(req.params.file)) return next();
+  const abs = path.join(DATA_DIR, 'resume', req.params.file);
+  if (!abs.startsWith(path.join(DATA_DIR, 'resume') + path.sep) || !fs.existsSync(abs)) return next();
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // inline, not attachment: a recruiter should be able to glance at it.
+  res.setHeader('Content-Disposition', `inline; filename="${req.params.file}"`);
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  fs.createReadStream(abs).pipe(res);
+});
+
+/* ---------------------------------------------------------------- contact */
+
+function contactView(res, extra) {
+  return {
+    ...chrome(),
+    title: 'Contact',
+    description: 'Get in touch with Eric J. Dean.',
+    stamp: contact.issueStamp(),
+    errors: [],
+    values: { name: '', email: '', subject: '', message: '' },
+    sent: false,
+    ...extra,
+  };
+}
+
+router.get('/contact', (req, res) => {
+  res.render('pages/contact', contactView(res, {}));
+});
+
+router.post('/contact', express.urlencoded({ extended: false, limit: '32kb' }), (req, res) => {
+  const ip = (req.ip || req.socket.remoteAddress || 'unknown').toString();
+  const result = contact.validate(req.body || {}, ip);
+
+  if (!result.ok) {
+    // A honeypot hit is answered with the same page a real error gets, and
+    // nothing is stored. Telling a bot precisely why it failed is free
+    // tuning information.
+    return res.status(400).render('pages/contact', contactView(res, {
+      errors: result.errors,
+      values: result.values,
+      stamp: contact.issueStamp(),
+    }));
+  }
+
+  contact.store(result.values, { ip, userAgent: req.get('user-agent') });
+  res.render('pages/contact', contactView(res, { sent: true }));
 });
 
 /* -------------------------------------------------------------- documents */
@@ -423,6 +522,9 @@ router.get('/sitemap.xml', (req, res) => {
     { loc: '/work', pri: '0.9' },
     { loc: '/disciplines', pri: '0.7' },
     { loc: '/log', pri: '0.5' },
+    { loc: '/resume', pri: '0.9' },
+    { loc: '/contact', pri: '0.7' },
+    { loc: '/documents', pri: '0.7' },
   ];
   for (const p of repo.listProjects()) urls.push({ loc: `/work/${p.slug}`, mod: p.updated_at, pri: '0.8' });
   for (const f of repo.listFacets('discipline')) urls.push({ loc: `/disciplines/${f.slug}`, pri: '0.6' });

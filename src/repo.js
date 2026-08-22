@@ -420,6 +420,43 @@ function reindexAll() {
   }
 }
 
+/* ------------------------------------------------------------------ pages */
+
+/*
+ * Singleton editorial pages. Deliberately not a general CMS: the admin can
+ * rewrite a page without a deploy, but cannot invent a new URL that nothing
+ * links to and nothing knows how to lay out.
+ */
+const PAGE_SLUGS = ['resume', 'about'];
+
+function getPage(slug) {
+  if (!PAGE_SLUGS.includes(slug)) return null;
+  return get('SELECT * FROM page WHERE slug = ? AND published = 1', slug);
+}
+
+function getPageForEdit(slug) {
+  if (!PAGE_SLUGS.includes(slug)) return null;
+  return get('SELECT * FROM page WHERE slug = ?', slug);
+}
+
+function savePage(slug, { title, subtitle, body_md, body_html, published }) {
+  if (!PAGE_SLUGS.includes(slug)) throw new Error(`Unknown page: ${slug}`);
+  run(
+    `INSERT INTO page (slug, title, subtitle, body_md, body_html, published, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(slug) DO UPDATE SET
+       title = excluded.title, subtitle = excluded.subtitle,
+       body_md = excluded.body_md, body_html = excluded.body_html,
+       published = excluded.published, updated_at = excluded.updated_at`,
+    slug, title, subtitle || null, body_md, body_html, published ? 1 : 0, nowIso()
+  );
+  upsertSearchRow({
+    kind: 'page', ref_id: null, url: `/${slug}`,
+    title, subtitle: subtitle || '', body: plain(body_md),
+    tags: slug, published: published ? 1 : 0,
+  });
+}
+
 /* ------------------------------------------------------------------ audit */
 
 function logChange(actor, table, rowId, action, snapshot) {
@@ -453,5 +490,6 @@ module.exports = {
   reorderProjects, nextProjectKey, nextKeyFor,
   listNotes, latestNoteDate, getNow,
   search, toMatchQuery, queryTerms, editDistance, correctTerms, upsertSearchRow, reindexProject, reindexAll, plain,
+  getPage, getPageForEdit, savePage, PAGE_SLUGS,
   logChange, findRedirect, logError,
 };

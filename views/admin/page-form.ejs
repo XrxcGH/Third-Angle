@@ -1,0 +1,40 @@
+<p class="eyebrow">Admin</p>
+<h1>Edit the <%= slug %> page</h1>
+
+<% if (saved) { %><p class="flash">Saved. <a href="/<%= slug %>">View it</a></p><% } %>
+
+<p style="color: var(--text-muted); max-width: 62ch;">
+  A deliberately small subset of Markdown: <code>##</code> through <code>####</code> headings,
+  <code>- </code> bullets, <code>**bold**</code>, <code>`code`</code>, links, and
+  <code>Label :: value</code> rows for the label and value pairs a resume is mostly made of.
+  Everything is escaped first and only those constructs are added back, so no
+  markup can reach the page.
+</p>
+
+<form method="post" action="/admin/pages/<%= slug %>" class="panel" style="margin-top: var(--s-4);">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+  <div class="field">
+    <label for="title">Title</label>
+    <input id="title" name="title" type="text" value="<%= page.title || '' %>" required>
+  </div>
+
+  <div class="field">
+    <label for="subtitle">Subtitle</label>
+    <input id="subtitle" name="subtitle" type="text" value="<%= page.subtitle || '' %>">
+  </div>
+
+  <div class="field">
+    <label for="body_md">Body</label>
+    <textarea id="body_md" name="body_md" style="min-height: 32rem; font-family: var(--f-mono); font-size:.82rem; line-height:1.6;"><%= page.body_md || '' %></textarea>
+  </div>
+
+  <label style="display:flex; gap:8px; align-items:center; margin-bottom: var(--s-4);">
+    <input type="checkbox" name="published" value="1"<%= page.published ? ' checked' : '' %>> Published
+  </label>
+
+  <div style="display:flex; gap: var(--s-2);">
+    <button class="btn" type="submit">Save</button>
+    <a class="btn btn-quiet" href="/<%= slug %>">View the page</a>
+  </div>
+</form>

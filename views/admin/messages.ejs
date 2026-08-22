@@ -1,0 +1,49 @@
+<p class="eyebrow">Admin</p>
+<h1>Messages</h1>
+<p style="color: var(--text-muted); max-width: 62ch;">
+  From the contact form. No captcha and no third party script: a honeypot, a
+  minimum time to submit and a per-IP limit do the work on the server instead.
+</p>
+
+<div class="panel" style="padding:0; margin-top: var(--s-4);">
+  <table class="admin-table">
+    <thead>
+      <tr><th style="width:7rem;">When</th><th>From</th><th>Message</th><th style="text-align:right;">Actions</th></tr>
+    </thead>
+    <tbody>
+      <% if (!messages.length) { %>
+        <tr><td colspan="4" style="color: var(--text-muted);">Nothing yet.</td></tr>
+      <% } %>
+      <% for (const m of messages) { %>
+        <tr style="<%= m.read ? 'opacity:.72;' : '' %>">
+          <td class="mono" style="font-size:.7rem; white-space:nowrap;">
+            <%= m.created_at.slice(0,10) %><br><%= m.created_at.slice(11,16) %>
+          </td>
+          <td>
+            <strong><%= m.name %></strong>
+            <div><a href="mailto:<%= m.email %>" style="font-size:.82rem;"><%= m.email %></a></div>
+            <% if (!m.read) { %><span class="badge" style="border-color: var(--accent); color: var(--accent-ink);">new</span><% } %>
+          </td>
+          <td>
+            <% if (m.subject) { %><strong style="display:block;"><%= m.subject %></strong><% } %>
+            <span style="font-size:.9rem; white-space:pre-wrap;"><%= m.body %></span>
+          </td>
+          <td>
+            <div class="actions">
+              <% if (!m.read) { %>
+                <form method="post" action="/admin/messages/<%= m.id %>/read">
+                  <input type="hidden" name="_csrf" value="<%= csrf %>">
+                  <button class="btn btn-quiet btn-sm" type="submit">Mark read</button>
+                </form>
+              <% } %>
+              <form method="post" action="/admin/messages/<%= m.id %>/delete">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>

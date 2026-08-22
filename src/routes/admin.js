@@ -17,6 +17,7 @@ const { generateKeyBetween } = require('fractional-indexing');
 const multer = require('multer');
 const media = require('../media');
 const documents = require('../documents');
+const contact = require('../contact');
 
 /* In memory, because every upload is validated and re-encoded before it ever
    touches the disk. multer 2.2.0 or newer: earlier versions carry CVE-2026-2359
@@ -172,6 +173,7 @@ router.get('/', (req, res) => {
     pages: get('SELECT COUNT(*) AS n FROM document_page').n,
     notes: get('SELECT COUNT(*) AS n FROM note').n,
     errors: get('SELECT COUNT(*) AS n FROM app_error WHERE seen = 0').n,
+    messages: contact.unreadCount(),
   };
   res.render('admin/dashboard', view('dashboard', {
     title: 'Admin',
@@ -595,6 +597,55 @@ router.post('/facets/save', form, requireCsrf, (req, res) => {
       : err.message;
     res.redirect(303, `/admin/facets?error=${encodeURIComponent(msg)}`);
   }
+});
+
+/* --------------------------------------------------------------- messages */
+
+router.get('/messages', (req, res) => {
+  res.render('admin/messages', view('messages', {
+    title: 'Messages',
+    messages: contact.listMessages(),
+  }));
+});
+
+router.post('/messages/:id/read', form, requireCsrf, (req, res) => {
+  contact.markRead(Number(req.params.id));
+  res.redirect(303, '/admin/messages');
+});
+
+router.post('/messages/:id/delete', form, requireCsrf, (req, res) => {
+  contact.remove(Number(req.params.id));
+  repo.logChange(req.session.email, 'message', Number(req.params.id), 'delete', null);
+  res.redirect(303, '/admin/messages');
+});
+
+/* ------------------------------------------------------------------ pages */
+
+router.get('/pages/:slug', (req, res, next) => {
+  const page = repo.getPageForEdit(req.params.slug);
+  if (!repo.PAGE_SLUGS.includes(req.params.slug)) return next();
+  res.render('admin/page-form', view('page-form', {
+    title: `Edit: ${req.params.slug}`,
+    slug: req.params.slug,
+    page: page || { slug: req.params.slug, title: '', subtitle: '', body_md: '', published: 1 },
+    saved: Boolean(req.query.saved),
+  }));
+});
+
+router.post('/pages/:slug', form, requireCsrf, (req, res, next) => {
+  if (!repo.PAGE_SLUGS.includes(req.params.slug)) return next();
+  const md = String(req.body.body_md || '');
+  repo.savePage(req.params.slug, {
+    title: String(req.body.title || '').trim() || req.params.slug,
+    subtitle: String(req.body.subtitle || '').trim(),
+    body_md: md,
+    // Same conservative renderer the seed uses, so what the admin sees and
+    // what the seed produces cannot diverge.
+    body_html: require('../../scripts/seed-pages.js').render(md),
+    published: req.body.published ? 1 : 0,
+  });
+  repo.logChange(req.session.email, 'page', 0, 'update', { slug: req.params.slug });
+  res.redirect(303, `/admin/pages/${req.params.slug}?saved=1`);
 });
 
 /* ------------------------------------------------------------------ notes */

@@ -319,3 +319,34 @@ CREATE TRIGGER IF NOT EXISTS search_index_au AFTER UPDATE ON search_index BEGIN
   INSERT INTO search_trgm(rowid, title, subtitle, tags)
     VALUES (new.id, new.title, new.subtitle, new.tags);
 END;
+
+-- ---------------------------------------------------------------- pages
+
+-- Singleton editorial pages (resume, about). Deliberately not a general CMS:
+-- the admin picks from a fixed set of slugs the code knows how to route, so a
+-- page can be rewritten without a deploy but a new URL cannot be invented that
+-- nothing links to.
+CREATE TABLE IF NOT EXISTS page (
+  slug        TEXT PRIMARY KEY,
+  title       TEXT NOT NULL,
+  subtitle    TEXT,
+  body_md     TEXT NOT NULL DEFAULT '',
+  body_html   TEXT NOT NULL DEFAULT '',
+  published   INTEGER NOT NULL DEFAULT 1,
+  updated_at  TEXT NOT NULL
+) STRICT;
+
+-- ---------------------------------------------------------------- contact
+
+CREATE TABLE IF NOT EXISTS message (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL,
+  email      TEXT NOT NULL,
+  subject    TEXT,
+  body       TEXT NOT NULL,
+  ip         TEXT,
+  user_agent TEXT,
+  read       INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+) STRICT;
+CREATE INDEX IF NOT EXISTS message_unread ON message(read, created_at DESC);

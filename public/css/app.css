@@ -476,3 +476,29 @@ code {
 .doc-grid:has(> .doc-card:hover) > .doc-card:not(:hover) .card-title { color: var(--dim-title); }
 .doc-grid:has(> .doc-card:hover) > .doc-card:not(:hover) .card-summary,
 .doc-grid:has(> .doc-card:hover) > .doc-card:not(:hover) .card-meta { color: var(--dim-text); }
+
+/* ---------------------------------------------------------------- resume */
+
+/* A resume is a list of label/value rows, which a paragraph handles badly. */
+.res-row {
+  display: grid;
+  grid-template-columns: 17rem minmax(0, 1fr);
+  gap: var(--s-4);
+  margin: 0 0 .5em;
+  align-items: baseline;
+}
+@media (max-width: 720px) { .res-row { grid-template-columns: 1fr; gap: 2px; } }
+.res-row .res-k { font-family: var(--f-display); font-weight: 600; color: var(--text-strong); }
+.res-row .res-v { color: var(--text-muted); }
+
+.prose h3 { font-size: 1.0625rem; margin-top: var(--s-4); }
+
+/* The honeypot. Moved off screen rather than display:none, which some bots
+   now specifically check for before deciding whether to fill a field. */
+.honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
