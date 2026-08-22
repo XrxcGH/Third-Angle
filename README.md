@@ -22,6 +22,8 @@ refuses to start on them rather than failing later in a confusing way.
 npm install
 npm run fonts      # downloads the three OFL faces to public/fonts
 npm run seed       # creates the database and loads real content
+npm run seed:pages # the resume page
+npm run seed:edu   # institutions, classes and activities
 npm start          # http://localhost:3000
 ```
 
@@ -30,7 +32,7 @@ npm start          # http://localhost:3000
 ## Checks
 
 ```bash
-npm test              # 157 tests: routes, seo, icons, documents, contrast, layout, markup, account, search, schema, security, auth, media, backup, regression
+npm test              # 190 tests: routes, seo, icons, documents, contrast, layout, markup, account, pages, mailer, search, schema, security, auth, media, backup, regression
 npm run check:scope   # fails when prose outruns code
 npm run check:costs   # fails when a quoted price goes stale
 ```
@@ -52,6 +54,11 @@ src/
   schema.sql           STRICT tables, FTS5, the constraints that close risks
   repo.js              every query, as a named function
   markup.js            the two renderers. Nothing else turns stored text into HTML.
+  labels.js            title case, and one label per stored enum
+  collage.js           what the photo wall needs. It does NOT compute a layout.
+  github.js            server side GitHub, cached, so no visitor talks to GitHub
+  mailer.js            SMTP submission over node:tls, no dependency
+  settings.js          the closed set of switches the admin can flip
   middleware.js        theme, security headers, redirects
   routes/public.js     the public site
   routes/admin.js      the admin, including the account page
@@ -108,6 +115,30 @@ distance correction over the index's own vocabulary. So `harn` finds harnesses,
 one row. The keys are case sensitive base62: never declare `sort_key` as
 `COLLATE NOCASE` and never sort it with `localeCompare`.
 
+**GitHub is read by the server, not by the visitor.** The profile and every
+repository are fetched here, cached for an hour with an ETag, and rendered as
+HTML. Nothing on `/professional` calls out to a third party while you read it:
+no extra connection, no script exception to a CSP that allows none, and a panel
+that is not empty for anyone running a blocker. **LinkedIn cannot work the same
+way.** There is no public profile API without a partner agreement and a profile
+page cannot be framed, so what renders is a card built from the record this site
+already holds. LinkedIn's own badge is available as a switch in the admin,
+because it is a real third party connection and should be a decision.
+
+**The photo collage packs itself.** Each tile carries its aspect ratio and
+flexbox does the rest, so every row fills the width exactly, adding a photograph
+re-packs everything below it, and there is nothing to rearrange by hand.
+Hovering one tile widens it and its neighbours give up the width, without the
+row changing height or the page reflowing. Below 700px it becomes two masonry
+columns instead of squeezing, because a single justified tile crops every
+photograph to the same band and that destroys a portrait.
+
+**A contact message is stored before it is sent.** The inbox is the record and
+the email is a copy. A relay that is down, misconfigured or not set up yet costs
+a notification and never a message, and the admin shows every row's delivery
+state with a retry. Outbound mail is SMTP over `node:tls` with no dependency,
+same reasoning as scrypt and TOTP.
+
 **The account is maintained from inside the site.** `/admin/account` changes the
 name, the sign in address and the password, enrols or removes the second factor,
 and lists the sessions that can currently reach the admin. Changing the password
@@ -130,7 +161,8 @@ hand-over password is that it works.
 | 06 | Search, documents, feeds | **done**, including per-page PDF indexing |
 | 07 | Icons, structured data, social cards | **done** |
 | 08 | Deploy and rehearse the restore | tooling **done**; the drill is yours to run |
-| 09 | GitHub cleanup, then launch | pending |
+| 09 | Professional, education and personal pages | **done** |
+| 10 | GitHub cleanup, then launch | pending |
 
 The content, not the software, is the critical path. Photographs of the physical
 work and a short video of a robot moving outrank everything on this list.

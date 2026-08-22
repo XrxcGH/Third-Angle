@@ -30,15 +30,18 @@
         <a href="/admin/media"<%- here('/admin/media') %>>Media</a>
         <a href="/admin/documents"<%- here('/admin/documents') %>>Documents</a>
         <a href="/admin/facets"<%- here('/admin/facets') %>>Disciplines</a>
+        <a href="/admin/education"<%- here('/admin/education') %>>Education</a>
+        <a href="/admin/albums"<%- here('/admin/albums') %>>Albums</a>
         <a href="/admin/notes"<%- here('/admin/notes') %>>Log</a>
         <a href="/admin/messages"<%- here('/admin/messages') %>>Messages</a>
         <a href="/admin/pages/resume"<%- here('/admin/pages') %>>Resume</a>
+        <a href="/admin/settings"<%- here('/admin/settings') %>>Settings</a>
         <a href="/admin/account"<%- here('/admin/account') %>>Account</a>
-        <a href="/" target="_self">View site</a>
+        <a href="/" target="_self">View Site</a>
       </nav>
       <form class="signout" method="post" action="/admin/logout" style="margin-left:auto;">
         <input type="hidden" name="_csrf" value="<%= csrf %>">
-        <button class="btn btn-quiet" type="submit">Sign out</button>
+        <button class="btn btn-quiet" type="submit">Sign Out</button>
       </form>
     <% } %>
   </div>

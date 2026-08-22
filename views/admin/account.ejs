@@ -25,7 +25,7 @@
 
   <%# ------------------------------------------------------------- identity %>
   <section>
-    <h2>Who you are</h2>
+    <h2>Who You Are</h2>
     <p class="measure" style="color: var(--text-muted); font-size: .92rem;">
       The name appears in the audit log against every change. The address is the
       sign in credential.
@@ -44,7 +44,7 @@
                  autocomplete="username" value="<%= user.email %>">
         </div>
       </div>
-      <button class="btn" type="submit">Save details</button>
+      <button class="btn" type="submit">Save Details</button>
     </form>
   </section>
 
@@ -59,30 +59,30 @@
     <form class="panel" method="post" action="/admin/account/password" style="margin-top: var(--s-3);">
       <input type="hidden" name="_csrf" value="<%= csrf %>">
       <div class="field">
-        <label for="current_password">Current password</label>
+        <label for="current_password">Current Password</label>
         <input id="current_password" name="current_password" type="password" required
                autocomplete="current-password">
       </div>
       <div class="row2">
         <div class="field">
-          <label for="new_password">New password</label>
+          <label for="new_password">New Password</label>
           <input id="new_password" name="new_password" type="password" required
                  minlength="<%= minPassword %>" autocomplete="new-password">
           <span class="hint">At least <%= minPassword %> characters. A passphrase beats a short scramble.</span>
         </div>
         <div class="field">
-          <label for="confirm_password">Repeat the new password</label>
+          <label for="confirm_password">Repeat the New Password</label>
           <input id="confirm_password" name="confirm_password" type="password" required
                  minlength="<%= minPassword %>" autocomplete="new-password">
         </div>
       </div>
-      <button class="btn" type="submit">Change password</button>
+      <button class="btn" type="submit">Change Password</button>
     </form>
   </section>
 
   <%# ----------------------------------------------------------------- totp %>
   <section>
-    <h2>Two factor authentication</h2>
+    <h2>Two Factor Authentication</h2>
     <p class="measure" style="color: var(--text-muted); font-size: .92rem;">
       A six digit code from an authenticator app, on top of the password.
       Enrolment is two steps on purpose: a secret that is generated and made
@@ -120,20 +120,20 @@
         <form method="post" action="/admin/account/totp/confirm">
           <input type="hidden" name="_csrf" value="<%= csrf %>">
           <div class="field">
-            <label for="totp">First code</label>
+            <label for="totp">First Code</label>
             <input id="totp" name="totp" type="text" inputmode="numeric" pattern="[0-9]{6}"
                    maxlength="6" autocomplete="one-time-code" required
                    style="font-family: var(--f-mono); letter-spacing: .3em; max-width: 12rem;">
             <span class="hint">Confirming is what makes it required at sign in.</span>
           </div>
-          <button class="btn" type="submit">Confirm and require it</button>
+          <button class="btn" type="submit">Confirm and Require It</button>
         </form>
       <% } %>
 
       <% if (!user.totp_secret) { %>
         <form method="post" action="/admin/account/totp/start">
           <input type="hidden" name="_csrf" value="<%= csrf %>">
-          <button class="btn btn-quiet" type="submit">Set up two factor authentication</button>
+          <button class="btn btn-quiet" type="submit">Set up Two Factor Authentication</button>
         </form>
       <% } %>
 
@@ -141,12 +141,12 @@
         <form method="post" action="/admin/account/totp/off" style="margin-top: var(--s-4);">
           <input type="hidden" name="_csrf" value="<%= csrf %>">
           <div class="field">
-            <label for="totp_off_password">Current password</label>
+            <label for="totp_off_password">Current Password</label>
             <input id="totp_off_password" name="current_password" type="password" required
                    autocomplete="current-password" style="max-width: 22rem;">
             <span class="hint">Required, so a borrowed session cannot remove the factor it bypassed.</span>
           </div>
-          <button class="btn btn-danger" type="submit">Turn it off</button>
+          <button class="btn btn-danger" type="submit">Turn It Off</button>
         </form>
       <% } %>
     </div>
@@ -154,7 +154,7 @@
 
   <%# ------------------------------------------------------------- sessions %>
   <section>
-    <h2>Signed in devices</h2>
+    <h2>Signed in Devices</h2>
     <p class="measure" style="color: var(--text-muted); font-size: .92rem;">
       <%= sessionCount %> session<%= sessionCount === 1 ? '' : 's' %> can currently reach the admin.
       A session lasts fourteen days from sign in.<%

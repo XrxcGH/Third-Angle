@@ -1,0 +1,183 @@
+<section class="wrap pad-top">
+  <p class="eyebrow">Education</p>
+  <h1>Every Class, and Where It Stands</h1>
+  <p class="lede prose" style="color: var(--text-muted);">
+    Completed and in progress are different claims, so they are labelled
+    separately rather than merged into one list of subjects. Every row here is
+    editable in the admin, which is why it stays current.
+  </p>
+
+  <% if (totals.total) { %>
+    <div class="metrics" style="margin-top: var(--s-5);">
+      <div class="metric">
+        <div class="metric-value tnum"><%= totals.completed %></div>
+        <div class="metric-label">Classes Completed</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value tnum"><%= totals['in-progress'] %></div>
+        <div class="metric-label">In Progress</div>
+      </div>
+      <% if (totals.planned) { %>
+        <div class="metric">
+          <div class="metric-value tnum"><%= totals.planned %></div>
+          <div class="metric-label">Planned</div>
+        </div>
+      <% } %>
+      <div class="metric">
+        <div class="metric-value tnum"><%= schools.length %></div>
+        <div class="metric-label">Institutions</div>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (!schools.length) { %>
+    <p style="color: var(--text-muted); margin-top: var(--s-5);">
+      Nothing recorded here yet. Add an institution in the admin.
+    </p>
+  <% } %>
+
+  <% for (const s of schools) { %>
+    <section class="section" id="<%= s.slug %>">
+      <p class="eyebrow">
+        <%= label('schoolKind', s.kind) %>
+      </p>
+      <h2><%= s.name %></h2>
+
+      <div class="titleblock" style="margin-top: var(--s-3); max-width: 34rem;">
+        <% if (s.credential) { %>
+          <div><span class="k">Credential</span><span class="v"><%= s.credential %></span></div>
+        <% } %>
+        <% if (s.location) { %>
+          <div><span class="k">Location</span><span class="v"><%= s.location %></span></div>
+        <% } %>
+        <% if (s.started_on || s.ended_on) { %>
+          <div>
+            <span class="k">Dates</span>
+            <span class="v"><%= s.started_on || '' %><% if (s.ended_on) { %> to <%= s.ended_on %><% } %></span>
+          </div>
+        <% } %>
+        <% if (s.honours) { %>
+          <div><span class="k">Honours</span><span class="v"><%= s.honours %></span></div>
+        <% } %>
+        <% if (s.counts.total) { %>
+          <div>
+            <span class="k">Classes</span>
+            <span class="v tnum">
+              <%= s.counts.completed %> done<% if (s.counts['in-progress']) { %>, <%= s.counts['in-progress'] %> in progress<% } %>
+            </span>
+          </div>
+        <% } %>
+      </div>
+
+      <% if (s.blurb) { %>
+        <p class="measure" style="margin-top: var(--s-4);"><%= s.blurb %></p>
+      <% } %>
+
+      <%# ---------------------------------------------------------- coursework %>
+      <%
+        /* Grouped by status, not by term. "Completed" and "in progress" are
+           different claims about the same subject, and one merged list makes
+           the stronger one on the reader's behalf. The term is shown per row
+           wherever it has been recorded. */
+        const STATUS_LABEL = (v) => label('courseStatus', v);
+      %>
+      <% if (s.groups.length) { %>
+        <h3 style="margin-top: var(--s-5);">Coursework</h3>
+        <% for (const g of s.groups) { %>
+          <div class="term-block">
+            <p class="eyebrow">
+              <%= STATUS_LABEL(g.status) %>
+              <span class="tnum">&middot; <%= g.courses.length %></span>
+            </p>
+            <div class="course-list">
+              <% for (const c of g.courses) { %>
+                <div class="course">
+                  <span class="course-code"><%= c.code || '' %></span>
+                  <span>
+                    <span class="course-title"><%= c.title %></span>
+                    <% if (c.note) { %><span class="course-note"><%= c.note %></span><% } %>
+                  </span>
+                  <span style="display:flex; gap: var(--s-2); align-items:center; white-space:nowrap;">
+                    <% if (c.units) { %>
+                      <span class="mono tnum" style="font-size:.66rem; color: var(--text-muted);"><%= c.units %></span>
+                    <% } %>
+                    <% if (c.term) { %>
+                      <span class="mono" style="font-size:.66rem; color: var(--text-muted);"><%= c.term %></span>
+                    <% } %>
+                    <span class="badge" data-course="<%= c.status %>"><%= STATUS_LABEL(c.status) %></span>
+                  </span>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        <% } %>
+      <% } %>
+
+      <%# ---------------------------------------------------------- activities %>
+      <%
+        const acts = s.activities.filter((a) => a.kind === 'activity');
+        const awards = s.activities.filter((a) => a.kind !== 'activity');
+      %>
+      <% if (acts.length) { %>
+        <h3 style="margin-top: var(--s-5);">Activities</h3>
+        <div class="stack" style="margin-top: var(--s-3);">
+          <% for (const a of acts) { %>
+            <div class="discipline-row">
+              <div>
+                <span style="font-family: var(--f-display); font-weight: var(--w-med); color: var(--text-strong);"><%= a.title %></span>
+                <% if (a.role) { %>
+                  <span class="eyebrow" style="margin:0; display:block;"><%= a.role %></span>
+                <% } %>
+              </div>
+              <p style="margin:0;">
+                <%= a.detail || '' %>
+                <% if (a.started_on || a.ended_on) { %>
+                  <span class="mono" style="font-size:.66rem; color: var(--text-muted); white-space:nowrap;">
+                    <%= a.started_on || '' %><% if (a.ended_on) { %> to <%= a.ended_on %><% } %>
+                  </span>
+                <% } %>
+              </p>
+            </div>
+          <% } %>
+        </div>
+      <% } %>
+
+      <% if (awards.length) { %>
+        <h3 style="margin-top: var(--s-5);">Awards and Certifications</h3>
+        <ul class="stack measure" style="margin-top: var(--s-3); padding-left: 1.2rem;">
+          <% for (const a of awards) { %>
+            <li>
+              <strong><%= a.title %></strong><% if (a.detail) { %>. <%= a.detail %><% } %>
+              <% if (a.ended_on || a.started_on) { %>
+                <span class="mono" style="font-size:.66rem; color: var(--text-muted);"><%= a.ended_on || a.started_on %></span>
+              <% } %>
+            </li>
+          <% } %>
+        </ul>
+      <% } %>
+    </section>
+  <% } %>
+
+  <%# -------------------------------------------------- everything unattached %>
+  <% if (unattached.length) { %>
+    <section class="section">
+      <p class="eyebrow">Beyond The Classroom</p>
+      <h2>Certifications and Recognition</h2>
+      <ul class="stack measure" style="margin-top: var(--s-3); padding-left: 1.2rem;">
+        <% for (const a of unattached) { %>
+          <li>
+            <strong><%= a.title %></strong><% if (a.detail) { %>. <%= a.detail %><% } %>
+            <% if (a.ended_on || a.started_on) { %>
+              <span class="mono" style="font-size:.66rem; color: var(--text-muted);"><%= a.ended_on || a.started_on %></span>
+            <% } %>
+          </li>
+        <% } %>
+      </ul>
+    </section>
+  <% } %>
+
+  <nav class="btn-row" style="margin-top: var(--s-7);">
+    <a class="btn btn-quiet" href="/resume">Read the Resume</a>
+    <a class="btn btn-quiet" href="/work">See the Work</a>
+  </nav>
+</section>

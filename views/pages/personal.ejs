@@ -1,0 +1,68 @@
+<section class="wrap pad-top">
+  <p class="eyebrow">Personal</p>
+  <h1>Beyond the Bench</h1>
+  <p class="lede prose" style="color: var(--text-muted);">
+    Sport, travel, family, animals and the rest of it. A record of projects is
+    an honest account of what someone has built and a poor account of who built
+    it.
+  </p>
+
+  <% if (!albums.length) { %>
+    <p style="color: var(--text-muted); margin-top: var(--s-5);">
+      Nothing here yet. Create an album in the admin and upload photographs to
+      it; they appear on this page immediately, with no arranging.
+    </p>
+  <% } %>
+
+  <% for (const a of albums) { %>
+    <section class="section" id="<%= a.slug %>">
+      <p class="eyebrow"><%= a.count %> photograph<%= a.count === 1 ? '' : 's' %></p>
+      <h2><%= a.title %></h2>
+      <% if (a.blurb) { %>
+        <p class="measure" style="color: var(--text-muted);"><%= a.blurb %></p>
+      <% } %>
+
+      <%
+        /*
+         * The collage.
+         *
+         * Nothing here decides a position. Each tile carries only its aspect
+         * ratio as --ar, and flexbox packs the rows: every tile in a row lands
+         * on the same height, the row fills the width exactly, and adding a
+         * photograph re-packs everything below it. That is why there is no
+         * ordering step and nothing to redo after an upload.
+         *
+         * --row-h sets the proportion rather than the fit, so a short album
+         * reads as a feature and a long one does not become a scroll.
+         */
+      %>
+      <div class="collage" style="--row-h: <%= a.rowHeight %>px; margin-top: var(--s-4);">
+        <% for (const t of a.tiles) { %>
+          <figure class="collage-item" style="--ar: <%= t.aspect %>;" tabindex="0">
+            <img src="/media/<%= t.storage_key %>"
+                 <% const av = srcset(t, 'avif'); const wp = srcset(t, 'webp'); %>
+                 <% if (wp) { %>srcset="<%= wp %>" sizes="(min-width: 900px) 40vw, 90vw"<% } %>
+                 alt="<%= t.alt %>"
+                 width="<%= t.width %>" height="<%= t.height %>"
+                 loading="lazy" decoding="async">
+            <% if (t.caption) { %>
+              <figcaption>
+                <%= t.caption %><% if (t.capturedOn) { %>
+                  <span class="mono tnum" style="font-size:.62rem; opacity:.85;"><%= t.capturedOn %></span>
+                <% } %>
+              </figcaption>
+            <% } %>
+          </figure>
+        <% } %>
+      </div>
+    </section>
+  <% } %>
+
+  <% if (albums.length) { %>
+    <p class="eyebrow" style="margin-top: var(--s-6);">
+      <%= totalPhotos %> photograph<%= totalPhotos === 1 ? '' : 's' %> across
+      <%= albums.length %> album<%= albums.length === 1 ? '' : 's' %>.
+      Hover or focus a photograph to open it up.
+    </p>
+  <% } %>
+</section>

@@ -6,6 +6,10 @@ const { setTheme } = require('../middleware');
 const seo = require('../seo');
 const documents = require('../documents');
 const contact = require('../contact');
+const github = require('../github');
+const settings = require('../settings');
+const collage = require('../collage');
+const mailer = require('../mailer');
 
 const router = express.Router();
 
@@ -207,6 +211,143 @@ router.get('/resume/:file', (req, res, next) => {
   fs.createReadStream(abs).pipe(res);
 });
 
+/* The one place the LinkedIn handle is written down. */
+const LINKEDIN = {
+  handle: process.env.LINKEDIN_USER || 'edean07',
+  get url() { return `https://www.linkedin.com/in/${this.handle}`; },
+};
+
+/* ----------------------------------------------------------- professional
+ *
+ * GitHub and LinkedIn on one page, so a reviewer can read the repositories and
+ * the professional record without leaving the site.
+ *
+ * GitHub is fetched server side and cached, so the visitor's browser never
+ * talks to GitHub: no third party connection, no script exception to a CSP
+ * that allows none, and a panel that is not empty for anyone running a
+ * blocker. See src/github.js.
+ *
+ * LinkedIn cannot work the same way and does not pretend to. There is no
+ * public profile API without a partnership, and a profile page cannot be
+ * framed: LinkedIn serves X-Frame-Options DENY precisely to stop it. The two
+ * honest options are a server rendered card built from the record the owner
+ * already maintains here, which is the default, or LinkedIn's own badge
+ * script, which is a real third party connection and is therefore a switch in
+ * the admin rather than an assumption.
+ */
+router.get('/professional', (req, res) => {
+  const cfg = settings.allSettings();
+  const gh = github.snapshot({ live: cfg.github_live, topRepos: 8 });
+
+  res.render('pages/professional', {
+    ...chrome(),
+    title: 'Professional Profile',
+    description:
+      'GitHub repositories and professional profile for Eric J. Dean, read without leaving the site.',
+    gh,
+    settings: cfg,
+    linkedin: LINKEDIN,
+    schools: repo.listSchools(),
+    stamp: contact.issueStamp(),
+    errors: [],
+    values: { name: '', email: '', subject: '', message: '' },
+    sent: false,
+    jsonLd: seo.jsonLd(res.locals.siteUrl, {
+      trail: [{ name: 'Home', url: '/' }, { name: 'Professional', url: '/professional' }],
+    }),
+    ogImage: registerOg({
+      title: 'Professional Profile',
+      subtitle: `${gh.repos.length} public repositories, and how to get in touch.`,
+      eyebrow: 'Eric J. Dean',
+    }),
+  });
+});
+
+/*
+ * The GitHub profile picture, served from this origin.
+ *
+ * A fixed path rather than the upstream URL, so img-src stays 'self' and
+ * GitHub never sees a visitor. Cached on disk for a week; a miss renders the
+ * page without a picture rather than blocking on it.
+ */
+router.get('/avatar/github.png', async (req, res, next) => {
+  try {
+    const img = await github.avatar();
+    if (!img) return next();
+    res.setHeader('Content-Type', img.mime);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Content-Length', img.buffer.length);
+    res.end(img.buffer);
+  } catch {
+    next();
+  }
+});
+
+/* ------------------------------------------------------------------ education */
+
+router.get('/education', (req, res) => {
+  const schools = repo.listSchools().map((sch) => ({
+    ...sch,
+    groups: repo.coursesByStatus(sch.slug),
+    counts: repo.courseCounts(sch.slug),
+    activities: repo.listActivities(sch.slug),
+  }));
+
+  const totals = schools.reduce((acc, sch) => {
+    for (const k of ['completed', 'in-progress', 'planned', 'total']) acc[k] += sch.counts[k] || 0;
+    return acc;
+  }, { completed: 0, 'in-progress': 0, planned: 0, total: 0 });
+
+  res.render('pages/education', {
+    ...chrome(),
+    title: 'Education',
+    description: 'Coursework, activities and awards at UCLA and Archbishop Riordan High School.',
+    schools,
+    totals,
+    unattached: repo.listActivities(null),
+    jsonLd: seo.jsonLd(res.locals.siteUrl, {
+      trail: [{ name: 'Home', url: '/' }, { name: 'Education', url: '/education' }],
+    }),
+    ogImage: registerOg({
+      title: 'Education',
+      subtitle: `${totals.completed} classes completed, ${totals['in-progress']} in progress.`,
+      eyebrow: 'Eric J. Dean',
+    }),
+  });
+});
+
+/* ------------------------------------------------------------------ personal */
+
+router.get('/personal', (req, res) => {
+  /*
+   * Every published album, each rendered from whatever is in it right now.
+   * Uploading a photograph to an album IS publishing it: there is no separate
+   * arrangement step, because a collage that has to be re-laid out by hand is
+   * a collage that stops being added to.
+   */
+  const albums = repo.listAlbums().map((a) => {
+    const photos = repo.albumPhotos(a.slug);
+    return { ...a, ...collage.layout(photos), rowHeight: collage.rowHeight(photos.length) };
+  }).filter((a) => a.count > 0);
+
+  res.render('pages/personal', {
+    ...chrome(),
+    title: 'Beyond The Bench',
+    description: 'Sport, travel, family and the rest of it. The parts of a person a project record leaves out.',
+    albums,
+    totalPhotos: albums.reduce((n, a) => n + a.count, 0),
+    jsonLd: seo.jsonLd(res.locals.siteUrl, {
+      trail: [{ name: 'Home', url: '/' }, { name: 'Personal', url: '/personal' }],
+    }),
+    ogImage: registerOg({
+      title: 'Beyond The Bench',
+      subtitle: 'Sport, travel, family and the rest of it.',
+      eyebrow: 'Eric J. Dean',
+    }),
+  });
+});
+
 /* ---------------------------------------------------------------- contact */
 
 function contactView(res, extra) {
@@ -241,7 +382,17 @@ router.post('/contact', express.urlencoded({ extended: false, limit: '32kb' }), 
     }));
   }
 
-  contact.store(result.values, { ip, userAgent: req.get('user-agent') });
+  /*
+   * Stored first, forwarded second, and never the other way round.
+   *
+   * The inbox is the system of record. If the relay is down, misconfigured or
+   * simply not set up yet, the message is already safe and the admin shows it
+   * as unsent with a retry button. A form that mails and then stores loses the
+   * message on exactly the failure it most needs to survive.
+   */
+  const id = contact.store(result.values, { ip, userAgent: req.get('user-agent') });
+  contact.forward(id).catch(() => { /* recorded on the row */ });
+
   res.render('pages/contact', contactView(res, { sent: true }));
 });
 
@@ -249,11 +400,27 @@ router.post('/contact', express.urlencoded({ extended: false, limit: '32kb' }), 
 
 router.get('/documents', (req, res) => {
   const docs = documents.listDocuments();
+
+  /*
+   * The resume and the CV sit at the top, in that order, whatever their sort
+   * key says. They are the two documents a reviewer came for, and burying them
+   * in a library ordered by upload date is the one arrangement guaranteed to be
+   * wrong. Everything else keeps its own order below.
+   */
+  const ROLE_RANK = { resume: 0, cv: 1 };
+  const pinned = docs
+    .filter((d) => d.doc_role === 'resume' || d.doc_role === 'cv')
+    .sort((a, b) => ROLE_RANK[a.doc_role] - ROLE_RANK[b.doc_role]);
+  const others = docs.filter((d) => !(d.doc_role in ROLE_RANK));
+
   res.render('pages/documents', {
     ...chrome(),
     title: 'Documents',
     description: 'Game manuals, runbooks, governance packages and training curricula, searchable by page.',
     docs,
+    pinned,
+    others,
+    pdfViewer: settings.getSetting('pdf_viewer'),
     jsonLd: seo.jsonLd(res.locals.siteUrl, {
       trail: [{ name: 'Home', url: '/' }, { name: 'Documents', url: '/documents' }],
     }),
@@ -263,6 +430,64 @@ router.get('/documents', (req, res) => {
       eyebrow: 'Eric J. Dean',
     }),
   });
+});
+
+/*
+ * A document, rendered in the browser rather than downloaded.
+ *
+ * /media serves every PDF as an attachment on purpose: a PDF is the one
+ * accepted upload that cannot be re-encoded on the way in, so it is the
+ * residual vector once every other control is in place. This route is the
+ * deliberate exception, and it is narrowed rather than opened:
+ *
+ *   - only rows that are already in the document table, never an arbitrary key
+ *   - a CSP of its own that permits nothing at all, so even a PDF carrying
+ *     script has no origin to reach and no subresource to load
+ *   - still nosniff, still same origin, and the operator can switch the whole
+ *     inline path off from the admin
+ */
+router.get('/documents/:slug/view', (req, res, next) => {
+  if (!settings.getSetting('pdf_viewer')) return next();
+  const doc = documents.getDocument(req.params.slug);
+  if (!doc) return next();
+
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const { UPLOAD_DIR } = require('../db');
+  const abs = path.resolve(UPLOAD_DIR, doc.storage_key);
+  const root = path.resolve(UPLOAD_DIR);
+  if (!abs.startsWith(root + path.sep) || !fs.existsSync(abs)) return next();
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  res.setHeader('Content-Disposition', `inline; filename="${documents.slugify(doc.title)}.pdf"`);
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  fs.createReadStream(abs).pipe(res);
+});
+
+/*
+ * The same PDF, as a download, named after the document rather than after its
+ * storage key. /media serves it too, but a storage key is a random hex string:
+ * a reviewer who downloads the resume should not end up with
+ * a7cb5788cb9189b2d941431c9fc5b163.pdf in their downloads folder.
+ */
+router.get('/documents/:slug/download', (req, res, next) => {
+  const doc = documents.getDocument(req.params.slug);
+  if (!doc) return next();
+
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const { UPLOAD_DIR } = require('../db');
+  const abs = path.resolve(UPLOAD_DIR, doc.storage_key);
+  const root = path.resolve(UPLOAD_DIR);
+  if (!abs.startsWith(root + path.sep) || !fs.existsSync(abs)) return next();
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Disposition', `attachment; filename="${documents.slugify(doc.title)}.pdf"`);
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  fs.createReadStream(abs).pipe(res);
 });
 
 router.get('/documents/:slug', (req, res, next) => {
@@ -537,9 +762,17 @@ router.get('/sitemap.xml', (req, res) => {
     { loc: '/disciplines', pri: '0.7' },
     { loc: '/log', pri: '0.5' },
     { loc: '/resume', pri: '0.9' },
+    { loc: '/education', pri: '0.8' },
+    { loc: '/professional', pri: '0.8' },
     { loc: '/contact', pri: '0.7' },
     { loc: '/documents', pri: '0.7' },
   ];
+  /*
+   * /personal is listed only when it has something on it. A sitemap entry for
+   * an empty page is a promise to a crawler that the page does not keep, and
+   * the empty state here is the normal state until photographs are uploaded.
+   */
+  if (repo.listAlbums().some((a) => a.photo_count > 0)) urls.push({ loc: '/personal', pri: '0.5' });
   for (const p of repo.listProjects()) urls.push({ loc: `/work/${p.slug}`, mod: p.updated_at, pri: '0.8' });
   for (const f of repo.listFacets('discipline')) urls.push({ loc: `/disciplines/${f.slug}`, pri: '0.6' });
   for (const d of documents.listDocuments()) urls.push({ loc: `/documents/${d.slug}`, mod: d.updated_at, pri: '0.6' });

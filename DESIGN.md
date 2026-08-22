@@ -128,6 +128,48 @@ Never `require()` a file from `scripts/` inside a route. Requiring a script runs
 it: the page editor used to reach its renderer that way and re-ran the
 environment assertion, the migration and the seeding loop on every save.
 
+## Capitalisation
+
+One rule, stated in `src/labels.js` and applied by `titleCase()` there:
+
+- **Title Case** for anything that names something: headings, navigation,
+  buttons, links that act as controls, table headers, form labels, dropdown
+  options and status badges. AP form, so short articles, conjunctions and
+  prepositions stay lowercase in the middle: "Open in a New Tab", not "Open In
+  A New Tab".
+- **Sentence case** for anything that reads as a sentence: body copy, the hint
+  under a field, empty states, flash messages, alt text and placeholders.
+- **ALL CAPS is never typed.** Where small caps are wanted the uppercase comes
+  from `text-transform` in CSS, so the source stays readable in a diff,
+  searchable, and translatable.
+
+Every stored enum has exactly one label, in `LABELS` in the same file. A
+template must never print `status`, `tier`, `kind`, `weight`, `origin` or
+`visibility` directly, or with its own `.replace()`: that is how `case-study`
+came to appear as three different strings on three screens. A test enforces it.
+
+## The photo collage
+
+The layout is not computed on the server, and that is the design.
+
+A server deciding row breaks has to assume a viewport width it does not know,
+so rows that pack perfectly at 1440px leave a ragged edge at 900px. Each tile
+carries only its aspect ratio as `--ar`; flexbox gives it a natural width at the
+row height and a proportional share of the leftover, so every tile in a row
+lands on the same height and the row fills the width exactly, at any width.
+Adding a photograph re-packs everything below it for free.
+
+- Aspect ratios are clamped for layout only, so a 6:1 panorama cannot take a
+  whole row and a 1:4 portrait cannot become a sliver. The image keeps its real
+  shape and is cropped by `object-fit`.
+- Hover and focus raise one tile's `flex-grow`, so it widens and its neighbours
+  give up the width. The row keeps its height and its total width, so no other
+  row moves and the page never reflows.
+- Below 700px the layout changes rather than shrinking. Justified rows need two
+  tiles to mean anything, and a single tile stretched to the full width at a
+  fixed row height crops every photograph to the same band, which destroys a
+  portrait. Two masonry columns instead, each tile at its true aspect ratio.
+
 ## Banned
 
 - Any gradient between hues 250 and 320
@@ -188,6 +230,8 @@ branch has to exist in JavaScript. See risk R4 in the proposal.
 | R9 stale prices | `costs.yml` with dated evidence | `npm run check:costs` |
 | R10 silent layout break | gutter, grid floor, measure and control-layer assertions | `tests/layout.test.mjs` |
 | R11 stored text corruption | one renderer, line endings normalised on the way in | `tests/markup.test.mjs` |
+| R12 capitalisation drift | one `titleCase` and one enum label map | `tests/pages.test.mjs` |
+| R13 a lost contact message | stored before it is mailed, with a visible delivery state | `tests/mailer.test.mjs` |
 
 ## Things that will bite
 
@@ -204,3 +248,18 @@ branch has to exist in JavaScript. See risk R4 in the proposal.
   disabled pragma turns every `ON DELETE CASCADE` into a no-op.
 - STRICT tables validate **datatypes only**. They do nothing for vocabulary
   drift; only the lookup table and the NOCASE index close that.
+- `schema.sql` is all `CREATE TABLE IF NOT EXISTS`, which is a no-op for a table
+  that already exists. A column added to an existing table therefore never
+  appears on an older database, and the failure is a runtime "no such column" on
+  whichever page reads it first. Added columns go in `ADDED_COLUMNS` in
+  `src/db.js`.
+- A `min-width` on a table inside an `overflow-x: auto` wrapper still pushes the
+  **document** sideways. Nothing has a bounding box outside the viewport,
+  `overflow-x: clip` on an ancestor does not stop it, and the root element will
+  not clip it either, because the root's overflow is propagated to the viewport.
+  `contain: layout paint` on the wrapper is the mechanism that isolates it.
+- `object-src` governs the page doing the embedding, not the thing embedded, and
+  Chrome checks `frame-src` for a PDF `<object>` as well. Both have to open for
+  the inline reader, and both close again when it is switched off.
+- A `<select>` sizes itself to its longest option. In a table cell that lets one
+  long album title set the width of a whole column.

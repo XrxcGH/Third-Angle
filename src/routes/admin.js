@@ -18,7 +18,11 @@ const multer = require('multer');
 const media = require('../media');
 const documents = require('../documents');
 const contact = require('../contact');
+const mailer = require('../mailer');
 const markup = require('../markup');
+const settings = require('../settings');
+const github = require('../github');
+const collage = require('../collage');
 
 /* In memory, because every upload is validated and re-encoded before it ever
    touches the disk. multer 2.2.0 or newer: earlier versions carry CVE-2026-2359
@@ -337,6 +341,9 @@ router.get('/', (req, res) => {
     notes: get('SELECT COUNT(*) AS n FROM note').n,
     errors: get('SELECT COUNT(*) AS n FROM app_error WHERE seen = 0').n,
     messages: contact.unreadCount(),
+    undelivered: contact.undeliveredCount(),
+    photos: get("SELECT COUNT(*) AS n FROM media WHERE album_slug IS NOT NULL").n,
+    courses: get('SELECT COUNT(*) AS n FROM course').n,
   };
   res.render('admin/dashboard', view('dashboard', {
     title: 'Admin',
@@ -594,6 +601,7 @@ router.get('/media', (req, res) => {
     title: 'Media',
     items: media.listMedia(),
     projects: repo.listProjects({ includeUnpublished: true }),
+    albums: repo.listAlbums({ includeUnpublished: true }),
     error: typeof req.query.error === 'string' ? req.query.error : null,
     uploaded: req.query.uploaded ? Number(req.query.uploaded) : 0,
   }));
@@ -651,6 +659,13 @@ router.post('/media/:id/delete', form, requireCsrf, (req, res) => {
   res.redirect(303, '/admin/media');
 });
 
+/* Put one photograph into an album, or take it out of every album. The
+   personal page renders albums, so this is what publishes a photograph. */
+router.post('/media/:id/album', form, requireCsrf, (req, res) => {
+  repo.setMediaAlbum(Number(req.params.id), req.body.album_slug || null);
+  res.redirect(303, req.body.back === 'albums' ? '/admin/albums' : '/admin/media');
+});
+
 router.post('/media/:id/attach', form, requireCsrf, (req, res) => {
   const mediaId = Number(req.params.id);
   const projectId = Number(req.body.project_id);
@@ -665,10 +680,29 @@ router.post('/media/:id/attach', form, requireCsrf, (req, res) => {
 
 /* -------------------------------------------------------------- documents */
 
+/*
+ * Which document is the resume and which is the CV.
+ *
+ * A role rather than a filename convention: "resume-final-v3.pdf" is not a
+ * contract, and the public page has to know which two documents to put at the
+ * top without guessing from a title.
+ */
+router.post('/documents/:id/role', form, requireCsrf, (req, res) => {
+  const role = ['resume', 'cv', 'other'].includes(req.body.doc_role) ? req.body.doc_role : 'other';
+  // At most one of each. Assigning a role takes it off whatever held it before,
+  // because two documents both claiming to be the resume is a page that has to
+  // pick one arbitrarily.
+  if (role !== 'other') run("UPDATE document SET doc_role = 'other' WHERE doc_role = ?", role);
+  run('UPDATE document SET doc_role = ? WHERE id = ?', role, Number(req.params.id));
+  repo.logChange(req.session.email, 'document', Number(req.params.id), 'update', { doc_role: role });
+  res.redirect(303, '/admin/documents');
+});
+
 router.get('/documents', (req, res) => {
   res.render('admin/documents', view('documents', {
     title: 'Documents',
     docs: documents.listDocuments({ includePrivate: true }),
+    roles: ['resume', 'cv', 'other'],
     projects: repo.listProjects({ includeUnpublished: true }),
     error: typeof req.query.error === 'string' ? req.query.error : null,
     uploaded: req.query.uploaded ? Number(req.query.uploaded) : 0,
@@ -753,13 +787,196 @@ router.post('/facets/save', form, requireCsrf, (req, res) => {
   }
 });
 
+/* --------------------------------------------------------------- settings */
+
+router.get('/settings', (req, res) => {
+  res.render('admin/settings', view('settings', {
+    title: 'Settings',
+    definitions: settings.DEFINITIONS,
+    values: settings.allSettings(),
+    mail: {
+      configured: mailer.isConfigured(),
+      host: mailer.config().host,
+      port: mailer.config().port,
+      from: mailer.config().from,
+      recipient: contact.recipient(),
+    },
+    gh: github.snapshot({ live: false }),
+    saved: Boolean(req.query.saved),
+    refreshed: req.query.refreshed || null,
+  }));
+});
+
+router.post('/settings', form, requireCsrf, (req, res) => {
+  settings.saveFromForm(req.body || {});
+  repo.logChange(req.session.email, 'setting', 0, 'update', settings.allSettings());
+  res.redirect(303, '/admin/settings?saved=1');
+});
+
+/* Pull GitHub now rather than waiting for the hourly refresh. Useful straight
+   after a repository is renamed, and the only way to see an API error. */
+router.post('/settings/github/refresh', form, requireCsrf, async (req, res) => {
+  const result = await github.refresh();
+  res.redirect(303, `/admin/settings?refreshed=${result.ok ? 'ok' : 'failed'}`);
+});
+
+/* --------------------------------------------------------------- education */
+
+router.get('/education', (req, res) => {
+  const schools = repo.listSchools().map((sch) => ({
+    ...sch,
+    courses: repo.listCourses(sch.slug),
+    counts: repo.courseCounts(sch.slug),
+  }));
+  res.render('admin/education', view('education', {
+    title: 'Education',
+    schools,
+    activities: repo.listActivities(),
+    statuses: repo.COURSE_STATUS,
+    kinds: repo.ACTIVITY_KINDS,
+    schoolKinds: repo.SCHOOL_KINDS,
+    editCourse: req.query.course
+      ? get('SELECT * FROM course WHERE id = ?', Number(req.query.course))
+      : null,
+    editActivity: req.query.activity
+      ? get('SELECT * FROM activity WHERE id = ?', Number(req.query.activity))
+      : null,
+    saved: Boolean(req.query.saved),
+    error: null,
+  }));
+});
+
+router.post('/education/school', form, requireCsrf, (req, res) => {
+  const slug = slugify(req.body.slug || req.body.name);
+  if (!slug || !String(req.body.name || '').trim()) return res.redirect(303, '/admin/education');
+  repo.saveSchool(slug, req.body);
+  repo.logChange(req.session.email, 'school', 0, 'update', { slug });
+  res.redirect(303, '/admin/education?saved=1');
+});
+
+router.post('/education/school/:slug/delete', form, requireCsrf, (req, res) => {
+  repo.deleteSchool(req.params.slug);
+  repo.logChange(req.session.email, 'school', 0, 'delete', { slug: req.params.slug });
+  res.redirect(303, '/admin/education');
+});
+
+router.post('/education/course', form, requireCsrf, (req, res) => {
+  if (!String(req.body.title || '').trim() || !req.body.school_slug) {
+    return res.redirect(303, '/admin/education');
+  }
+  try {
+    repo.saveCourse(req.body);
+  } catch (err) {
+    // The unique index is what stops the same class being listed twice, and a
+    // 500 on a duplicate would look like a broken page rather than a rejected
+    // entry.
+    const schools = repo.listSchools().map((sch) => ({
+      ...sch, courses: repo.listCourses(sch.slug), counts: repo.courseCounts(sch.slug),
+    }));
+    return res.status(400).render('admin/education', view('education', {
+      title: 'Education',
+      schools,
+      activities: repo.listActivities(),
+      statuses: repo.COURSE_STATUS,
+      kinds: repo.ACTIVITY_KINDS,
+      schoolKinds: repo.SCHOOL_KINDS,
+      editCourse: null,
+      editActivity: null,
+      saved: false,
+      error: /UNIQUE/i.test(err.message)
+        ? 'That class is already listed for this school in that term.'
+        : err.message,
+    }));
+  }
+  res.redirect(303, '/admin/education?saved=1');
+});
+
+router.post('/education/course/:id/delete', form, requireCsrf, (req, res) => {
+  repo.deleteCourse(req.params.id);
+  res.redirect(303, '/admin/education');
+});
+
+router.post('/education/activity', form, requireCsrf, (req, res) => {
+  if (!String(req.body.title || '').trim()) return res.redirect(303, '/admin/education');
+  repo.saveActivity({ ...req.body, school_slug: req.body.school_slug || null });
+  res.redirect(303, '/admin/education?saved=1');
+});
+
+router.post('/education/activity/:id/delete', form, requireCsrf, (req, res) => {
+  repo.deleteActivity(req.params.id);
+  res.redirect(303, '/admin/education');
+});
+
+/* ----------------------------------------------------------------- albums */
+
+router.get('/albums', (req, res) => {
+  const albums = repo.listAlbums({ includeUnpublished: true }).map((a) => ({
+    ...a,
+    photos: repo.albumPhotos(a.slug),
+  }));
+  res.render('admin/albums', view('albums', {
+    title: 'Photo Albums',
+    albums,
+    /* Photographs that are in the library but in no album. They are the ones
+       that will not appear anywhere on the personal page, which is exactly the
+       thing that is invisible without a list like this. */
+    unfiled: all(
+      `SELECT id, storage_key, alt, width, height, created_at FROM media
+        WHERE album_slug IS NULL AND mime LIKE 'image/%'
+        ORDER BY created_at DESC LIMIT 60`
+    ),
+    saved: Boolean(req.query.saved),
+  }));
+});
+
+router.post('/albums/save', form, requireCsrf, (req, res) => {
+  const slug = slugify(req.body.slug || req.body.title);
+  if (!slug || !String(req.body.title || '').trim()) return res.redirect(303, '/admin/albums');
+  repo.saveAlbum(slug, req.body);
+  repo.logChange(req.session.email, 'album', 0, 'update', { slug });
+  res.redirect(303, '/admin/albums?saved=1');
+});
+
+router.post('/albums/:slug/delete', form, requireCsrf, (req, res) => {
+  /* Deleting an album never deletes photographs: media.album_slug is
+     ON DELETE SET NULL, so they return to the unfiled list. */
+  repo.deleteAlbum(req.params.slug);
+  repo.logChange(req.session.email, 'album', 0, 'delete', { slug: req.params.slug });
+  res.redirect(303, '/admin/albums');
+});
+
+router.post('/albums/assign', form, requireCsrf, (req, res) => {
+  const ids = [].concat(req.body.media_id || []).filter(Boolean);
+  for (const id of ids) repo.setMediaAlbum(id, req.body.album_slug || null);
+  res.redirect(303, '/admin/albums?saved=1');
+});
+
 /* --------------------------------------------------------------- messages */
 
 router.get('/messages', (req, res) => {
   res.render('admin/messages', view('messages', {
     title: 'Messages',
     messages: contact.listMessages(),
+    mailConfigured: mailer.isConfigured(),
+    forwarding: settings.getSetting('contact_forward'),
+    recipient: contact.recipient(),
+    undelivered: contact.undeliveredCount(),
+    notice: req.query.sent === '1' ? 'Message forwarded.'
+      : (req.query.sent === '0' ? 'That did not send. The reason is on the row.' : null),
   }));
+});
+
+/*
+ * Retry one forward.
+ *
+ * The message is already stored, so this is only ever about the notification.
+ * Retry is a button rather than a background queue: the operator is the only
+ * person who needs it, and a retry loop on a single writer SQLite box is
+ * machinery this does not need.
+ */
+router.post('/messages/:id/forward', form, requireCsrf, async (req, res) => {
+  const result = await contact.forward(Number(req.params.id));
+  res.redirect(303, `/admin/messages?sent=${result.ok ? '1' : '0'}`);
 });
 
 router.post('/messages/:id/read', form, requireCsrf, (req, res) => {

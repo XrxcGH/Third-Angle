@@ -9,13 +9,25 @@
       </span>
     </a>
 
+    <%
+      /* One list, so a page cannot be added to the site and forgotten in the
+         navigation. Labels are Title Case: they are names, not the tracking
+         labels the mono eyebrows use, and the uppercase is applied in CSS. */
+      const NAV = [
+        ['/work', 'Work'],
+        ['/disciplines', 'Disciplines'],
+        ['/education', 'Education'],
+        ['/professional', 'Professional'],
+        ['/personal', 'Personal'],
+        ['/documents', 'Documents'],
+        ['/log', 'Log'],
+        ['/search', 'Search'],
+      ];
+    %>
     <nav class="nav" aria-label="Main">
-      <a href="/work"<%- path.startsWith('/work') ? ' aria-current="page"' : '' %>>Work</a>
-      <a href="/disciplines"<%- path.startsWith('/disciplines') ? ' aria-current="page"' : '' %>>Disciplines</a>
-      <a href="/documents"<%- path.startsWith('/documents') ? ' aria-current="page"' : '' %>>Documents</a>
-      <a href="/log"<%- path.startsWith('/log') ? ' aria-current="page"' : '' %>>Log</a>
-      <a href="/resume"<%- path.startsWith('/resume') ? ' aria-current="page"' : '' %>>Resume</a>
-      <a href="/search"<%- path.startsWith('/search') ? ' aria-current="page"' : '' %>>Search</a>
+      <% for (const [href, label] of NAV) { %>
+        <a href="<%= href %>"<%- path === href || path.startsWith(href + '/') ? ' aria-current="page"' : '' %>><%= label %></a>
+      <% } %>
     </nav>
 
     <%

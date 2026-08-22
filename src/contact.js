@@ -20,6 +20,8 @@
 
 const crypto = require('node:crypto');
 const { get, all, run, nowIso } = require('./db');
+const mailer = require('./mailer');
+const settings = require('./settings');
 
 const MIN_SECONDS = 3;
 const MAX_SECONDS = 60 * 60 * 6;
@@ -122,8 +124,76 @@ function store(values, { ip, userAgent } = {}) {
   return Number(res.lastInsertRowid);
 }
 
+/* ---------------------------------------------------------------- forward
+ *
+ * The inbox is the system of record and the email is a copy, not the other way
+ * round. Every message is stored before anything is sent, so a relay that is
+ * down, misconfigured, or simply not set up yet costs a notification and never
+ * a message. mail_status is what turns that from a silent loss into a row the
+ * admin can see and retry.
+ */
+
+function recipient() {
+  const configured = String(settings.getSetting('contact_to') || '').trim();
+  if (configured) return configured;
+  // Falls back to the admin account, which is by definition an address the
+  // operator can read.
+  const owner = get('SELECT email FROM user WHERE active = 1 ORDER BY id LIMIT 1');
+  return owner ? owner.email : null;
+}
+
+/**
+ * Send one stored message on. Resolves either way: the caller is a request
+ * handler that has already answered the visitor, and a delivery problem is the
+ * operator's to see, not the visitor's.
+ */
+async function forward(id) {
+  const m = get('SELECT * FROM message WHERE id = ?', id);
+  if (!m) return { ok: false, error: 'No such message.' };
+
+  const setStatus = (status, error) => run(
+    'UPDATE message SET mail_status = ?, mail_error = ?, mailed_at = ? WHERE id = ?',
+    status, error || null, status === 'sent' ? nowIso() : null, id
+  );
+
+  if (!settings.getSetting('contact_forward')) {
+    setStatus('off', 'Forwarding is switched off in the admin settings.');
+    return { ok: false, error: 'Forwarding is off.' };
+  }
+  if (!mailer.isConfigured()) {
+    setStatus('unconfigured', 'SMTP is not configured. The message is stored in the inbox.');
+    return { ok: false, error: 'SMTP is not configured.' };
+  }
+  const to = recipient();
+  if (!to) {
+    setStatus('failed', 'No forwarding address. Set one in the admin settings.');
+    return { ok: false, error: 'No forwarding address.' };
+  }
+
+  try {
+    await mailer.send({
+      to,
+      // The visitor's address goes in Reply-To so a reply reaches them, while
+      // From stays the authenticated mailbox. See src/mailer.js.
+      replyTo: m.email,
+      subject: m.subject ? `Portfolio: ${m.subject}` : `Portfolio message from ${m.name}`,
+      text: mailer.formatContactMessage(m),
+    });
+    setStatus('sent', null);
+    return { ok: true };
+  } catch (err) {
+    setStatus('failed', String(err && err.message || err).slice(0, 500));
+    return { ok: false, error: String(err && err.message || err) };
+  }
+}
+
 function listMessages(limit = 100) {
   return all('SELECT * FROM message ORDER BY created_at DESC LIMIT ?', limit);
+}
+
+/** Messages the operator has not been told about by email. */
+function undeliveredCount() {
+  return get("SELECT COUNT(*) AS n FROM message WHERE mail_status != 'sent'").n;
 }
 
 function unreadCount() {
@@ -140,6 +210,7 @@ function remove(id) {
 
 module.exports = {
   issueStamp, stampAgeSeconds, validate, store,
+  forward, recipient, undeliveredCount,
   listMessages, unreadCount, markRead, remove,
   looksLikeEmail, MIN_SECONDS, PER_IP_PER_HOUR, LIMITS,
 };

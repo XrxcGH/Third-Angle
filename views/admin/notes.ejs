@@ -1,5 +1,5 @@
 <p class="eyebrow">Admin</p>
-<h1>Build log</h1>
+<h1>Build Log</h1>
 <p style="color: var(--text-muted); max-width: 62ch;">
   One field is required. This is the freshness mechanism: a site with no dated activity reads
   as abandoned, and an entry here costs thirty seconds. The public log hides itself entirely
@@ -10,11 +10,11 @@
   <input type="hidden" name="_csrf" value="<%= csrf %>">
   <div class="row2">
     <div class="field">
-      <label for="title">Title, optional</label>
+      <label for="title">Title, Optional</label>
       <input id="title" name="title" type="text">
     </div>
     <div class="field">
-      <label for="project_id">Related project, optional</label>
+      <label for="project_id">Related Project, Optional</label>
       <select id="project_id" name="project_id">
         <option value="">None</option>
         <% for (const p of projects) { %>
@@ -24,10 +24,10 @@
     </div>
   </div>
   <div class="field">
-    <label for="body_md">What happened</label>
+    <label for="body_md">What Happened</label>
     <textarea id="body_md" name="body_md" required></textarea>
   </div>
-  <button class="btn" type="submit">Post entry</button>
+  <button class="btn" type="submit">Post Entry</button>
 </form>
 
 <div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="padding:0; margin-top: var(--s-5);">

@@ -12,6 +12,8 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "seed": "node scripts/seed.js",
+    "seed:pages": "node scripts/seed-pages.js",
+    "seed:edu": "node scripts/seed-education.js",
     "reset-db": "node scripts/seed.js --reset",
     "fonts": "node scripts/fetch-fonts.mjs",
     "check:scope": "node scripts/scope-guard.mjs",

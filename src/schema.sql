@@ -350,3 +350,85 @@ CREATE TABLE IF NOT EXISTS message (
   created_at TEXT NOT NULL
 ) STRICT;
 CREATE INDEX IF NOT EXISTS message_unread ON message(read, created_at DESC);
+
+-- ---------------------------------------------------------------- settings
+
+-- Site-wide switches an operator flips without a deploy. Deliberately a closed
+-- key set rather than free text: an unknown key is a typo that silently does
+-- nothing, which is the worst possible behaviour for a feature flag. The
+-- allowlist lives in src/settings.js and is asserted by a test.
+CREATE TABLE IF NOT EXISTS setting (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+
+-- ---------------------------------------------------------------- education
+
+-- One row per institution. Separate from the resume page prose because the
+-- resume is a document and this is a record: a course added here shows up on
+-- /education, in search and in the term summary without anyone re-writing a
+-- paragraph.
+CREATE TABLE IF NOT EXISTS school (
+  slug        TEXT PRIMARY KEY,
+  name        TEXT NOT NULL,
+  kind        TEXT NOT NULL DEFAULT 'university'
+                CHECK (kind IN ('university','high-school','certification')),
+  credential  TEXT,
+  location    TEXT,
+  started_on  TEXT,
+  ended_on    TEXT,
+  honours     TEXT,
+  blurb       TEXT,
+  sort_key    TEXT NOT NULL
+) STRICT;
+
+-- A class. status is the whole point: "done" and "in progress" are different
+-- claims and a portfolio that blurs them is making the stronger one falsely.
+CREATE TABLE IF NOT EXISTS course (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  school_slug TEXT NOT NULL REFERENCES school(slug) ON DELETE CASCADE,
+  code        TEXT,
+  title       TEXT NOT NULL,
+  term        TEXT,
+  units       TEXT,
+  status      TEXT NOT NULL DEFAULT 'planned'
+                CHECK (status IN ('completed','in-progress','planned')),
+  note        TEXT,
+  sort_key    TEXT NOT NULL
+) STRICT;
+CREATE INDEX IF NOT EXISTS course_school ON course(school_slug, sort_key);
+-- The same class cannot be listed twice for one school. Case insensitive,
+-- because "MAE M20" and "MAE m20" are the same class and only the index stops
+-- both existing.
+CREATE UNIQUE INDEX IF NOT EXISTS course_unique
+  ON course(school_slug, title COLLATE NOCASE, term COLLATE NOCASE);
+
+-- Clubs, societies, teams and anything else that is participation rather than
+-- coursework. school_slug is nullable: not every activity belongs to a school.
+CREATE TABLE IF NOT EXISTS activity (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  school_slug TEXT REFERENCES school(slug) ON DELETE SET NULL,
+  title       TEXT NOT NULL,
+  role        TEXT,
+  detail      TEXT,
+  started_on  TEXT,
+  ended_on    TEXT,
+  kind        TEXT NOT NULL DEFAULT 'activity'
+                CHECK (kind IN ('activity','award','certification')),
+  sort_key    TEXT NOT NULL
+) STRICT;
+CREATE INDEX IF NOT EXISTS activity_school ON activity(school_slug, sort_key);
+
+-- ---------------------------------------------------------------- albums
+
+-- A photo collage is a folder. The page renders whatever is in the album, so
+-- uploading a photo IS publishing it and nothing has to be re-laid out by hand.
+CREATE TABLE IF NOT EXISTS album (
+  slug       TEXT PRIMARY KEY,
+  title      TEXT NOT NULL,
+  blurb      TEXT,
+  published  INTEGER NOT NULL DEFAULT 1,
+  sort_key   TEXT NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX IF NOT EXISTS album_title_ci ON album(title COLLATE NOCASE);

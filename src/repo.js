@@ -484,6 +484,235 @@ function logError(route, err) {
   } catch { /* never let error logging throw */ }
 }
 
+
+/* -------------------------------------------------------------- education
+ *
+ * The resume page is a document; this is a record. A class added here shows up
+ * on /education, in the term summary and in search without anyone rewriting a
+ * paragraph, which is the difference between a list that stays current and one
+ * that is accurate on the day it is written.
+ */
+
+const COURSE_STATUS = ['completed', 'in-progress', 'planned'];
+const ACTIVITY_KINDS = ['activity', 'award', 'certification'];
+const SCHOOL_KINDS = ['university', 'high-school', 'certification'];
+
+function listSchools() {
+  return all('SELECT * FROM school ORDER BY sort_key');
+}
+
+function getSchool(slug) {
+  return get('SELECT * FROM school WHERE slug = ?', slug);
+}
+
+function saveSchool(slug, fields) {
+  const kind = SCHOOL_KINDS.includes(fields.kind) ? fields.kind : 'university';
+  const existing = getSchool(slug);
+  if (existing) {
+    run(
+      `UPDATE school SET name=?, kind=?, credential=?, location=?, started_on=?,
+         ended_on=?, honours=?, blurb=? WHERE slug=?`,
+      fields.name, kind, fields.credential || null, fields.location || null,
+      fields.started_on || null, fields.ended_on || null, fields.honours || null,
+      fields.blurb || null, slug
+    );
+  } else {
+    run(
+      `INSERT INTO school (slug, name, kind, credential, location, started_on, ended_on, honours, blurb, sort_key)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      slug, fields.name, kind, fields.credential || null, fields.location || null,
+      fields.started_on || null, fields.ended_on || null, fields.honours || null,
+      fields.blurb || null, nextKeyFor('school')
+    );
+  }
+  return slug;
+}
+
+const deleteSchool = transaction((slug) => {
+  // course cascades, activity is set null: an activity can outlive the school
+  // record it was attached to, and losing it would be a silent data loss.
+  run('DELETE FROM school WHERE slug = ?', slug);
+});
+
+function listCourses(schoolSlug) {
+  return schoolSlug
+    ? all('SELECT * FROM course WHERE school_slug = ? ORDER BY sort_key', schoolSlug)
+    : all('SELECT * FROM course ORDER BY school_slug, sort_key');
+}
+
+/**
+ * Courses grouped by term, newest term first, with the terms in a stable order.
+ *
+ * Terms are compared as text with a deliberate season ordering rather than
+ * alphabetically: "Fall 2026" sorts before "Winter 2027" only if the code knows
+ * that Fall comes first in an academic year, and localeCompare does not.
+ */
+const SEASON_ORDER = { winter: 1, spring: 2, summer: 3, fall: 4, autumn: 4 };
+
+function termSortValue(term) {
+  const t = String(term || '').trim();
+  const m = /^([A-Za-z]+)\s*(\d{4})$/.exec(t);
+  if (!m) return { year: 0, season: 0, label: t };
+  return { year: Number(m[2]), season: SEASON_ORDER[m[1].toLowerCase()] || 0, label: t };
+}
+
+/**
+ * Courses grouped by status, which is the axis that carries a claim.
+ *
+ * "Completed" and "in progress" are different statements about the same
+ * subject, and a single alphabetical list of class names quietly makes the
+ * stronger one. Term is shown per row where it is recorded, rather than being
+ * the grouping: a class whose term nobody wrote down still belongs on the page.
+ */
+function coursesByStatus(schoolSlug) {
+  const rows = listCourses(schoolSlug);
+  const order = ['in-progress', 'completed', 'planned'];
+  const byTerm = (a, b) => {
+    const ta = termSortValue(a.term);
+    const tb = termSortValue(b.term);
+    // A recorded term sorts above an unrecorded one, newest first.
+    if (ta.year !== tb.year) return tb.year - ta.year;
+    if (ta.season !== tb.season) return tb.season - ta.season;
+    return a.sort_key.localeCompare(b.sort_key);
+  };
+  return order
+    .map((status) => ({ status, courses: rows.filter((c) => c.status === status).sort(byTerm) }))
+    .filter((g) => g.courses.length);
+}
+
+function coursesByTerm(schoolSlug) {
+  const rows = listCourses(schoolSlug);
+  const groups = new Map();
+  for (const c of rows) {
+    const key = c.term || 'Unscheduled';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(c);
+  }
+  return [...groups.entries()]
+    .map(([term, courses]) => ({ term, courses, ...termSortValue(term) }))
+    .sort((a, b) => (b.year - a.year) || (b.season - a.season) || b.label.localeCompare(a.label));
+}
+
+function courseCounts(schoolSlug) {
+  const rows = listCourses(schoolSlug);
+  const out = { completed: 0, 'in-progress': 0, planned: 0, total: rows.length };
+  for (const c of rows) out[c.status] = (out[c.status] || 0) + 1;
+  return out;
+}
+
+function saveCourse(fields) {
+  const status = COURSE_STATUS.includes(fields.status) ? fields.status : 'planned';
+  if (fields.id) {
+    run(
+      `UPDATE course SET school_slug=?, code=?, title=?, term=?, units=?, status=?, note=? WHERE id=?`,
+      fields.school_slug, fields.code || null, fields.title, fields.term || null,
+      fields.units || null, status, fields.note || null, Number(fields.id)
+    );
+    return Number(fields.id);
+  }
+  const res = run(
+    `INSERT INTO course (school_slug, code, title, term, units, status, note, sort_key)
+     VALUES (?,?,?,?,?,?,?,?)`,
+    fields.school_slug, fields.code || null, fields.title, fields.term || null,
+    fields.units || null, status, fields.note || null,
+    nextKeyFor('course', 'school_slug = ?', fields.school_slug)
+  );
+  return Number(res.lastInsertRowid);
+}
+
+function deleteCourse(id) {
+  run('DELETE FROM course WHERE id = ?', Number(id));
+}
+
+function listActivities(schoolSlug) {
+  return schoolSlug === undefined
+    ? all('SELECT * FROM activity ORDER BY sort_key')
+    : all(
+      schoolSlug === null
+        ? 'SELECT * FROM activity WHERE school_slug IS NULL ORDER BY sort_key'
+        : 'SELECT * FROM activity WHERE school_slug = ? ORDER BY sort_key',
+      ...(schoolSlug === null ? [] : [schoolSlug])
+    );
+}
+
+function saveActivity(fields) {
+  const kind = ACTIVITY_KINDS.includes(fields.kind) ? fields.kind : 'activity';
+  if (fields.id) {
+    run(
+      `UPDATE activity SET school_slug=?, title=?, role=?, detail=?, started_on=?, ended_on=?, kind=? WHERE id=?`,
+      fields.school_slug || null, fields.title, fields.role || null, fields.detail || null,
+      fields.started_on || null, fields.ended_on || null, kind, Number(fields.id)
+    );
+    return Number(fields.id);
+  }
+  const res = run(
+    `INSERT INTO activity (school_slug, title, role, detail, started_on, ended_on, kind, sort_key)
+     VALUES (?,?,?,?,?,?,?,?)`,
+    fields.school_slug || null, fields.title, fields.role || null, fields.detail || null,
+    fields.started_on || null, fields.ended_on || null, kind, nextKeyFor('activity')
+  );
+  return Number(res.lastInsertRowid);
+}
+
+function deleteActivity(id) {
+  run('DELETE FROM activity WHERE id = ?', Number(id));
+}
+
+/* ----------------------------------------------------------------- albums */
+
+function listAlbums({ includeUnpublished = false } = {}) {
+  return all(
+    `SELECT a.*, (SELECT COUNT(*) FROM media m WHERE m.album_slug = a.slug) AS photo_count
+       FROM album a ${includeUnpublished ? '' : 'WHERE a.published = 1'} ORDER BY a.sort_key`
+  );
+}
+
+function getAlbum(slug, { includeUnpublished = false } = {}) {
+  return get(
+    `SELECT * FROM album WHERE slug = ? ${includeUnpublished ? '' : 'AND published = 1'}`,
+    slug
+  );
+}
+
+/**
+ * Every photo in an album, newest capture first.
+ *
+ * Only rows with real dimensions come back. The collage packs by aspect ratio,
+ * and a row with no width or height has no ratio: including it would make the
+ * layout fall back to a guess for that one tile and visibly break the row.
+ */
+function albumPhotos(slug) {
+  return all(
+    `SELECT id, storage_key, alt, caption, width, height, captured_on, created_at, mime
+       FROM media
+      WHERE album_slug = ? AND width IS NOT NULL AND height IS NOT NULL AND width > 0 AND height > 0
+      ORDER BY COALESCE(captured_on, created_at) DESC, id DESC`,
+    slug
+  );
+}
+
+function saveAlbum(slug, fields) {
+  const existing = get('SELECT slug FROM album WHERE slug = ?', slug);
+  if (existing) {
+    run('UPDATE album SET title=?, blurb=?, published=? WHERE slug=?',
+      fields.title, fields.blurb || null, fields.published ? 1 : 0, slug);
+  } else {
+    run('INSERT INTO album (slug, title, blurb, published, sort_key) VALUES (?,?,?,?,?)',
+      slug, fields.title, fields.blurb || null, fields.published ? 1 : 0, nextKeyFor('album'));
+  }
+  return slug;
+}
+
+function deleteAlbum(slug) {
+  // media.album_slug is ON DELETE SET NULL, so the photos survive and simply
+  // stop being in an album. Deleting an album must never delete photographs.
+  run('DELETE FROM album WHERE slug = ?', slug);
+}
+
+function setMediaAlbum(mediaId, albumSlug) {
+  run('UPDATE media SET album_slug = ? WHERE id = ?', albumSlug || null, Number(mediaId));
+}
+
 module.exports = {
   listFacets, getFacet, facetCounts,
   listProjects, getProjectBySlug, listProjectsByFacet,
@@ -492,4 +721,9 @@ module.exports = {
   search, toMatchQuery, queryTerms, editDistance, correctTerms, upsertSearchRow, reindexProject, reindexAll, plain,
   getPage, getPageForEdit, savePage, PAGE_SLUGS,
   logChange, findRedirect, logError,
+  listSchools, getSchool, saveSchool, deleteSchool,
+  listCourses, coursesByTerm, coursesByStatus, courseCounts, saveCourse, deleteCourse,
+  listActivities, saveActivity, deleteActivity,
+  listAlbums, getAlbum, albumPhotos, saveAlbum, deleteAlbum, setMediaAlbum,
+  COURSE_STATUS, ACTIVITY_KINDS, SCHOOL_KINDS, termSortValue,
 };

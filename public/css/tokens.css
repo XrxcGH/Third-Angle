@@ -47,6 +47,15 @@
   --mark-bg:       #FFC773;  /* hazard amber wash */
   --mark-ink:      #151C11;  /* 11.33:1 on --mark-bg */
 
+  /* ---- scrim ----
+     A caption sits on top of a photograph, not on the canvas, so it takes its
+     contrast from a gradient rather than from a surface token. Identical in
+     both themes for the same reason: the photograph underneath does not change
+     when the reader flips the site to dark. */
+  --shade-strong:  rgba(10, 14, 9, .78);
+  --shade-none:    rgba(10, 14, 9, 0);
+  --on-shade:      #FFFFFF;  /* 13.7:1 on --shade-strong over any image */
+
   /* ---- quiet supports ---- */
   --copper:        #925512;  /* Bus,       5.44:1 */
   --patina:        #006963;  /* Verdigris, 6.00:1 */
@@ -122,6 +131,10 @@
     --mark-bg:     #7A4712;  /* 7.02:1 against --mark-ink */
     --mark-ink:    #F2F6F0;
 
+    --shade-strong: rgba(10, 14, 9, .78);
+    --shade-none:   rgba(10, 14, 9, 0);
+    --on-shade:     #FFFFFF;
+
     --copper:      #DBA475;  /*  8.41:1 */
     --patina:      #73C9C1;  /*  9.53:1 */
 
@@ -166,6 +179,10 @@
 
   --mark-bg:     #7A4712;
   --mark-ink:    #F2F6F0;
+
+  --shade-strong: rgba(10, 14, 9, .78);
+  --shade-none:   rgba(10, 14, 9, 0);
+  --on-shade:     #FFFFFF;
 
   --copper:      #DBA475;
   --patina:      #73C9C1;
@@ -226,6 +243,12 @@
 
     --mark-bg:     #FFFFFF;
     --mark-ink:    #000000;
+
+    /* No scrim on paper: the caption prints under the photograph in ordinary
+       ink rather than reversed out of a gradient that costs a page of toner. */
+    --shade-strong: rgba(255, 255, 255, 0);
+    --shade-none:   rgba(255, 255, 255, 0);
+    --on-shade:     #000000;
 
     --copper:      #333333;
     --patina:      #333333;

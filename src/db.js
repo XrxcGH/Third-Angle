@@ -68,9 +68,50 @@ function assertEnvironment() {
   }
 }
 
+/*
+ * Columns added to a table that already exists.
+ *
+ * schema.sql is written with CREATE TABLE IF NOT EXISTS, which is idempotent
+ * for new tables and a no-op for a table that is already there. A column added
+ * to an existing table therefore never appears on a database created by an
+ * earlier version, and the failure is a runtime "no such column" on whichever
+ * page happens to read it first.
+ *
+ * Kept as an explicit, ordered list rather than a migrations directory: this is
+ * a single-writer SQLite file with one operator, and a folder of numbered files
+ * would be more machinery than the problem has.
+ */
+const ADDED_COLUMNS = [
+  // A photo belongs to at most one album. The collage pages render an album,
+  // so setting this IS publishing the photo.
+  ['media', 'album_slug', 'TEXT REFERENCES album(slug) ON DELETE SET NULL'],
+  // Pins the resume and the CV to the top of the document library. Everything
+  // else is 'other' and sorts below by its fractional index.
+  ['document', 'doc_role', "TEXT NOT NULL DEFAULT 'other'"],
+  // Delivery state for a contact message. The message is stored first and
+  // mailed second, so a mail failure can never lose the message; this column is
+  // what turns that from a silent loss into a visible retry.
+  ['message', 'mail_status', "TEXT NOT NULL DEFAULT 'pending'"],
+  ['message', 'mail_error', 'TEXT'],
+  ['message', 'mailed_at', 'TEXT'],
+];
+
+function addMissingColumns() {
+  for (const [table, column, decl] of ADDED_COLUMNS) {
+    const exists = db.prepare(`PRAGMA table_info(${table})`).all()
+      .some((c) => c.name === column);
+    if (!exists) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${decl}`);
+  }
+}
+
 function migrate() {
   const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
   db.exec(sql);
+  addMissingColumns();
+  // Indexes over added columns have to come after the columns exist.
+  db.exec('CREATE INDEX IF NOT EXISTS media_album ON media(album_slug)');
+  db.exec('CREATE INDEX IF NOT EXISTS document_role ON document(doc_role, sort_key)');
+  db.exec('CREATE INDEX IF NOT EXISTS message_mail_status ON message(mail_status, created_at DESC)');
 }
 
 /* ---- thin query helpers -------------------------------------------------
@@ -99,6 +140,6 @@ const nowIso = () => new Date().toISOString();
 
 module.exports = {
   db, get, all, run, exec, transaction,
-  migrate, assertEnvironment, nowIso,
+  migrate, addMissingColumns, assertEnvironment, nowIso,
   DATA_DIR, DB_PATH, UPLOAD_DIR,
 };

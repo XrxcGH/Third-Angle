@@ -32,7 +32,7 @@
   <% } %>
 
   <div class="chips" style="margin-top: var(--s-4);">
-    <span class="badge" data-status="<%= project.status %>"><%= project.status.replace('-', ' ') %></span>
+    <span class="badge" data-status="<%= project.status %>"><%= label('status', project.status) %></span>
     <% for (const f of project.facets) { %>
       <a class="chip" href="/disciplines/<%= f.slug %>">
         <span class="dot" style="background: var(--<%= f.color_token %>);"></span><%= f.label %>
@@ -71,7 +71,7 @@
   <% if (depth >= 6 && noted.length) { %>
     <section class="section">
       <p class="eyebrow">Discipline breakdown</p>
-      <h2>What this was, per discipline</h2>
+      <h2>What This Was, per Discipline</h2>
       <div class="stack" style="margin-top: var(--s-4);">
         <% for (const f of noted) { %>
           <div class="discipline-row">
@@ -83,7 +83,7 @@
             %>
             <div class="eyebrow" style="margin:0; color: var(--<%= f.color_token %>);">
               <%= f.label %>
-              <span style="color: var(--text-muted); display:block;"><%= f.weight %></span>
+              <span style="color: var(--text-muted); display:block;"><%= label('weight', f.weight) %></span>
             </div>
             <p style="margin:0;"><%= f.contribution_note %></p>
           </div>
@@ -114,7 +114,7 @@
       <ul class="stack" style="list-style:none; padding:0; margin-top: var(--s-3);">
         <% for (const l of project.links) { %>
           <li style="display:flex; gap: var(--s-3); align-items:baseline;">
-            <span class="mono" style="font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color: var(--text-muted); min-width:5.5rem;"><%= l.kind %></span>
+            <span class="mono" style="font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color: var(--text-muted); min-width:5.5rem;"><%= label('linkKind', l.kind) %></span>
             <a href="<%= l.url %>" rel="noopener"><%= l.label %></a>
           </li>
         <% } %>
@@ -123,7 +123,7 @@
   <% } %>
 
   <nav style="margin-top: var(--s-7); display:flex; gap: var(--s-4); flex-wrap:wrap;">
-    <a href="/work">All work</a>
+    <a href="/work">All Work</a>
     <% if (project.facets[0]) { %>
       <%
         /* Not toLowerCase(). The labels carry acronyms, and lower-casing

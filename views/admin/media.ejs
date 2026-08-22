@@ -24,7 +24,7 @@
   </div>
 
   <div class="field">
-    <label for="alt">Alt text</label>
+    <label for="alt">Alt Text</label>
     <input id="alt" name="alt" type="text" required
            placeholder="Crimp terminations on the 12V distribution panel, before routing">
     <span class="hint">
@@ -38,16 +38,16 @@
       <label for="kind">Kind</label>
       <select id="kind" name="kind">
         <% for (const k of ['photo','cad_render','drawing','schematic','harness_photo','plot','video','other']) { %>
-          <option value="<%= k %>"><%= k.replace('_', ' ') %></option>
+          <option value="<%= k %>"><%= label('mediaKind', k) %></option>
         <% } %>
       </select>
     </div>
     <div class="field">
       <label for="origin">Origin</label>
       <select id="origin" name="origin">
-        <option value="original">original, I made or shot this</option>
-        <option value="generated">generated, a render or plot from my work</option>
-        <option value="third-party">third party, someone else made it</option>
+        <option value="original"><%= label('origin', 'original') %></option>
+        <option value="generated"><%= label('origin', 'generated') %></option>
+        <option value="third-party"><%= label('origin', 'third-party') %></option>
       </select>
       <span class="hint">Only "original" satisfies the publish gate on physical projects.</span>
     </div>
@@ -55,11 +55,11 @@
 
   <div class="row2">
     <div class="field">
-      <label for="captured_on">Captured on</label>
+      <label for="captured_on">Captured On</label>
       <input id="captured_on" name="captured_on" type="text" placeholder="2026-08-21">
     </div>
     <div class="field">
-      <label for="project_id">Attach to project</label>
+      <label for="project_id">Attach to Project</label>
       <select id="project_id" name="project_id">
         <option value="">Not yet</option>
         <% for (const p of projects) { %>
@@ -70,7 +70,7 @@
   </div>
 
   <div class="field">
-    <label for="caption">Caption, optional</label>
+    <label for="caption">Caption, Optional</label>
     <input id="caption" name="caption" type="text">
   </div>
 
@@ -90,11 +90,11 @@
 <div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="padding:0; margin-top: var(--s-3);">
   <table class="admin-table">
     <thead>
-      <tr><th style="width:96px;">Preview</th><th>Alt and caption</th><th>Kind</th><th>Origin</th><th>Size</th><th style="text-align:right;">Actions</th></tr>
+      <tr><th style="width:96px;">Preview</th><th>Alt and Caption</th><th>Album</th><th>Kind</th><th>Origin</th><th>Size</th><th style="text-align:right;">Actions</th></tr>
     </thead>
     <tbody>
       <% if (!items.length) { %>
-        <tr><td colspan="6" style="color: var(--text-muted);">Nothing uploaded yet.</td></tr>
+        <tr><td colspan="7" style="color: var(--text-muted);">Nothing uploaded yet.</td></tr>
       <% } %>
       <% for (const m of items) { %>
         <tr>
@@ -112,9 +112,24 @@
             <div style="font-size:.9rem;"><%= m.alt %></div>
             <% if (m.caption) { %><div style="font-size:.82rem; color: var(--text-muted);"><%= m.caption %></div><% } %>
           </td>
-          <td><span class="badge"><%= m.kind.replace('_', ' ') %></span></td>
           <td>
-            <span class="badge" style="<%= m.origin === 'original' ? 'border-color: var(--patina); color: var(--patina);' : '' %>"><%= m.origin %></span>
+            <%# An album is what publishes a photograph on the personal page, so
+                it is set here rather than only on the albums screen. %>
+            <form method="post" action="/admin/media/<%= m.id %>/album" style="display:flex; gap:4px;">
+              <input type="hidden" name="_csrf" value="<%= csrf %>">
+              <label class="visually-hidden" for="album-<%= m.id %>">Album</label>
+              <select id="album-<%= m.id %>" name="album_slug">
+                <option value="">None</option>
+                <% for (const a of albums) { %>
+                  <option value="<%= a.slug %>"<%= m.album_slug === a.slug ? ' selected' : '' %>><%= a.title %></option>
+                <% } %>
+              </select>
+              <button class="btn btn-quiet btn-sm" type="submit">Set</button>
+            </form>
+          </td>
+          <td><span class="badge"><%= label('mediaKind', m.kind) %></span></td>
+          <td>
+            <span class="badge" style="<%= m.origin === 'original' ? 'border-color: var(--patina); color: var(--patina);' : '' %>"><%= label('origin', m.origin).split(',')[0] %></span>
           </td>
           <td class="mono" style="font-size:.7rem; white-space:nowrap;">
             <%= (m.bytes / 1024).toFixed(0) %> KB<% if (m.width) { %><br><%= m.width %>&times;<%= m.height %><% } %>
@@ -124,8 +139,7 @@
               <form method="post" action="/admin/media/<%= m.id %>/attach" style="display:flex; gap:4px;">
                 <input type="hidden" name="_csrf" value="<%= csrf %>">
                 <label class="visually-hidden" for="attach-<%= m.id %>">Attach to project</label>
-                <select id="attach-<%= m.id %>" name="project_id"
-                        style="font-size:.75rem; padding:4px 6px; border-radius: var(--r-control); border:1px solid var(--hairline); background: var(--surface); color: var(--text-body);">
+                <select id="attach-<%= m.id %>" name="project_id">
                   <option value="">Attach to…</option>
                   <% for (const p of projects) { %><option value="<%= p.id %>"><%= p.title %></option><% } %>
                 </select>

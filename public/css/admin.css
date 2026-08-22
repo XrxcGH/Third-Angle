@@ -34,7 +34,19 @@
 .admin .field { margin-bottom: var(--s-3); }
 .admin .row2 { margin-bottom: var(--s-3); }
 
-.admin-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+/*
+ * table-layout: fixed is not cosmetic here.
+ *
+ * With automatic layout the table sizes to its widest content, and a table
+ * inside an overflow:auto wrapper that does this pushes the DOCUMENT sideways
+ * as well as its own scroll box: the page gained several hundred pixels of
+ * empty scrollable canvas that no element's bounding box accounted for, which
+ * is the least debuggable form the bug takes. Fixed layout resolves the columns
+ * from the header row and keeps the table at its declared width, so the wrapper
+ * is the only thing that ever scrolls.
+ */
+.admin-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: .9rem; }
+.admin-table td, .admin-table th { overflow-wrap: break-word; }
 .admin-table th {
   text-align: left; font-family: var(--f-mono); font-size: .58rem; font-stretch: 80%;
   letter-spacing: .13em; text-transform: uppercase; color: var(--text-muted);
@@ -45,11 +57,33 @@
 .admin-table .actions { display: flex; gap: 5px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
 
 /*
+ * A select sizes itself to its longest option. In a table cell that means one
+ * album called "Sport And The Outdoors" sets the width of the whole column, the
+ * table grows past its scroll container, and the page acquires a horizontal
+ * scrollbar that no element's bounding box explains. The popup still shows the
+ * full text, so nothing is lost by capping the closed control.
+ */
+.admin-table select {
+  max-width: 11rem;
+  min-width: 0;
+  font-size: .75rem;
+  padding: 4px 6px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--text-body);
+  font-family: var(--f-body);
+}
+.admin-table td form { min-width: 0; }
+
+/*
  * A table of eight columns cannot reflow into 320px, and squeezing it produces
  * one word per line. It scrolls inside .table-wrap instead. min-width keeps the
  * columns legible while scrolling rather than collapsing them to fit the box.
  */
-.table-wrap .admin-table { min-width: 40rem; }
+/* Wide enough that seven columns stay readable while scrolling, rather than
+   collapsing into one word per line. */
+.table-wrap .admin-table { min-width: 46rem; }
 
 .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr)); gap: 1px;
   background: var(--hairline); border: 1px solid var(--hairline); border-radius: var(--r-card); overflow: hidden; }

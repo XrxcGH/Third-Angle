@@ -1,6 +1,6 @@
 <div style="max-width: 26rem; margin: var(--s-6) auto;">
   <p class="eyebrow">Third Angle</p>
-  <h1 style="margin-bottom: var(--s-4);">Sign in</h1>
+  <h1 style="margin-bottom: var(--s-4);">Sign In</h1>
 
   <% if (error) { %><p class="flash error"><%= error %></p><% } %>
 
@@ -19,7 +19,7 @@
 
     <% if (needsTotp) { %>
       <div class="field">
-        <label for="totp">Authenticator code</label>
+        <label for="totp">Authenticator Code</label>
         <input id="totp" name="totp" type="text" inputmode="numeric" pattern="[0-9]{6}"
                maxlength="6" autocomplete="one-time-code" required
                style="font-family: var(--f-mono); letter-spacing: .3em;">
@@ -27,6 +27,6 @@
       </div>
     <% } %>
 
-    <button class="btn" type="submit" style="width:100%;">Sign in</button>
+    <button class="btn" type="submit" style="width:100%;">Sign In</button>
   </form>
 </div>

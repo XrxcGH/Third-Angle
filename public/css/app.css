@@ -32,7 +32,18 @@ body {
   accent-color: var(--accent);
 }
 
-body > main { flex: 1 0 auto; }
+/*
+ * min-width: 0 is load bearing, not defensive.
+ *
+ * body is a flex column, so main is a flex item, and a flex item's automatic
+ * minimum size is its content's min-content width. A table with a min-width
+ * inside main therefore pushed main wider than the viewport even though the
+ * table sat in an overflow:auto wrapper that was scrolling correctly on its
+ * own. The symptom was a page that scrolled sideways with no element whose
+ * bounding box was outside the viewport, which is the least debuggable form
+ * this bug takes.
+ */
+body > main { flex: 1 0 auto; min-width: 0; }
 
 /* ---------------------------------------------------------- type */
 
@@ -204,6 +215,21 @@ code {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   max-width: 100%;
+  /* So the wrapper itself can be narrower than the table it scrolls. */
+  min-width: 0;
+  /*
+   * containment, and it is doing real work.
+   *
+   * overflow-x: auto alone was not enough. A table with a min-width inside it
+   * still contributed that width to the document's scrollable area, so the
+   * whole page could be dragged sideways into several hundred pixels of empty
+   * canvas while the wrapper itself scrolled correctly. Nothing had a bounding
+   * box outside the viewport, overflow-x: clip on an ancestor did not stop it,
+   * and even the root element would not clip it, because the root's overflow is
+   * propagated to the viewport rather than applied. Containment is the
+   * mechanism that actually isolates the box.
+   */
+  contain: layout paint;
 }
 .table-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -533,6 +559,322 @@ code {
   display: flex; justify-content: space-between; gap: var(--s-2) var(--s-4); flex-wrap: wrap;
 }
 .site-footer a { color: var(--text-muted); }
+
+/* ---------------------------------------------------------- collage
+ *
+ * Justified rows, packed by flexbox rather than by the server. Each tile
+ * carries its aspect ratio as --ar, which gives it a natural width at the row
+ * height and a proportional share of whatever is left over. Every tile in a row
+ * lands on the same height and the row fills the width exactly, at any viewport
+ * width, with no JavaScript and no stored order. Adding a photograph re-packs
+ * everything below it for free. See src/collage.js.
+ */
+
+.collage {
+  --row-h: 220px;
+  --collage-gap: 6px;
+  /*
+   * How much of its natural width a tile claims as its flex-basis.
+   *
+   * At rest this changes nothing: basis and grow are both proportional to the
+   * aspect ratio, so a tile's final width comes out proportional to its aspect
+   * ratio whatever this is. What it does change is how much free space each row
+   * has left over, and free space is the only thing flex-grow can redistribute.
+   * At 1.0 a hovered tile can only take the few pixels a row happens to have
+   * spare, and the expansion is barely visible. Below about 0.7 the rows start
+   * carrying more tiles than they should and the crop gets heavy.
+   */
+  --tile-fit: .78;
+  --tile-hover: 3.4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--collage-gap);
+  /* Hovering the gap must not shrink the row it is between. */
+  pointer-events: none;
+}
+
+/*
+ * The last row.
+ *
+ * Without this, flex-grow stretches the final one or two photographs across
+ * the whole width and a wall of tidy rows ends in one enormous tile. A filler
+ * with an enormous grow takes the slack instead, so the last row sits at its
+ * natural size, left aligned, like every justified gallery worth copying.
+ */
+.collage::after {
+  content: '';
+  /*
+   * Not 999999. An enormous grow leaves the last row at exactly its natural
+   * width and a hard empty gap to its right; a moderate one lets the last row
+   * take a share of the slack and stop, so it reads as the end of a wall rather
+   * than as a row that failed to load. Every other row still fills exactly,
+   * because a row only reaches the filler once it is the last one.
+   */
+  flex-grow: 5;
+  flex-basis: 0;
+  height: 0;
+  min-width: 0;
+}
+
+.collage-item {
+  pointer-events: auto;
+  position: relative;
+  display: block;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--r-card);
+  border: 1px solid var(--hairline);
+  background: var(--sunken);
+  height: var(--row-h);
+  flex-basis: calc(var(--ar) * var(--row-h) * var(--tile-fit));
+  flex-grow: var(--ar);
+  /* Properties enumerated, never `all`, and declared on the base selector so
+     the return trip animates too. See DESIGN.md, Motion. */
+  transition:
+    flex-grow var(--t-group) var(--ease),
+    border-color var(--t-hover) var(--ease),
+    box-shadow var(--t-hover) var(--ease);
+}
+
+.collage-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /*
+   * cover, not contain. contain would letterbox every tile whose shape does not
+   * match its row and reintroduce exactly the dead space this layout exists to
+   * remove. The crop is what makes a wall of mixed shapes read as one surface.
+   */
+  object-fit: cover;
+  object-position: center;
+  transition: filter var(--t-group) var(--ease), transform var(--t-group) var(--ease);
+}
+
+/*
+ * Hover, and focus, which has to behave identically or the wall is unusable
+ * from a keyboard.
+ *
+ * The hovered tile takes a much larger share of its row, so the tiles beside it
+ * give up width and shrink. Nothing is scaled and nothing overlaps: the row
+ * keeps its height and its total width, so no other row moves and the page
+ * never reflows. The image also un-crops slightly as its frame widens, which is
+ * the point, and lifts its saturation back from the resting state.
+ */
+.collage-item:hover,
+.collage-item:focus-visible {
+  flex-grow: calc(var(--ar) * var(--tile-hover));
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  z-index: 2;
+}
+
+/* The rest of the wall settles back, so the focused photograph is the only one
+   at full strength. A token swap and a saturation drop, never opacity. */
+.collage:has(.collage-item:hover) .collage-item:not(:hover) img,
+.collage:has(.collage-item:focus-visible) .collage-item:not(:focus-visible) img {
+  filter: saturate(.55) contrast(.98);
+}
+
+.collage-item figcaption {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: var(--s-3) var(--s-3) var(--s-2);
+  font-size: .78rem;
+  line-height: 1.35;
+  color: var(--on-shade);
+  background: linear-gradient(to top, var(--shade-strong), var(--shade-none));
+  opacity: 0;
+  transition: opacity var(--t-group) var(--ease);
+}
+.collage-item:hover figcaption,
+.collage-item:focus-visible figcaption { opacity: 1; }
+
+/* A taller row on a large monitor. The row height is only a basis: flexbox
+   still fills the width exactly at every size, so this changes proportion and
+   never whether the wall fits. */
+@media (min-width: 1400px) { .collage { --row-h: 260px; } }
+
+/*
+ * Narrow screens get a different layout, not a squeezed version of this one.
+ *
+ * Justified rows need at least two tiles per row to mean anything. Below about
+ * 700px only one fits, and a single tile in a row is stretched to the full
+ * width at the fixed row height, which crops every photograph to the same
+ * letterbox band. A portrait does not survive that: the crop throws away the
+ * part of the frame the photograph is of.
+ *
+ * Two masonry columns instead. Each tile keeps its true aspect ratio, so
+ * nothing is cropped, and columns close up behind each other so there is no
+ * dead space between rows of unequal height. Hover expansion is not lost by
+ * this, because a touch screen has no hover; focus still opens the caption.
+ */
+@media (max-width: 700px) {
+  .collage {
+    --collage-gap: 4px;
+    display: block;
+    column-count: 2;
+    column-gap: var(--collage-gap);
+    pointer-events: auto;
+  }
+  .collage::after { display: none; }
+  .collage-item {
+    height: auto;
+    aspect-ratio: var(--ar);
+    margin-bottom: var(--collage-gap);
+    break-inside: avoid;
+  }
+  /* Nothing reflows on a tap, so the focused tile is marked rather than grown. */
+  .collage-item:hover, .collage-item:focus-visible { flex-grow: unset; }
+  .collage-item figcaption { opacity: 1; }
+}
+
+/* One column only at the narrowest sizes, where two columns would be about
+   140px each and the photographs would be postage stamps. A 390px phone gets
+   two, which is what a photo grid is expected to look like. */
+@media (max-width: 359px) {
+  .collage { column-count: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The state change still happens. It is information, not decoration. */
+  .collage-item, .collage-item img, .collage-item figcaption { transition-duration: 1ms !important; }
+}
+
+@media (forced-colors: active) {
+  .collage-item:hover, .collage-item:focus-visible { border-color: Highlight; }
+  .collage-item figcaption { background: Canvas; color: CanvasText; }
+}
+
+@media print {
+  /* Growing on hover is meaningless on paper, and a wall of tiles at row height
+     wastes a page. Print at a fixed grid instead. */
+  .collage { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .collage::after { display: none; }
+  .collage-item { height: auto; aspect-ratio: var(--ar); }
+  .collage-item figcaption { position: static; opacity: 1; background: none; color: var(--text-muted); }
+}
+
+/* ---------------------------------------------------------- profile cards */
+
+/* GitHub and LinkedIn panels. Two columns where there is room, one where there
+   is not, and the collapse is on the container so it works inside a narrow
+   column on a wide screen. */
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+  gap: var(--s-4);
+  align-items: start;
+}
+.profile-grid > * { min-width: 0; }
+
+.profile-head { display: flex; gap: var(--s-3); align-items: center; margin-bottom: var(--s-3); }
+.profile-head img {
+  width: 56px; height: 56px; flex: none;
+  border-radius: var(--r-card);
+  border: 1px solid var(--hairline);
+  background: var(--sunken);
+}
+.profile-head .profile-name {
+  font-family: var(--f-display); font-weight: var(--w-med);
+  font-size: 1.0625rem; color: var(--text-strong); display: block;
+}
+
+/* A repository. Not a .card: those are project records and carry a different
+   contract. */
+.repo-list { display: flex; flex-direction: column; gap: 1px; background: var(--hairline);
+  border: 1px solid var(--hairline); border-radius: var(--r-card); overflow: hidden; }
+.repo {
+  display: block; text-decoration: none; background: var(--surface);
+  padding: var(--s-3) var(--s-4);
+  transition: background-color var(--t-hover) var(--ease);
+}
+.repo:hover { background: var(--sunken); }
+.repo-name { font-family: var(--f-mono); font-size: .82rem; font-stretch: 84%;
+  color: var(--accent-ink); display: block; }
+.repo:hover .repo-name { color: var(--accent); }
+.repo-desc { font-size: .9rem; color: var(--text-body); margin: 3px 0 0; }
+.repo-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px;
+  font-family: var(--f-mono); font-size: .58rem; font-stretch: 80%;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+.repo-lang-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block;
+  background: var(--text-muted); margin-right: 5px; vertical-align: baseline; }
+
+/* ---------------------------------------------------------- education */
+
+.term-block { border-top: 1px solid var(--hairline); padding-top: var(--s-4); margin-top: var(--s-4); }
+.term-block:first-of-type { border-top: 0; margin-top: 0; padding-top: 0; }
+
+.course-list { display: grid; gap: 1px; background: var(--hairline);
+  border: 1px solid var(--hairline); border-radius: var(--r-card); overflow: hidden; }
+.course {
+  background: var(--surface);
+  display: grid;
+  grid-template-columns: minmax(0, 7rem) minmax(0, 1fr) auto;
+  gap: var(--s-2) var(--s-4);
+  align-items: baseline;
+  padding: var(--s-3) var(--s-4);
+}
+@media (max-width: 640px) {
+  .course { grid-template-columns: minmax(0, 1fr) auto; }
+  .course .course-code { grid-column: 1 / -1; }
+}
+.course-code { font-family: var(--f-mono); font-size: .72rem; font-stretch: 82%;
+  letter-spacing: .04em; color: var(--text-muted); font-variant-numeric: tabular-nums lining-nums; }
+.course-title { color: var(--text-strong); }
+.course-note { display: block; font-size: .85rem; color: var(--text-muted); margin-top: 2px; }
+
+/* Status is carried on a second channel as well as colour: the badge text says
+   it outright, so it survives forced-colors and a monochrome print. */
+.badge[data-course="completed"] { border-color: var(--patina); color: var(--patina); }
+.badge[data-course="in-progress"] { border-color: var(--accent); color: var(--accent-ink); }
+.badge[data-course="planned"] { border-color: var(--hairline); color: var(--text-muted); }
+
+/* ---------------------------------------------------------- documents */
+
+.doc-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s-3) var(--s-4);
+  align-items: start;
+  padding: var(--s-4) 0;
+  border-bottom: 1px solid var(--hairline);
+}
+@media (max-width: 640px) { .doc-row { grid-template-columns: minmax(0, 1fr); } }
+.doc-row h3 { margin: 0 0 4px; }
+.doc-row .doc-desc { margin: 0; color: var(--text-muted); font-size: .95rem; max-width: 62ch; }
+
+/*
+ * The inline PDF viewer.
+ *
+ * An <object> rather than an <iframe>: it falls back to its own children when
+ * the browser has no PDF plugin, which is most mobile browsers, so the download
+ * and open-in-a-tab controls appear there automatically instead of a blank box.
+ */
+/*
+ * Hidden below this width, and that is not a responsive compromise.
+ *
+ * Mobile browsers overwhelmingly have no inline PDF renderer, so an <object>
+ * there is an 80vh box of nothing with two buttons stranded in the middle of
+ * it. The same two buttons are already above the frame, where they are the
+ * whole control on a phone. On a desktop browser that also cannot render one,
+ * the fallback inside still does its job.
+ */
+.pdf-frame { display: none; }
+@media (min-width: 900px) {
+  .pdf-frame {
+    display: block;
+    width: 100%;
+    height: min(80vh, 900px);
+    min-height: 420px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-card);
+    background: var(--sunken);
+  }
+}
+.pdf-fallback { padding: var(--s-5); text-align: center; color: var(--text-muted); }
+.pdf-note { color: var(--text-muted); font-size: .85rem; }
+@media (min-width: 900px) { .pdf-note { display: none; } }
 
 /* ---------------------------------------------------------- controls
  *

@@ -16,7 +16,7 @@
       <div class="metric-label">Pages</div>
     </div>
     <div class="metric">
-      <div class="metric-value"><%= (doc.bytes / 1024 / 1024).toFixed(1) %><span style="font-size:.6em; color: var(--text-muted);"> MB</span></div>
+      <div class="metric-value"><%= fmtBytes(doc.bytes) %></div>
       <div class="metric-label">Size</div>
     </div>
     <div class="metric">
@@ -32,14 +32,14 @@
          control is in place: a PDF is the one accepted type that cannot be
          re-encoded on the way in. */
     %>
-    <a class="chip" href="/media/<%= doc.storage_key %>">Download the PDF</a>
+    <a class="chip" href="/documents/<%= doc.slug %>/download">Download The PDF</a>
     <% if (doc.project_slug) { %>
       <a class="chip" href="/work/<%= doc.project_slug %>">The project it belongs to</a>
     <% } %>
   </div>
 
   <section class="section">
-    <p class="eyebrow">Search inside this document</p>
+    <p class="eyebrow">Search Inside This Document</p>
     <form method="get" action="/documents/<%= doc.slug %>" role="search"
           class="searchbar" style="margin-top: var(--s-3);">
       <label class="visually-hidden" for="q">Search inside <%= doc.title %></label>
@@ -67,5 +67,5 @@
     <% } %>
   </section>
 
-  <p style="margin-top: var(--s-6);"><a href="/documents">All documents</a></p>
+  <p style="margin-top: var(--s-6);"><a href="/documents">All Documents</a></p>
 </article>

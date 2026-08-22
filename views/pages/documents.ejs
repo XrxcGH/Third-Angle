@@ -1,32 +1,105 @@
 <section class="wrap pad-top">
   <p class="eyebrow">Documents</p>
-  <h1>Written to be used without me in the room</h1>
+  <h1>Written to Be Used Without Me in the Room</h1>
   <p class="lede prose" style="color: var(--text-muted);">
-    Game manuals, migration runbooks, governance packages and training curricula.
-    Every page of every document is indexed, so a search for a term returns the
-    document and the page it is on.
+    Game manuals, migration runbooks, governance packages and training
+    curricula. Every page of every document is indexed, so a search for a term
+    returns the document and the page it is on.
   </p>
 
-  <% if (!docs.length) { %>
-    <p style="color: var(--text-muted); margin-top: var(--s-5);">Nothing published here yet.</p>
-  <% } else { %>
-    <div class="doc-grid" style="margin-top: var(--s-5);">
-      <% for (const d of docs) { %>
-        <a class="doc-card" href="/documents/<%= d.slug %>">
-          <span class="doc-spine" aria-hidden="true"></span>
-          <span class="doc-body">
-            <span class="card-meta">
-              <span class="badge"><%= d.pages %> page<%= d.pages === 1 ? '' : 's' %></span>
-              <% if (d.project_title) { %><span><%= d.project_title %></span><% } %>
-            </span>
-            <span class="card-title"><%= d.title %></span>
-            <% if (d.description) { %><span class="card-summary"><%= d.description %></span><% } %>
-            <span class="mono" style="font-size:.6rem; letter-spacing:.1em; color: var(--text-muted);">
-              PDF &middot; <%= (d.bytes / 1024 / 1024).toFixed(1) %> MB
-            </span>
-          </span>
-        </a>
-      <% } %>
-    </div>
+  <%# ------------------------------------------------------- resume and CV %>
+  <% if (pinned.length) { %>
+    <% for (const d of pinned) { %>
+      <section class="section" id="<%= d.slug %>">
+        <p class="eyebrow"><%= d.doc_role === 'cv' ? 'Curriculum Vitae' : 'Resume' %></p>
+        <h2><%= d.title %></h2>
+        <% if (d.description) { %>
+          <p class="measure" style="color: var(--text-muted);"><%= d.description %></p>
+        <% } %>
+
+        <div class="btn-row" style="margin-top: var(--s-3);">
+          <a class="btn" href="/documents/<%= d.slug %>/view" target="_blank" rel="noopener">Open In A New Tab</a>
+          <a class="btn btn-quiet" href="/documents/<%= d.slug %>/download">Download The PDF</a>
+          <a class="btn btn-quiet" href="/documents/<%= d.slug %>">Search Inside It</a>
+        </div>
+
+        <% if (pdfViewer) { %>
+          <%
+            /*
+             * <object>, not <iframe>.
+             *
+             * An object falls back to its own children when the browser has no
+             * PDF plugin, which is most mobile browsers. An iframe renders an
+             * empty grey box instead, with nothing to tell the reader what
+             * happened or what to do about it.
+             *
+             * The PDF response carries its own Content-Security-Policy of
+             * default-src 'none'; sandbox, so a PDF that contains script has no
+             * origin to reach and nothing to load. See the /documents/:slug/view
+             * route.
+             */
+          %>
+          <object class="pdf-frame" data="/documents/<%= d.slug %>/view" type="application/pdf"
+                  aria-label="<%= d.title %>, rendered in the page" style="margin-top: var(--s-4);">
+            <div class="pdf-fallback">
+              <p>This browser will not render a PDF in the page.</p>
+              <p class="btn-row" style="justify-content:center;">
+                <a class="btn" href="/documents/<%= d.slug %>/view" target="_blank" rel="noopener">Open In A New Tab</a>
+                <a class="btn btn-quiet" href="/documents/<%= d.slug %>/download">Download The PDF</a>
+              </p>
+            </div>
+          </object>
+          <p class="pdf-note" style="margin-top: var(--s-3);">
+            The reader above is hidden on a narrow screen, where almost no
+            browser can render a PDF in the page. Use the two buttons instead.
+          </p>
+          <p class="eyebrow" style="margin-top: var(--s-2);">
+            <%= d.pages %> page<%= d.pages === 1 ? '' : 's' %> &middot;
+            <%= fmtBytes(d.bytes) %> &middot;
+            Updated <%= d.updated_at.slice(0, 10) %>
+          </p>
+        <% } %>
+      </section>
+    <% } %>
   <% } %>
+
+  <%# ------------------------------------------------------------- library %>
+  <section class="section">
+    <p class="eyebrow">The Library</p>
+    <h2><%= others.length %> Further Document<%= others.length === 1 ? '' : 's' %></h2>
+
+    <% if (!others.length) { %>
+      <p style="color: var(--text-muted); margin-top: var(--s-3);">
+        <% if (pinned.length) { %>
+          Nothing else published here yet.
+        <% } else { %>
+          Nothing published here yet. Upload a PDF in the admin, and mark one as
+          the resume and one as the CV to pin them above.
+        <% } %>
+      </p>
+    <% } else { %>
+      <div style="margin-top: var(--s-3);">
+        <% for (const d of others) { %>
+          <article class="doc-row">
+            <div>
+              <h3><a href="/documents/<%= d.slug %>"><%= d.title %></a></h3>
+              <% if (d.description) { %><p class="doc-desc"><%= d.description %></p><% } %>
+              <p class="card-meta" style="margin-top: var(--s-2);">
+                <span class="badge"><%= d.pages %> page<%= d.pages === 1 ? '' : 's' %></span>
+                <span><%= fmtBytes(d.bytes) %></span>
+                <% if (d.project_title) { %><span><%= d.project_title %></span><% } %>
+                <% if (d.indexed_pages < d.pages) { %>
+                  <span><%= d.indexed_pages %> of <%= d.pages %> pages indexed</span>
+                <% } %>
+              </p>
+            </div>
+            <div class="btn-row" style="justify-content: flex-end;">
+              <a class="btn btn-quiet btn-sm" href="/documents/<%= d.slug %>/view" target="_blank" rel="noopener">View</a>
+              <a class="btn btn-quiet btn-sm" href="/documents/<%= d.slug %>/download">Download</a>
+            </div>
+          </article>
+        <% } %>
+      </div>
+    <% } %>
+  </section>
 </section>
