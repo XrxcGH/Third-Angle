@@ -46,8 +46,8 @@ const SCHOOLS = [
     started_on: '2025-09',
     blurb:
       'Mechanical engineering, with the coursework weighted toward mechanics, '
-      + 'materials, and computation. The classes below are the record; the projects '
-      + 'are on the work index.',
+      + 'materials, and computation, and an entrepreneurship minor planned. The '
+      + 'classes below are the record; the projects are on the work index.',
   },
   {
     slug: 'archbishop-riordan',

@@ -119,3 +119,21 @@ test('the admin normalises line endings before storing them', () => {
     );
   }
 });
+
+test('no seed writes rendered HTML as a second literal', () => {
+  /*
+   * The /now block shipped with the markdown and a hand written copy of the
+   * HTML passed as two separate arguments, and they drifted: the HTML carried
+   * a sentence the markdown did not, so the page showed it, the admin editor
+   * did not, and the next save from the admin would have deleted it with no
+   * warning. Whatever is stored as HTML must have been rendered from the
+   * markdown stored beside it.
+   */
+  const dir = path.join(ROOT, 'scripts');
+  for (const f of readdirSync(dir)) {
+    if (!/\.(js|mjs)$/.test(f)) continue;
+    const src = readFileSync(path.join(dir, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const hit = src.match(/body_html[^;]{0,400}?'<p>/s) || src.match(/'<p>[^']*'\s*(\+|,)/);
+    assert.equal(hit, null, `${f} writes an HTML literal into a body_html column; render it instead`);
+  }
+});

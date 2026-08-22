@@ -187,9 +187,7 @@
       <p class="measure" style="color: var(--text-muted);">
         <%= c('professional.contact.note') %>
       </p>
-      <div style="max-width: 46rem;">
-        <%- include('../partials/contact-form', { formId: 'pro', stamp, errors, values }) %>
-      </div>
+      <%- include('../partials/contact-form', { formId: 'pro', stamp, errors, values }) %>
     <% } %>
   </section>
 </section>

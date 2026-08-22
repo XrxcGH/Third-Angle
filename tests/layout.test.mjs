@@ -156,12 +156,30 @@ test('--header-h is defined, not merely defaulted', () => {
 
 /* ------------------------------------------------------------ the measure */
 
-test('a divider is page width and a measure is text width, never the same box', () => {
-  // .section carries a full width rule; .prose caps at 68ch. An element with
-  // both stopped its rule at 68ch while every other rule on the page ran the
-  // full width, which reads as a broken render rather than as a section break.
-  assert.match(APP, /\.section\.prose\s*\{[^}]*max-width:\s*none/);
-  assert.match(APP, /\.section\.prose\s*>\s*\*\s*\{[^}]*max-width:\s*68ch/);
+test('prose runs the page width, and a form does not', () => {
+  /*
+   * The measure was removed on purpose: short paragraphs sitting beside full
+   * width tables and card grids read as a rendering fault when they stop at
+   * half the window. .wrap still caps the column at 1180px, so the line length
+   * is bounded by the page rather than by the screen.
+   *
+   * A form is the exception. A single line input stretched across 1180px is a
+   * target the eye has to travel and stops suggesting how much to type.
+   */
+  assert.match(APP, /\.prose\s*\{[^}]*max-width:\s*none/);
+  assert.match(APP, /\.measure\s*\{[^}]*max-width:\s*none/);
+  assert.match(APP, /form\.panel\s*\{[^}]*max-width:\s*46rem/);
+
+  // And no template may put the cap back with an inline style.
+  for (const [file, src] of templates()) {
+    if (!file.includes('pages') && !file.includes('partials')) continue;
+    for (const m of src.matchAll(/(<[^>]*style="[^"]*max-width:\s*(\d+)(ch|rem)[^"]*")/g)) {
+      // A titleblock is a specification table, not a paragraph: its two columns
+      // are meant to sit near each other.
+      if (/titleblock/.test(m[1])) continue;
+      assert.fail(`${file} caps a block at ${m[2]}${m[3]} inline; prose runs the page width`);
+    }
+  }
 });
 
 /* --------------------------------------------------------- inline handlers */
@@ -178,4 +196,39 @@ test('no template carries an inline event handler', () => {
     }
   }
   assert.deepEqual(offenders, [], offenders.join('\n'));
+});
+
+test('nothing that sits on .wrap can zero the page gutter', () => {
+  /*
+   * .wrap supplies the gutter with padding-inline. Any class used beside it
+   * that sets the `padding` shorthand overrides that to whatever the shorthand
+   * says, and `padding: 40px 0` says zero. This has now happened twice: first
+   * on the 404 and 500 pages, then on the home page hero, where the headline
+   * ran into the edge of the window on a phone. Neither threw anything.
+   */
+  const companions = new Set();
+  for (const [, src] of templates()) {
+    for (const m of src.matchAll(/class="wrap ([^"]*)"/g)) {
+      for (const cls of m[1].split(/\s+/)) {
+        // Skip the EJS expressions that build a class name at render time.
+        if (!/^[a-z][a-z0-9-]*$/.test(cls)) continue;
+        companions.add(cls);
+      }
+    }
+  }
+  assert.ok(companions.size >= 3, `expected several classes beside .wrap, found ${companions.size}`);
+
+  for (const cls of companions) {
+    const re = new RegExp(`^\\.${cls}\\b[^{]*\\{([^}]*)\\}`, 'gm');
+    for (const m of APP.matchAll(re)) {
+      const body = m[1];
+      const shorthand = body.match(/(^|[;{\s])padding:\s*([^;]+)/);
+      if (!shorthand) continue;
+      assert.fail(
+        `.${cls} is used on .wrap and sets the padding shorthand ` +
+        `(padding: ${shorthand[2].trim()}), which resets the page gutter to whatever ` +
+        `that shorthand says. Use padding-block.`
+      );
+    }
+  }
 });

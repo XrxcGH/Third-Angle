@@ -130,6 +130,7 @@ const SLOTS = [
   ['site.footer.now', 'site', 'line', 'Now'],
   ['site.footer.feed', 'site', 'line', 'Feed'],
   ['site.footer.attributions', 'site', 'line', 'Attributions'],
+  ['site.footer.signin', 'site', 'line', 'Sign In', 'Goes to the admin, which asks for a password unless you are already in.'],
   ['site.updated', 'site', 'line', 'Updated', 'Precedes a date, wherever one is shown.'],
   ['site.home.link', 'site', 'line', 'Home'],
 
@@ -359,7 +360,7 @@ const SLOTS = [
   ['contact.eyebrow', 'contact', 'line', 'Contact'],
   ['contact.heading', 'contact', 'line', 'Get in Touch'],
   ['contact.lede', 'contact', 'text',
-    'Available for summer 2027 internships in mechanical design, controls, electrical, or embedded work, in the Bay Area or Los Angeles. Also happy to talk about FIRST, or about anything on this site.'],
+    'Available for summer 2027 internships in robotics, mechanical design, controls, electrical, or hardware engineering, ideally spanning more than one of them, in the Bay Area or Los Angeles. Also happy to talk about FIRST, or about anything on this site.'],
   ['contact.sent.heading', 'contact', 'line', 'Message Sent'],
   ['contact.sent.lede', 'contact', 'text',
     'That reached me. I read everything and reply to anything that is not automated.'],

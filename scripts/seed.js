@@ -421,13 +421,21 @@ console.log(`projects: ${PROJECTS.length}`);
 
 /* ------------------------------------------------------------------- now */
 
+/*
+ * One string, rendered. This used to pass the markdown and a hand written copy
+ * of the HTML as two separate literals, and they drifted: the HTML carried a
+ * sentence about this term's classes that the markdown did not, so the page
+ * showed it and the admin editor did not, and saving from the admin would have
+ * silently deleted it. See DESIGN.md, R11.
+ */
+const NOW_MD =
+  'Interning at the Western Region Robotics Forum, founding Groundwork Robotics, '
+  + 'and mentoring three FIRST teams. At UCLA this term: MAE M20, MATH 32B, and MSE 104.';
+
 db.run(
   `INSERT INTO now_page (id, body_md, body_html, updated_at) VALUES (1, ?, ?, ?)
    ON CONFLICT(id) DO UPDATE SET body_md = excluded.body_md, body_html = excluded.body_html, updated_at = excluded.updated_at`,
-  'Interning at the Western Region Robotics Forum, founding Groundwork Robotics, and mentoring three FIRST teams.',
-  '<p>Interning at the Western Region Robotics Forum, founding Groundwork Robotics, and mentoring three FIRST teams. ' +
-  'At UCLA this term: MAE M20, MATH 32B, and MSE 104.</p>',
-  now
+  NOW_MD, markup.richText(NOW_MD), now
 );
 
 /* --------------------------------------------------------------- indexes */

@@ -184,9 +184,21 @@ code {
 .pad-top     { padding-block-start: var(--s-6); }
 .pad-page-lg { padding-block: var(--s-7); }
 
-/* The measure. 68ch is the reading line length; it is not a layout width. */
-.prose { max-width: 68ch; }
-.measure { max-width: 68ch; }
+/*
+ * Text runs the full width of the page.
+ *
+ * This was a 68ch measure, which is the classic typographic advice and is the
+ * right default for a page of continuous prose. It is not what this site is:
+ * the paragraphs are short, they sit beside tables, metric rows, and card
+ * grids that all run the full width, and a paragraph stopping at half the
+ * window beside a full width rule reads as a rendering fault rather than as
+ * typography. Asked for explicitly, and the right call for these pages.
+ *
+ * The width is not unbounded: .wrap still caps the column at 1180px, so the
+ * longest line on a large monitor is the page, not the screen.
+ */
+.prose { max-width: none; }
+.measure { max-width: none; }
 
 .stack   { display: flex; flex-direction: column; gap: var(--s-4); }
 .stack-lg{ display: flex; flex-direction: column; gap: var(--s-6); }
@@ -195,17 +207,16 @@ code {
 .section:first-of-type { border-top: 0; margin-top: 0; }
 
 /*
- * A divider is a page-width element; a measure is a text width. Putting both on
- * one element made the rule above a prose section stop at 68ch while every
- * other rule on the page ran the full width, which reads as a rendering fault.
- * The section keeps its full width and the cap moves to the text inside it.
+ * Kept as an explicit `none` rather than deleted. `.section.prose` used to cap
+ * its children, and a future edit that reintroduces a measure should have to
+ * change this line on purpose rather than inherit one by accident.
  */
 /* A section whose dividing line has been switched off in the admin. The
    spacing stays: the rule is the decoration, the gap is the structure. */
 .section.no-rule { border-top: 0; }
 
 .section.prose { max-width: none; }
-.section.prose > * { max-width: 68ch; }
+.section.prose > * { max-width: none; }
 
 .scroll-x { overflow-x: auto; }
 
@@ -329,12 +340,20 @@ code {
 
 /* ---------------------------------------------------------- hero */
 
-.hero { padding: var(--s-7) 0 var(--s-6); display: grid; gap: var(--s-5); }
+/*
+ * padding-block, never the four value shorthand.
+ *
+ * .hero always sits on .wrap, and .wrap is what supplies the page gutter. A
+ * `padding: X 0 Y` here silently sets padding-inline to 0, and the hero, which
+ * is the first thing anybody sees, is the one block on the site whose text
+ * runs into the edge of the window. Same defect as the 404 page had.
+ */
+.hero { padding-block: var(--s-7) var(--s-6); display: grid; gap: var(--s-5); }
 @media (min-width: 900px) {
   /* Asymmetric, content left weighted. Not a centred hero. */
   .hero { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); align-items: end; }
 }
-.hero .lede { color: var(--text-muted); max-width: 46ch; margin-top: var(--s-4); }
+.hero .lede { color: var(--text-muted); margin-top: var(--s-4); }
 
 .titleblock {
   border: 1px solid var(--rule);
@@ -922,7 +941,7 @@ code {
 }
 @media (max-width: 640px) { .doc-row { grid-template-columns: minmax(0, 1fr); } }
 .doc-row h3 { margin: 0 0 4px; }
-.doc-row .doc-desc { margin: 0; color: var(--text-muted); font-size: .95rem; max-width: 62ch; }
+.doc-row .doc-desc { margin: 0; color: var(--text-muted); font-size: .95rem; }
 
 /*
  * The inline PDF viewer.
@@ -1084,6 +1103,14 @@ code {
 /* A search box and its button. Used by /search and by the in-document search,
    which each carried their own copy of these declarations inline. */
 .searchbar { display: flex; gap: var(--s-2); flex-wrap: wrap; max-width: 34rem; }
+
+/*
+ * Prose runs the full width; a form does not. A single line input stretched
+ * across 1180px is a target the eye has to travel, and the field no longer
+ * suggests how much to type. The cap is on the form, so every heading and
+ * paragraph around it still runs the page width.
+ */
+form.panel { max-width: 46rem; }
 .searchbar .input { flex: 1 1 14rem; }
 .searchbar .btn { flex: none; }
 
@@ -1139,7 +1166,7 @@ code {
 /* The discipline index row: icon, text, count. The text column carries the
    measure; the row keeps the full width so the count stays flush right. */
 .facet-row-link { text-decoration: none; }
-.facet-row-link .facet-text { max-width: 68ch; }
+.facet-row-link .facet-text { max-width: none; }
 .facet-row-link .facet-label {
   font-family: var(--f-display); font-weight: var(--w-med); font-size: 1.1rem;
   color: var(--text-strong); display: block;

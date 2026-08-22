@@ -119,6 +119,7 @@ const PAGES = [
       '- President’s Volunteer Service Award, Gold, AmeriCorps, 2023',
       '- Certified Onshape Associate (in progress)',
       '- PADI Advanced Open Water, Enriched Air; First Aid, CPR, and AED, American Red Cross',
+      '- Conversational in American Sign Language',
     ].join('\n'),
   },
 ];
