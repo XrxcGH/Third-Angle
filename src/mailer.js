@@ -211,7 +211,7 @@ async function send({ to, replyTo, subject, text }, override) {
    */
   const cfg = { ...config(), ...(override || {}) };
   if (!cfg.configured) {
-    throw new Error('SMTP is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER and SMTP_PASS.');
+    throw new Error('SMTP is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS.');
   }
 
   const msg = buildMessage({ from: cfg.from, to, replyTo, subject, text });

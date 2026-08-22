@@ -3,13 +3,13 @@
 /*
  * Authentication for exactly one admin.
  *
- * Zero new dependencies: scrypt, HMAC, random bytes and timing-safe compare
+ * Zero new dependencies: scrypt, HMAC, random bytes, and timing-safe compare
  * are all in node:crypto, and TOTP is thirty lines of HMAC. Adding a native
  * argon2 build to a project whose entire point is "no native dependencies on
  * the ARM target" would be a poor trade for a marginal KDF improvement.
  *
  * Threat model, stated so the controls can be judged against it: a personal
- * portfolio with one operator, no user accounts, no payments and no third party
+ * portfolio with one operator, no user accounts, no payments, and no third party
  * data. The realistic attacks are credential stuffing and drive-by scanning,
  * not a targeted adversary with a GPU cluster. Passkeys were considered and
  * declined for V1: four credential paths is four lockout risks for one person.

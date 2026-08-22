@@ -23,7 +23,7 @@ body {
   font-size: 17px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
-  /* A part number, a CAN id or a long URL must fold rather than push the page
+  /* A part number, a CAN id, or a long URL must fold rather than push the page
      sideways. break-word, not anywhere: it only breaks when there is no other
      opportunity, so ordinary prose is untouched. */
   overflow-wrap: break-word;
@@ -301,7 +301,7 @@ code {
 .theme-form button:hover { color: var(--text-strong); }
 
 /*
- * Narrow header. Below this width the brand, six nav links and the three state
+ * Narrow header. Below this width the brand, six nav links, and the three state
  * theme control cannot share one row: they used to overflow the viewport and
  * give every page on the site a horizontal scrollbar on a phone. The nav takes
  * its own full width row underneath, and the brand and the theme control share
@@ -317,7 +317,7 @@ code {
   .nav { order: 3; flex: 1 0 100%; }
 }
 
-/* At the narrowest sizes the wordmark, the strapline under it and the mark
+/* At the narrowest sizes the wordmark, the strapline under it, and the mark
    together are wider than the space left beside the theme control, so the
    strapline is dropped rather than allowed to push the layout apart. */
 @media (max-width: 400px) {
@@ -546,7 +546,7 @@ code {
 .rail { border-left: 2px solid var(--accent); padding-left: var(--s-4); }
 
 /* The row layout lives on the inner .wrap, which is where the gutter is. The
-   footer element only supplies the rule, the rhythm and the type. */
+   footer element only supplies the rule, the rhythm, and the type. */
 .site-footer {
   flex: none;
   margin-top: var(--s-7);
@@ -958,7 +958,7 @@ code {
 
 /* ---------------------------------------------------------- controls
  *
- * Forms, buttons and panels live here rather than in admin.css.
+ * Forms, buttons, and panels live here rather than in admin.css.
  *
  * They used to live in the admin sheet, which the public layout does not load.
  * The public contact form therefore rendered as raw user-agent widgets: labels

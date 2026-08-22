@@ -142,7 +142,7 @@ test('indexed page count is reported honestly against the total', { skip: !have(
   }
 });
 
-test('deleting a document removes its pages, its file and its search row', { skip: !have() }, async () => {
+test('deleting a document removes its pages, its file, and its search row', { skip: !have() }, async () => {
   const fs = require('node:fs');
   const path = require('node:path');
   const { UPLOAD_DIR } = db;

@@ -381,7 +381,7 @@ CREATE TABLE IF NOT EXISTS content (
 
 -- One row per institution. Separate from the resume page prose because the
 -- resume is a document and this is a record: a course added here shows up on
--- /education, in search and in the term summary without anyone re-writing a
+-- /education, in search, and in the term summary without anyone re-writing a
 -- paragraph.
 CREATE TABLE IF NOT EXISTS school (
   slug        TEXT PRIMARY KEY,
@@ -418,7 +418,7 @@ CREATE INDEX IF NOT EXISTS course_school ON course(school_slug, sort_key);
 CREATE UNIQUE INDEX IF NOT EXISTS course_unique
   ON course(school_slug, title COLLATE NOCASE, term COLLATE NOCASE);
 
--- Clubs, societies, teams and anything else that is participation rather than
+-- Clubs, societies, teams, and anything else that is participation rather than
 -- coursework. school_slug is nullable: not every activity belongs to a school.
 CREATE TABLE IF NOT EXISTS activity (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,

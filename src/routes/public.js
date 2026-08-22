@@ -340,7 +340,7 @@ router.get('/personal', (req, res) => {
     }),
     ogImage: registerOg({
       title: 'Beyond the Bench',
-      subtitle: 'Sport, travel, family and the rest of it.',
+      subtitle: 'Sport, travel, family, and the rest of it.',
       eyebrow: 'Eric J. Dean',
     }),
   });
@@ -571,7 +571,7 @@ router.get('/og/:key.png', async (req, res, next) => {
     // An unknown key means the page that would have registered it has not been
     // rendered in this process. Fall back rather than 404, because a crawler
     // may hit the image before it ever hits the page.
-    const svg = seo.ogSvg(spec || { title: 'Eric J. Dean', subtitle: 'Mechanical, electrical, controls and software.' });
+    const svg = seo.ogSvg(spec || { title: 'Eric J. Dean', subtitle: 'Mechanical, electrical, controls, and software.' });
     fs.mkdirSync(dir, { recursive: true });
     const png = await sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer();
     fs.writeFileSync(file, png);
@@ -683,7 +683,7 @@ router.get('/feed.xml', (req, res) => {
     '<?xml version="1.0" encoding="utf-8"?>',
     '<feed xmlns="http://www.w3.org/2005/Atom">',
     '  <title>Eric J. Dean</title>',
-    '  <subtitle>Mechanical, electrical, controls and software.</subtitle>',
+    '  <subtitle>Mechanical, electrical, controls, and software.</subtitle>',
     `  <link href="${xmlEscape(site)}/feed.xml" rel="self"/>`,
     `  <link href="${xmlEscape(site)}/"/>`,
     `  <id>${xmlEscape(site)}/</id>`,

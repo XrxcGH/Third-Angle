@@ -36,17 +36,17 @@ const now = db.nowIso();
 
 const DISCIPLINES = [
   ['mechanical', 'Mechanical and CAD', 'ch-mechanical',
-    'Part and assembly modelling in Onshape and Fusion 360, mechanism and drivetrain design, dimensioned drawings, bills of materials, tolerance and fit checks.'],
+    'Part and assembly modelling in Onshape and Fusion 360, mechanism and drivetrain design, dimensioned drawings, bills of materials, and tolerance and fit checks.'],
   ['electrical', 'Electrical', 'ch-electrical',
     'Wiring harness fabrication, crimping and connectorisation, through hole assembly standards, 12V distribution at several hundred amps, breakers and fusing, and first line triage of a robot that will not move.'],
   ['controls', 'Controls', 'ch-controls',
-    'Closed loop control, swerve kinematics, odometry and pose estimation, sensor fusion, AprilTag localisation and autonomous path planning.'],
+    'Closed loop control, swerve kinematics, odometry and pose estimation, sensor fusion, AprilTag localisation, and autonomous path planning.'],
   ['software', 'Software', 'ch-software',
     'Java robot code, TypeScript and Node applications, server rendered web apps with SQLite, WebSockets, and test suites that actually run.'],
   ['fabrication', 'Fabrication', 'ch-fabrication',
     'CNC milling, FDM printing, laser cutting, drill press and band saw, and the shop practice that keeps all of it safe.'],
   ['documentation', 'Documentation', 'ch-documentation',
-    'Game manuals, migration runbooks, governance packages, training curricula and build trackers. Documents that other people have to use without me in the room.'],
+    'Game manuals, migration runbooks, governance packages, training curricula, and build trackers. Documents that other people have to use without me in the room.'],
   ['business', 'Business', 'ch-business',
     'Fundraising and sponsorship, grant writing, budgeting, business planning, and founding a California nonprofit.'],
   ['teaching', 'Teaching', 'ch-teaching',
@@ -71,7 +71,7 @@ const PROJECTS = [
   {
     slug: 'summit-push',
     title: 'SUMMIT PUSH',
-    subtitle: 'A complete off-season FRC game, designed end to end: manual, field CAD, drawings and vision layout.',
+    subtitle: 'A complete off-season FRC game, designed end to end: manual, field CAD, drawings, and vision layout.',
     tier: 'case-study',
     status: 'shipped',
     context: 'CADathon 2026',
@@ -116,15 +116,15 @@ const PROJECTS = [
     featured: 1,
     started_on: '2026-07',
     summary_md:
-      'A batteries-included Java robot template for teams starting a season from scratch. Swerve, PathPlanner and ' +
-      'Choreo autonomous with on-the-fly pathfinding, AdvantageKit logging into AdvantageScope, physics simulation ' +
-      'and unit tests, all driven from one Constants file and coordinated by one Superstructure state machine.',
+      'A batteries-included Java robot template for teams starting a season from scratch. Swerve, PathPlanner, and ' +
+      'Choreo autonomous with on-the-fly pathfinding, AdvantageKit logging into AdvantageScope, and physics ' +
+      'simulation with unit tests, all driven from one Constants file and coordinated by one Superstructure state machine.',
     body_md: [
       'Every subsystem, including the swerve drivetrain, sits behind an IO hardware abstraction layer, so a recorded ' +
       'match replays bit for bit. Every mechanism has both a Kraken X60 and a NEO implementation, switchable with one ' +
       'constant, and the vision backend switches between Limelight and PhotonVision the same way.',
       'It ships fill-in-the-blank mechanisms for an elevator, arm, wrist, turret, shooter, intake, indexer, end ' +
-      'effector, climber and CANdle LEDs. It builds, tests and simulates out of the box with placeholders, which is the ' +
+      'effector, climber, and CANdle LEDs. It builds, tests, and simulates out of the box with placeholders, which is the ' +
       'part most templates skip and the part a team starting in January actually needs.',
     ].join('\n\n'),
     metrics: [
@@ -174,7 +174,7 @@ const PROJECTS = [
   {
     slug: 'wrrf-workspace',
     title: 'WRRF Google Workspace Architecture',
-    subtitle: 'An architecture document, 90 day migration runbook, interactive wireframe and ten tab tracker, all generated from one folder tree definition.',
+    subtitle: 'An architecture document, 90 day migration runbook, interactive wireframe, and ten tab tracker, all generated from one folder tree definition.',
     tier: 'case-study',
     status: 'shipped',
     context: 'WRRF',
@@ -183,7 +183,7 @@ const PROJECTS = [
     started_on: '2026-05',
     summary_md:
       'Domains and licensing, organisational units, groups and email addresses, ten shared drives with full folder trees, ' +
-      'a permissions matrix, naming conventions and a retention schedule, all mapped to the structure of the new website.',
+      'a permissions matrix, naming conventions, and a retention schedule, all mapped to the structure of the new website.',
     body_md: [
       'The interesting part is not the architecture, it is that the wireframe and the workbook are both generated by ' +
       'Python from a single shared folder tree definition rather than hand maintained. Two artefacts that describe the same ' +
@@ -197,9 +197,9 @@ const PROJECTS = [
       ['Tracker tabs', '10', ''],
     ],
     facets: [
-      ['documentation', 'primary', 'An architecture document, a migration runbook, a permissions matrix and a retention schedule, written so a volunteer can execute the migration without me.'],
+      ['documentation', 'primary', 'An architecture document, a migration runbook, a permissions matrix, and a retention schedule, written so a volunteer can execute the migration without me.'],
       ['software', 'significant', 'Python generation of both the interactive HTML wireframe and the ten tab XLSX tracker from one shared folder tree definition, so the two artefacts cannot drift apart.'],
-      ['business', 'significant', 'Organisational design work: units, groups, licensing and access policy for a regional nonprofit.'],
+      ['business', 'significant', 'Organisational design work: units, groups, licensing, and access policy for a regional nonprofit.'],
     ],
     links: [],
   },
@@ -216,7 +216,7 @@ const PROJECTS = [
     ended_on: '2025-06',
     summary_md:
       'The A robot runs a Phoenix 6 swerve drivetrain on a 30 inch square frame with mixed SDS MK4i and MK4n modules, ' +
-      'Kraken X60 drive and steer motors, CANcoders and a Pigeon 2. On top sits a dual-NEO elevator with closed loop ' +
+      'Kraken X60 drive and steer motors, CANcoders, and a Pigeon 2. On top sits a dual-NEO elevator with closed loop ' +
       'height control in inches and a pivoting arm that finds its angle off an absolute encoder.',
     body_md: [
       'Three Limelights fuse MegaTag2 pose estimates into odometry. Game piece detection runs off a CANrange rather ' +
@@ -253,12 +253,12 @@ const PROJECTS = [
     ended_on: '2025-06',
     summary_md:
       'Grew the programme from a school club to a competitive team and then to a recognised co-ed non-athletic varsity ' +
-      'sport, working with administration on recognition, recruiting and parent volunteer coordination. Membership ranged ' +
+      'sport, working with administration on recognition, recruiting, and parent volunteer coordination. Membership ranged ' +
       'from roughly 15 to 50 students across three seasons.',
     body_md: [
       'Secured a $45,000 annual base budget from the school in the second and third years, an increase driven by ' +
-      'competition results, supplemented by sponsorships, grants, individual donations and a crowdfunding campaign. ' +
-      'Submitted grant applications to the Bayer Fund, REV Robotics, Intuitive, BAE Systems and the YMCA Youth ' +
+      'competition results, supplemented by sponsorships, grants, individual donations, and a crowdfunding campaign. ' +
+      'Submitted grant applications to the Bayer Fund, REV Robotics, Intuitive, BAE Systems, and the YMCA Youth ' +
       'Empowerment Fund among others.',
       'Authored or co-authored the team business plan, sponsorship programme, handbook, EDI plan, branding guide, ' +
       'accounting and inventory sheets, and the 2023 Entrepreneurship Award submission, which was presented in a judged ' +
@@ -272,8 +272,8 @@ const PROJECTS = [
     ],
     facets: [
       ['business', 'primary', 'Fundraising, sponsorship tiers, grant writing, budgeting, and the business plan and entrepreneurship submission behind a $45,000 annual programme.'],
-      ['teaching', 'significant', 'Recruiting, onboarding and running build season planning for a team that ranged from 15 to 50 students.'],
-      ['documentation', 'significant', 'The full operating document set: handbook, EDI plan, branding guide, accounting and inventory sheets, agendas and minutes.'],
+      ['teaching', 'significant', 'Recruiting, onboarding, and running build season planning for a team that ranged from 15 to 50 students.'],
+      ['documentation', 'significant', 'The full operating document set: handbook, EDI plan, branding guide, accounting and inventory sheets, agendas, and minutes.'],
     ],
     links: [],
   },
@@ -289,7 +289,7 @@ const PROJECTS = [
     started_on: '2026-08',
     summary_md:
       'Built across eight milestones covering resume ingestion, discovery, matching, a review queue, the writing engine, ' +
-      'form filling, a tracker and packaging, each with its own test suite.',
+      'form filling, a tracker, and packaging, each with its own test suite.',
     body_md: [
       'The part worth pointing at is the verification gate: it refuses to generate any sentence it cannot trace back to ' +
       'a stored fact in the profile. An application tool that invents a credential is worse than no tool.',
@@ -301,7 +301,7 @@ const PROJECTS = [
       ['Test suites', '8', ''],
     ],
     facets: [
-      ['software', 'primary', 'A TypeScript monorepo on React, Fastify, SQLite with Drizzle, Playwright and Zod, built across eight milestones each with its own tests.'],
+      ['software', 'primary', 'A TypeScript monorepo on React, Fastify, SQLite with Drizzle, Playwright, and Zod, built across eight milestones each with its own tests.'],
     ],
     links: [['Repository', 'https://github.com/XrxcGH/internship-applier', 'repo']],
   },
@@ -336,7 +336,7 @@ const PROJECTS = [
       ['Java written', '0', 'lines'],
     ],
     facets: [
-      ['software', 'primary', 'A design specification covering architecture, decisions and roadmap for a library that pre-wires the modern FRC toolchain behind one seam.'],
+      ['software', 'primary', 'A design specification covering architecture, decisions, and roadmap for a library that pre-wires the modern FRC toolchain behind one seam.'],
       ['documentation', 'significant', 'Structured as an engineering design review package rather than a README: scope, non-goals, alternatives rejected, and open questions.'],
     ],
     links: [['Repository', 'https://github.com/XrxcGH/PumpkinLib', 'repo']],
@@ -426,7 +426,7 @@ db.run(
    ON CONFLICT(id) DO UPDATE SET body_md = excluded.body_md, body_html = excluded.body_html, updated_at = excluded.updated_at`,
   'Interning at the Western Region Robotics Forum, founding Groundwork Robotics, and mentoring three FIRST teams.',
   '<p>Interning at the Western Region Robotics Forum, founding Groundwork Robotics, and mentoring three FIRST teams. ' +
-  'At UCLA this term: MAE M20, MATH 32B and MSE 104.</p>',
+  'At UCLA this term: MAE M20, MATH 32B, and MSE 104.</p>',
   now
 );
 

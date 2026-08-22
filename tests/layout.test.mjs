@@ -2,7 +2,7 @@
  * Layout gate.
  *
  * Every assertion here corresponds to a defect that shipped and was invisible
- * in the place people look. None of them throw an error, log a warning or fail
+ * in the place people look. None of them throw an error, log a warning, or fail
  * a build: they render, and the page is simply wrong. That is exactly the class
  * of bug that needs a test rather than a review.
  *
@@ -138,7 +138,7 @@ test('the sticky footer keeps a short page from ending half way up', () => {
 /* ----------------------------------------------------------------- header */
 
 test('the header stops being one row before it runs out of room', () => {
-  // Brand, six nav links and a three state theme control needed 409px. On a
+  // Brand, six nav links, and a three state theme control needed 409px. On a
   // 320px phone every page on the site carried a horizontal scrollbar.
   assert.match(APP, /\.site-header \.bar\s*\{[^}]*flex-wrap:\s*wrap/);
   assert.match(APP, /@media \(max-width: 720px\)[\s\S]{0,400}\.nav\s*\{[^}]*flex:\s*1 0 100%/);

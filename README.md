@@ -1,15 +1,15 @@
 # Third Angle
 
 Eric J. Dean's engineering portfolio. Mechanical, electrical, controls,
-software, fabrication, documentation, business and teaching, presented as one
+software, fabrication, documentation, business, and teaching, presented as one
 record per project rather than one page per discipline.
 
-Server rendered Node, Express and EJS on `node:sqlite`. No build step, no native
+Server rendered Node, Express, and EJS on `node:sqlite`. No build step, no native
 dependencies, no framework. Runs on a free Oracle Always Free ARM instance for
 the price of a domain name.
 
 **Status: phases 02 to 08 done.** The public site, facet model, search, design
-system, admin panel, media pipeline, document library, feeds and deploy tooling
+system, admin panel, media pipeline, document library, feeds, and deploy tooling
 are built and tested. The restore drill and the launch are not. See
 [Roadmap](#roadmap).
 
@@ -23,7 +23,7 @@ npm install
 npm run fonts      # downloads the three OFL faces to public/fonts
 npm run seed       # creates the database and loads real content
 npm run seed:pages # the resume page
-npm run seed:edu   # institutions, classes and activities
+npm run seed:edu   # institutions, classes, and activities
 npm start          # http://localhost:3000
 ```
 
@@ -70,7 +70,7 @@ scripts/               seed, fonts, admin, db-tool, scope guard, cost check
 deploy/                provision, systemd, Caddy, Litestream, backup, verify
 tests/                 routes, contrast, layout, markup, account, search, schema, security, auth, media, backup
 DESIGN.md              the rules, and what will bite you
-costs.yml              every price, dated and sourced
+costs.yml              every price, dated, and sourced
 ```
 
 ## Design
@@ -80,12 +80,12 @@ assistant at it too. The short version:
 
 - Colour direction is **Anodize**: machine tool gray green at OKLCH hue 135,
   hazard orange at hue 52 as the single loud accent.
-- Type is TASA Orbiter, Literata and Martian Mono, all SIL OFL, all self hosted.
+- Type is TASA Orbiter, Literata, and Martian Mono, all SIL OFL, all self hosted.
 - **`--on-accent` is never white.** White on hazard orange fails AA at 3.30:1.
 - **Dimming is a token swap, never opacity.** axe-core cannot see an opacity
   contrast failure, so an opacity dim passes the tool meant to catch it.
 - Discipline icons are drawn, not bought: a caliper, a crimp barrel, a step
-  response. Every stock pack offers a gear, a lightbulb and a rocket, all three
+  response. Every stock pack offers a gear, a lightbulb, and a rocket, all three
   of which are banned.
 - No emoji. No em dashes.
 
@@ -158,13 +158,13 @@ starts an element invisible is behind both a preference query and an `@supports`
 for the feature that finishes it.
 
 **A contact message is stored before it is sent.** The inbox is the record and
-the email is a copy. A relay that is down, misconfigured or not set up yet costs
+the email is a copy. A relay that is down, misconfigured, or not set up yet costs
 a notification and never a message, and the admin shows every row's delivery
 state with a retry. Outbound mail is SMTP over `node:tls` with no dependency,
 same reasoning as scrypt and TOTP.
 
 **The account is maintained from inside the site.** `/admin/account` changes the
-name, the sign in address and the password, enrols or removes the second factor,
+name, the sign in address, and the password, enrols or removes the second factor,
 and lists the sessions that can currently reach the admin. Changing the password
 requires the current one, even though the session is already authenticated, and
 ends every other session. `scripts/create-admin.js --temp` hands over a short
@@ -185,7 +185,7 @@ hand-over password is that it works.
 | 06 | Search, documents, feeds | **done**, including per-page PDF indexing |
 | 07 | Icons, structured data, social cards | **done** |
 | 08 | Deploy and rehearse the restore | tooling **done**; the drill is yours to run |
-| 09 | Professional, education and personal pages | **done** |
+| 09 | Professional, education, and personal pages | **done** |
 | 10 | GitHub cleanup, then launch | pending |
 
 The content, not the software, is the critical path. Photographs of the physical
@@ -209,6 +209,6 @@ recovery time goes, and filling it in is the point.
 
 ## Licence
 
-Code is MIT. Content, images and written work are all rights reserved. The three
+Code is MIT. Content, images, and written work are all rights reserved. The three
 typefaces are SIL OFL 1.1 and their notices are reproduced at `/attributions`,
 which the licence requires.

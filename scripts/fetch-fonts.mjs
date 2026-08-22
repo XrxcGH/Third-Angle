@@ -47,7 +47,7 @@ async function main() {
     if (!res.ok) throw new Error(`${fam.name}: HTTP ${res.status} from Google Fonts`);
     const css = await res.text();
 
-    // Keep only the latin block. latin-ext, cyrillic and greek are dead weight
+    // Keep only the latin block. latin-ext, cyrillic, and greek are dead weight
     // for this site and would triple the payload.
     const chunks = css.split('/*').filter((c) => c.trimStart().startsWith('latin *'));
     const chunk = chunks[0];

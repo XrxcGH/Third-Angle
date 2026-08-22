@@ -488,7 +488,7 @@ function logError(route, err) {
 /* -------------------------------------------------------------- education
  *
  * The resume page is a document; this is a record. A class added here shows up
- * on /education, in the term summary and in search without anyone rewriting a
+ * on /education, in the term summary, and in search without anyone rewriting a
  * paragraph, which is the difference between a list that stays current and one
  * that is accurate on the day it is written.
  */

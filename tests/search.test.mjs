@@ -14,7 +14,7 @@ const repo = require('../src/repo.js');
 const db = require('../src/db.js');
 
 test('hostile input never reaches FTS5 as syntax', () => {
-  // FTS5 has its own query language. A stray quote, colon or caret produces a
+  // FTS5 has its own query language. A stray quote, colon, or caret produces a
   // syntax error and a 500 on the one page a recruiter is most likely to use.
   for (const q of ['"', 'a:b', 'x^2', 'NEAR(', 'a OR b', '"unclosed', '*', 'C++', "o'brien", '\u005C']) {
     assert.doesNotThrow(() => repo.search(q), `threw on ${JSON.stringify(q)}`);

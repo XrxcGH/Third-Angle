@@ -50,7 +50,7 @@ test('SVG and HTML are caught by the markup check, not by sniffing', () => {
   assert.equal(media.looksLikeMarkup(png), false);
 });
 
-test('ingest rejects markup, junk and empty uploads with a usable message', async () => {
+test('ingest rejects markup, junk, and empty uploads with a usable message', async () => {
   const cases = [
     [Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>' + ' '.repeat(200)), /markup|SVG/i],
     [Buffer.alloc(64, 0x41), /not accepted/i],

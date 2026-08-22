@@ -1,7 +1,7 @@
 /*
  * Admin surface. Same tokens as the public site, denser.
  *
- * Forms, buttons, panels and flashes are NOT here. They live in app.css,
+ * Forms, buttons, panels, and flashes are NOT here. They live in app.css,
  * because the public contact form uses the same primitives and this sheet is
  * only loaded by layout-admin. Keeping them here rendered the contact page as
  * bare user-agent widgets. Only rules that are genuinely admin-specific

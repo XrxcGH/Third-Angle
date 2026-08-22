@@ -19,7 +19,7 @@ portfolio's whole thesis. One person, eight disciplines, one record per project.
 Direction **ANODIZE**. Machine tool enamel gray green at OKLCH hue 135, the
 colour of a Bridgeport, nowhere near slate at 257 or Tailwind's near black at
 265. Hazard orange at hue 52 is the single loud accent and reads instantly as
-electrical, safety and shop work. Copper and patina are the quiet supports.
+electrical, safety, and shop work. Copper and patina are the quiet supports.
 
 All values live in `public/css/tokens.css`. Nothing else defines a colour.
 
@@ -68,9 +68,9 @@ Technical typography, non negotiable:
 - Use `font-variant-numeric`, never `font-feature-settings`. The latter is all
   or nothing and silently cancels every `font-variant-*` on the element, which
   is the most common cause of tables that mysteriously lose tabular figures.
-- `tabular-nums lining-nums` on every BOM row, spec value, quantity and budget
+- `tabular-nums lining-nums` on every BOM row, spec value, quantity, and budget
   figure.
-- Part numbers, CAN IDs and revision codes go in the mono with
+- Part numbers, CAN IDs, and revision codes go in the mono with
   `font-variant-ligatures: none`. A part number containing `--` or `!=` is
   otherwise healed into a glyph the reader cannot retype.
 - Use U+2212 MINUS for negative tolerances, not a hyphen. Minus is drawn at
@@ -108,7 +108,7 @@ restated at that breakpoint because `scroll-margin-top` is derived from it.
 
 `src/markup.js` holds both renderers and is the only place either is defined.
 
-- `paragraphs()` for project summaries and bodies, log entries and `/now`.
+- `paragraphs()` for project summaries and bodies, log entries, and `/now`.
   Blank lines separate paragraphs, single newlines are line breaks, nothing else
   is interpreted.
 - `richText()` for the fixed editorial pages: h2 to h4, lists, bold, inline
@@ -126,7 +126,7 @@ the first save from the admin publishes the tags as visible text.
 
 Never `require()` a file from `scripts/` inside a route. Requiring a script runs
 it: the page editor used to reach its renderer that way and re-ran the
-environment assertion, the migration and the seeding loop on every save.
+environment assertion, the migration, and the seeding loop on every save.
 
 ## Capitalisation
 
@@ -138,7 +138,7 @@ One rule, stated in `src/labels.js` and applied by `titleCase()` there:
   prepositions stay lowercase in the middle: "Open in a New Tab", not "Open In
   A New Tab".
 - **Sentence case** for anything that reads as a sentence: body copy, the hint
-  under a field, empty states, flash messages, alt text and placeholders.
+  under a field, empty states, flash messages, alt text, and placeholders.
 - **ALL CAPS is never typed.** Where small caps are wanted the uppercase comes
   from `text-transform` in CSS, so the source stays readable in a diff,
   searchable, and translatable.
@@ -172,8 +172,8 @@ Every fixed string on the public site is a slot: a key, a default in
 
 **One wall, no categories.** `/personal` is a single stream of every photograph
 that is on the wall, full window width, newest capture first, and it scrolls.
-There are no albums, no sections and no filters, because a wall broken into
-"sport", "travel" and "family" asks the reader to pick a category before they
+There are no albums, no sections, and no filters, because a wall broken into
+"sport", "travel", and "family" asks the reader to pick a category before they
 have seen a photograph, and it forces a filing decision on every upload. The
 database keeps one album row, `personal`, purely so `media.album_slug` still has
 a foreign key to point at; nothing in the interface exposes it, and the only
@@ -203,8 +203,8 @@ Adding a photograph re-packs everything below it for free.
 
 - Any gradient between hues 250 and 320
 - Gradient clipped text headlines
-- Inter, Roboto, Geist Sans or Space Grotesk as a display face
-- Tailwind slate, zinc, gray, neutral and stone families
+- Inter, Roboto, Geist Sans, or Space Grotesk as a display face
+- Tailwind slate, zinc, gray, neutral, and stone families
 - Default blue-600 or indigo-500 anything
 - Decorative backdrop blur
 - Border radius above 6px on cards, above 3px on inputs
@@ -214,7 +214,7 @@ Adding a photograph re-packs everything below it for free.
 - A four column footer
 - Fade in up on more than one element per viewport
 - The worn Lucide subset: Sparkles, ArrowRight, Zap
-- Gear, lightbulb and rocket iconography
+- Gear, lightbulb, and rocket iconography
 - **Emoji, anywhere, in any context**
 - **Em dashes in any copy**
 
@@ -234,7 +234,7 @@ Adding a photograph re-packs everything below it for free.
 
 All of it is in `public/css/motion.css`, and all of it is CSS. There is no
 script on this site, and the motion layer did not introduce one: page
-transitions, scroll reveals, the read-progress line and the header settle are
+transitions, scroll reveals, the read-progress line, and the header settle are
 browser features, not a library.
 
 One hero motion moment per page: the first block of every page rises in on
@@ -289,9 +289,9 @@ branch has to exist in JavaScript. See risk R4 in the proposal.
 | R3 facet drift | lookup table plus a NOCASE unique index | `tests/schema.test.mjs` |
 | R4 dim fails contrast | token swap plus computed ratio assertions | `tests/contrast.test.mjs` |
 | R6 single writer | SIGTERM drain, no blue/green, measured restore | `RESTORE.md` |
-| R8 hollow sections | `project.tier` CHECK selects 3, 6 or 12 blocks | `tests/schema.test.mjs` |
+| R8 hollow sections | `project.tier` CHECK selects 3, 6, or 12 blocks | `tests/schema.test.mjs` |
 | R9 stale prices | `costs.yml` with dated evidence | `npm run check:costs` |
-| R10 silent layout break | gutter, grid floor, measure and control-layer assertions | `tests/layout.test.mjs` |
+| R10 silent layout break | gutter, grid floor, measure, and control-layer assertions | `tests/layout.test.mjs` |
 | R11 stored text corruption | one renderer, line endings normalised on the way in | `tests/markup.test.mjs` |
 | R12 capitalisation drift | one `titleCase` and one enum label map | `tests/pages.test.mjs` |
 | R13 a lost contact message | stored before it is mailed, with a visible delivery state | `tests/mailer.test.mjs` |

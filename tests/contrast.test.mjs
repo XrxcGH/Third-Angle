@@ -82,7 +82,7 @@ const dark = block(':root[data-theme="dark"]');
 const THEMES = [['light', light], ['dark', dark]];
 
 /* ---- the pairs the design actually uses ----
- * AA: 4.5:1 body text, 3:1 large text and non-text UI boundaries (SC 1.4.11).
+ * AA: 4.5:1 body text, 3:1 large text, and non-text UI boundaries (SC 1.4.11).
  */
 const TEXT_PAIRS = [
   ['text-body', 'canvas'], ['text-body', 'surface'],

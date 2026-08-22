@@ -4,7 +4,7 @@ The box is disposable. The backup is the system of record.
 
 That is not a slogan, it is a design decision with a specific cause: on 15 June
 2026 Oracle halved the Always Free allowance this site runs on, with no blog
-post, no email and no customer notification. There is no contract, no SLA and no
+post, no email, and no customer notification. There is no contract, no SLA, and no
 support channel. So the plan is not to trust the host, it is to be able to leave
 it in under an hour.
 
@@ -80,7 +80,7 @@ git clone https://github.com/XrxcGH/third-angle.git
 sudo bash third-angle/deploy/provision.sh
 ```
 
-Installs Node 24, Caddy, Litestream, the service units and the firewall, and
+Installs Node 24, Caddy, Litestream, the service units, and the firewall, and
 asserts up front that this SQLite build has FTS5 and the trigram tokenizer. If
 that assertion fails, stop: the app would fail later and more confusingly.
 

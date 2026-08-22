@@ -48,9 +48,9 @@ Cloudflare Containers runs an actual Docker image on their network. The app goes
 in essentially unchanged: Node 24, `node:sqlite`, `sharp`, Express, the lot.
 
 - **Changes to the code:** a Dockerfile, and a volume or R2 sync for `data/`.
-  Nothing else. The SQLite file, the uploads directory and the image pipeline
+  Nothing else. The SQLite file, the uploads directory, and the image pipeline
   all keep working.
-- **What you gain:** Cloudflare's network, DNS, TLS and WAF in front of the same
+- **What you gain:** Cloudflare's network, DNS, TLS, and WAF in front of the same
   application you have now, with no rewrite and no behaviour to re-verify.
 - **What you lose:** it is not free, and containers sleep when idle, so the
   first request after a quiet period pays a cold start.
@@ -58,7 +58,7 @@ in essentially unchanged: Node 24, `node:sqlite`, `sharp`, Express, the lot.
   for is $0 and does not sleep. $5/month buys you a better network and one less
   machine to patch. It does not buy you a capability you are missing.
 
-### Option B — Full port to Workers, D1 and R2
+### Option B — Full port to Workers, D1, and R2
 
 **Cost: $0 within the free limits.** D1 gives 5 GB and 5 M row reads a day, R2
 gives 10 GB and 10 M reads a month, Workers gives 100 K requests a day.
@@ -127,7 +127,7 @@ Worth knowing, whichever route you take. The following need no changes at all:
 - Every query is a named function in `src/repo.js`, so the driver is one file.
 - Nothing outside `public/css/tokens.css` defines a colour.
 - The renderers are pure functions in `src/markup.js`.
-- Password hashing, TOTP and CSRF use `node:crypto`, which Workers supports.
+- Password hashing, TOTP, and CSRF use `node:crypto`, which Workers supports.
 - The mailer talks to a relay on 587 or 465, both of which Workers permit; only
   the socket call itself changes.
 - There is no client-side JavaScript to port, because there is none.

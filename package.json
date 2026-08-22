@@ -2,7 +2,7 @@
   "name": "third-angle",
   "version": "0.1.0",
   "private": true,
-  "description": "Eric J. Dean, multi-discipline engineering portfolio. Server-rendered Node, Express, EJS and node:sqlite.",
+  "description": "Eric J. Dean, multi-discipline engineering portfolio. Server-rendered Node, Express, EJS, and node:sqlite.",
   "type": "commonjs",
   "main": "server.js",
   "engines": {

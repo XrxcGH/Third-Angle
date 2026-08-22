@@ -4,7 +4,7 @@
  * The two renderers that turn stored text into HTML.
  *
  * They live here rather than in a script or a route because three callers need
- * them and they must not diverge: the seed, the admin save path and the page
+ * them and they must not diverge: the seed, the admin save path, and the page
  * editor all have to produce byte-identical markup, or content changes shape
  * the moment it is edited rather than seeded.
  *
@@ -37,7 +37,7 @@ function escapeHtml(s) {
 const normaliseNewlines = (s) => String(s == null ? '' : s).replace(/\r\n?/g, '\n');
 
 /**
- * Project summaries, project bodies, log entries and the /now block.
+ * Project summaries, project bodies, log entries, and the /now block.
  *
  * Blank lines separate paragraphs, single newlines become a line break, and
  * nothing else is interpreted. This is what the project form's hint promises,

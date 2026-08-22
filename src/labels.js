@@ -20,7 +20,7 @@
  *
  *   ALL CAPS     never typed. Where small caps are wanted, the uppercase comes
  *                from `text-transform` in CSS, so the source stays Title Case
- *                and stays searchable, translatable and readable in a diff.
+ *                and stays searchable, translatable, and readable in a diff.
  *
  * Title Case here is the AP form: capitalise the first and last word and every
  * word of four letters or more, and leave short articles, conjunctions and
@@ -50,7 +50,7 @@ const EXACT = new Map(Object.entries({
  * AP-style title case.
  *
  * Deliberately conservative: a word that already contains an interior capital
- * is left exactly as it is, so "iD Tech", "PhotonVision" and "McMaster" survive
+ * is left exactly as it is, so "iD Tech", "PhotonVision", and "McMaster" survive
  * a pass through this function rather than being flattened to "Id Tech".
  */
 function titleCase(input) {

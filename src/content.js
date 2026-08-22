@@ -4,7 +4,7 @@
  * Editable content.
  *
  * Every fixed string on the public site — headings, ledes, button labels, empty
- * states, the two site-wide images and the rules between sections — is a slot
+ * states, the two site-wide images, and the rules between sections — is a slot
  * with a default in this file and an optional override in the database. The
  * templates ask for a slot by key; nothing on a page is a literal any more.
  *

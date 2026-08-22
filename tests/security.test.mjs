@@ -22,7 +22,7 @@ test('safeBackPath refuses off-site redirects', () => {
   }
 });
 
-test('safeBackPath refuses traversal, header splitting and junk types', () => {
+test('safeBackPath refuses traversal, header splitting, and junk types', () => {
   assert.equal(safeBackPath('/../etc/passwd'), '/');
   assert.equal(safeBackPath('/work\r\nSet-Cookie: a=b'), '/');
   assert.equal(safeBackPath('/' + 'a'.repeat(600)), '/');

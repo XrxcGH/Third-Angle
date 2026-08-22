@@ -16,7 +16,7 @@ const contact = require('../src/contact.js');
 const repo = require('../src/repo.js');
 const db = require('../src/db.js');
 // The renderer moved to src/markup.js. Importing it from the seed script ran
-// the script: assertEnvironment, migrate and the seeding loop all fired just to
+// the script: assertEnvironment, migrate, and the seeding loop all fired just to
 // reach one function.
 const { richText: render } = require('../src/markup.js');
 
@@ -148,7 +148,7 @@ test('page slugs are a closed set, so a URL cannot be invented', () => {
   assert.throws(() => repo.savePage('arbitrary', { title: 'x', body_md: '', body_html: '' }), /Unknown page/);
 });
 
-test('the resume page exists, is published and is indexed', () => {
+test('the resume page exists, is published, and is indexed', () => {
   const page = repo.getPage('resume');
   assert.ok(page, 'no resume page');
   assert.ok(page.body_html.length > 500, 'resume body is suspiciously short');

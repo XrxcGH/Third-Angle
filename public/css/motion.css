@@ -82,7 +82,7 @@ html { scroll-padding-top: calc(var(--header-h) + var(--s-3)); }
  *
  * Scroll-driven, not timer-driven: each element is tied to its own position in
  * the scrollport, so it animates exactly as the reader arrives at it and it
- * rewinds if they scroll back up. There is no observer, no threshold and no
+ * rewinds if they scroll back up. There is no observer, no threshold, and no
  * class being toggled, because there is no script.
  *
  * `entry 0%` is the instant the element's leading edge reaches the bottom of
@@ -102,7 +102,7 @@ html { scroll-padding-top: calc(var(--header-h) + var(--s-3)); }
  * more than a thumb's worth of scrolling to arrive. A test asserts the first
  * half at five scroll positions on thirteen pages.
  *
- * Sections that contain a grid, a wall or a metric row are excluded, because
+ * Sections that contain a grid, a wall, or a metric row are excluded, because
  * their children reveal individually and revealing both would fade the same
  * pixels twice.
  */
