@@ -136,14 +136,19 @@ test('a specification is exempt from the evidence gate by design', () => {
   assert.deepEqual(media.publishBlockers(p.id), [], 'specification was wrongly gated');
 });
 
-test('the publish gate is actually INVOKED by the save path, not just defined', () => {
+test('the publish gate is actually INVOKED by the save path, not just defined', async () => {
   // This is the failure mode the gate itself is vulnerable to. A blocker
   // function that is exported and unit tested but never called is worse than
   // no gate at all, because it looks closed. Assert the call site exists.
   const fs = require('node:fs');
   const path = require('node:path');
+  // fileURLToPath, not pathname.slice(1). Stripping the leading slash is a
+  // Windows-only correction; applied unconditionally it turned the absolute
+  // path into a relative one and this test threw ENOENT on every Linux run,
+  // which is the deploy target.
+  const { fileURLToPath } = await import('node:url');
   const admin = fs.readFileSync(
-    path.join(path.dirname(path.dirname(new URL(import.meta.url).pathname.slice(1))), 'src', 'routes', 'admin.js'),
+    path.join(path.dirname(path.dirname(fileURLToPath(import.meta.url))), 'src', 'routes', 'admin.js'),
     'utf8'
   );
   assert.match(admin, /publishBlockers\(/, 'nothing calls publishBlockers');

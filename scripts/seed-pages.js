@@ -18,54 +18,8 @@ db.migrate();
 
 const FORCE = process.argv.includes('--force');
 
-/* Minimal, deliberate subset of Markdown. A full parser is a dependency and an
-   XSS surface; this escapes everything first and then adds back only the six
-   constructs the pages actually use. */
-function render(md) {
-  const esc = (s) => String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-
-  const inline = (s) => esc(s)
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]*)\)/g, '<a href="$2">$1</a>');
-
-  const out = [];
-  let list = null;
-
-  const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
-
-  for (const raw of String(md).split(/\r?\n/)) {
-    const line = raw.trimEnd();
-
-    if (!line.trim()) { closeList(); continue; }
-
-    const h = /^(#{2,4})\s+(.*)$/.exec(line);
-    if (h) { closeList(); out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); continue; }
-
-    const li = /^[-*]\s+(.*)$/.exec(line);
-    if (li) {
-      if (list !== 'ul') { closeList(); out.push('<ul>'); list = 'ul'; }
-      out.push(`<li>${inline(li[1])}</li>`);
-      continue;
-    }
-
-    // "Label :: value" renders as a definition row, which is what a resume
-    // actually is and what a paragraph handles badly.
-    const dl = /^(.+?)\s+::\s+(.*)$/.exec(line);
-    if (dl) {
-      closeList();
-      out.push(`<p class="res-row"><span class="res-k">${inline(dl[1])}</span><span class="res-v">${inline(dl[2])}</span></p>`);
-      continue;
-    }
-
-    closeList();
-    out.push(`<p>${inline(line)}</p>`);
-  }
-  closeList();
-  return out.join('\n');
-}
+/* One renderer, shared with the admin page editor. See src/markup.js. */
+const { richText: render } = require('../src/markup');
 
 const PAGES = [
   {
@@ -170,4 +124,3 @@ for (const p of PAGES) {
 }
 
 console.log(`\n${n} page${n === 1 ? '' : 's'} written.`);
-module.exports = { render };

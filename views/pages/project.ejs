@@ -21,7 +21,7 @@
   const rest = media.slice(1);
 %>
 
-<article class="wrap" style="padding-top: var(--s-6);">
+<article class="wrap pad-top">
 
   <p class="eyebrow">
     <%= project.context || 'Project' %><% if (project.role) { %> &middot; <%= project.role %><% } %><% if (project.started_on) { %> &middot; <%= project.started_on %><% if (project.ended_on) { %> to <%= project.ended_on %><% } %><% } %>
@@ -75,8 +75,15 @@
       <div class="stack" style="margin-top: var(--s-4);">
         <% for (const f of noted) { %>
           <div class="discipline-row">
+            <%
+              /* The weight goes on its own line rather than after a middot.
+                 A long label such as "Mechanical and CAD" wraps inside the
+                 11rem column, which left the separator stranded at the end of
+                 the first line with the weight orphaned underneath it. */
+            %>
             <div class="eyebrow" style="margin:0; color: var(--<%= f.color_token %>);">
-              <%= f.label %> <span style="color: var(--text-muted);">&middot; <%= f.weight %></span>
+              <%= f.label %>
+              <span style="color: var(--text-muted); display:block;"><%= f.weight %></span>
             </div>
             <p style="margin:0;"><%= f.contribution_note %></p>
           </div>
@@ -118,7 +125,11 @@
   <nav style="margin-top: var(--s-7); display:flex; gap: var(--s-4); flex-wrap:wrap;">
     <a href="/work">All work</a>
     <% if (project.facets[0]) { %>
-      <a href="/disciplines/<%= project.facets[0].slug %>">More <%= project.facets[0].label.toLowerCase() %></a>
+      <%
+        /* Not toLowerCase(). The labels carry acronyms, and lower-casing
+           "Mechanical and CAD" produced "More mechanical and cad". */
+      %>
+      <a href="/disciplines/<%= project.facets[0].slug %>">More <%= project.facets[0].label %></a>
     <% } %>
   </nav>
 </article>

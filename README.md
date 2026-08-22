@@ -8,9 +8,10 @@ Server rendered Node, Express and EJS on `node:sqlite`. No build step, no native
 dependencies, no framework. Runs on a free Oracle Always Free ARM instance for
 the price of a domain name.
 
-**Status: phases 02 to 05 done.** The public site, facet model, search, design
-system, admin panel and media pipeline are built and tested. The document
-library, feeds and deploy tooling are not. See [Roadmap](#roadmap).
+**Status: phases 02 to 08 done.** The public site, facet model, search, design
+system, admin panel, media pipeline, document library, feeds and deploy tooling
+are built and tested. The restore drill and the launch are not. See
+[Roadmap](#roadmap).
 
 ## Run it
 
@@ -29,7 +30,7 @@ npm start          # http://localhost:3000
 ## Checks
 
 ```bash
-npm test              # 102 tests: routes, seo, icons, documents, contrast, search, schema, security, auth, media, backup, regression
+npm test              # 157 tests: routes, seo, icons, documents, contrast, layout, markup, account, search, schema, security, auth, media, backup, regression
 npm run check:scope   # fails when prose outruns code
 npm run check:costs   # fails when a quoted price goes stale
 ```
@@ -37,8 +38,10 @@ npm run check:costs   # fails when a quoted price goes stale
 Each of those exists because of a specific documented failure, not because a
 checklist said to add tests. `npm test` currently catches, among other things, a
 dim state that fails WCAG while looking fine, an FTS5 syntax error triggered by
-typing `C++` into search, and an open redirect that a naive `startsWith('/')`
-check lets through.
+typing `C++` into search, an open redirect that a naive `startsWith('/')` check
+lets through, a `padding` shorthand that deletes the page gutter on a phone, and
+the CRLF that a browser puts in every textarea and that quietly collapsed a
+saved project body into one paragraph.
 
 ## Layout
 
@@ -48,13 +51,17 @@ src/
   db.js                node:sqlite, pragmas, startup assertions
   schema.sql           STRICT tables, FTS5, the constraints that close risks
   repo.js              every query, as a named function
+  markup.js            the two renderers. Nothing else turns stored text into HTML.
   middleware.js        theme, security headers, redirects
   routes/public.js     the public site
+  routes/admin.js      the admin, including the account page
 views/                 EJS, layout plus pages plus partials
 public/css/tokens.css  the design system. Nothing else defines a colour.
+public/css/app.css     the component layer, including every form control
+public/css/admin.css   admin density only. The public layout never loads it.
 scripts/               seed, fonts, admin, db-tool, scope guard, cost check
 deploy/                provision, systemd, Caddy, Litestream, backup, verify
-tests/                 routes, contrast, search, schema, security, auth, media, backup
+tests/                 routes, contrast, layout, markup, account, search, schema, security, auth, media, backup
 DESIGN.md              the rules, and what will bite you
 costs.yml              every price, dated and sourced
 ```
@@ -100,6 +107,15 @@ distance correction over the index's own vocabulary. So `harn` finds harnesses,
 **Ordering uses fractional indexes**, so inserting between two projects touches
 one row. The keys are case sensitive base62: never declare `sort_key` as
 `COLLATE NOCASE` and never sort it with `localeCompare`.
+
+**The account is maintained from inside the site.** `/admin/account` changes the
+name, the sign in address and the password, enrols or removes the second factor,
+and lists the sessions that can currently reach the admin. Changing the password
+requires the current one, even though the session is already authenticated, and
+ends every other session. `scripts/create-admin.js --temp` hands over a short
+password for exactly this page to replace; while that flag is set, every admin
+page carries a warning. It is a warning and not a lock, because the point of a
+hand-over password is that it works.
 
 ## Roadmap
 

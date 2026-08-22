@@ -4,8 +4,18 @@
 
 html { -webkit-text-size-adjust: 100%; }
 
+/*
+ * Sticky footer. On a short page (an empty document library, a 404) the footer
+ * otherwise floats half way up with dead canvas below it, which reads as a
+ * truncated render rather than as a short page. dvh, not vh: on mobile Safari
+ * 100vh is the address-bar-hidden height, so vh leaves a gap that appears only
+ * on a phone.
+ */
 body {
   margin: 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   background: var(--canvas);
   color: var(--text-body);
   font-family: var(--f-body);
@@ -13,7 +23,16 @@ body {
   font-size: 17px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  /* A part number, a CAN id or a long URL must fold rather than push the page
+     sideways. break-word, not anywhere: it only breaks when there is no other
+     opportunity, so ordinary prose is untouched. */
+  overflow-wrap: break-word;
+  /* Checkboxes and radios are the last native controls that ship a hard blue,
+     which is on the ban list. One declaration retints every one of them. */
+  accent-color: var(--accent);
 }
+
+body > main { flex: 1 0 auto; }
 
 /* ---------------------------------------------------------- type */
 
@@ -25,8 +44,10 @@ h1, h2, h3, h4 {
   font-weight: var(--w-head);
 }
 h1 { font-size: clamp(1.75rem, 1.2rem + 2.4vw, 2.5rem); line-height: 1.08; letter-spacing: -.022em; }
-h2 { font-size: 1.625rem; line-height: 1.16; letter-spacing: -.016em; }
-h3 { font-size: 1.3125rem; line-height: 1.25; letter-spacing: -.010em; }
+/* h2 and h3 were fixed sizes while h1 was fluid, so on a 320px phone the
+   subheads crowded the display face they are supposed to sit under. */
+h2 { font-size: clamp(1.375rem, 1.09rem + 1.05vw, 1.625rem); line-height: 1.16; letter-spacing: -.016em; }
+h3 { font-size: clamp(1.1875rem, 1.05rem + .5vw, 1.3125rem); line-height: 1.25; letter-spacing: -.010em; }
 h4 { font-size: 1.0625rem; line-height: 1.35; letter-spacing: -.004em; }
 
 .display-1 {
@@ -46,7 +67,24 @@ p { margin: 0 0 1.05em; }
 a { color: var(--accent-ink); text-underline-offset: 3px; text-decoration-thickness: 1px; }
 a:hover { color: var(--accent); }
 
-strong { font-weight: 600; color: var(--text-strong); }
+strong { font-weight: var(--w-med); color: var(--text-strong); }
+
+/*
+ * Search hit highlight. The browser default for <mark> is a hard yellow that
+ * belongs to no palette, and over the dark canvas it is a glaring rectangle
+ * with near-black text. Both halves come from tokens, and the underline is a
+ * second, non-colour channel so the hit survives forced-colors mode.
+ */
+mark {
+  background: var(--mark-bg);
+  color: var(--mark-ink);
+  padding: 0 .12em;
+  border-radius: 2px;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+@media (forced-colors: active) {
+  mark { background: Mark; color: MarkText; box-shadow: none; text-decoration: underline; }
+}
 
 /* Mono is a real information channel, never decoration. Ligatures off on
    identifiers so a part number containing -- or != can still be retyped. */
@@ -85,7 +123,8 @@ code {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: var(--r-control);
+  /* A contrasting ring in the page colour, so the accent outline stays visible
+     against a card as well as against the canvas. */
   box-shadow: 0 0 0 4px var(--canvas);
 }
 
@@ -116,8 +155,27 @@ code {
 
 /* ---------------------------------------------------------- layout */
 
-.wrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 48px); }
+/*
+ * The gutter is padding-inline, not the padding shorthand, so a page that sets
+ * its own vertical rhythm cannot silently delete it. A template writing
+ * `padding: var(--s-7) 0` on a .wrap used to leave the 404 and 500 pages with
+ * their text flush against the edge of a phone screen.
+ */
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: clamp(18px, 4vw, 48px);
+  width: 100%;
+}
+/* Vertical page rhythm, as a class rather than a per-template inline style, so
+   there is nothing left to hand-roll into the padding shorthand by mistake.
+   Both are block-axis only: the gutter is never theirs to touch. */
+.pad-top     { padding-block-start: var(--s-6); }
+.pad-page-lg { padding-block: var(--s-7); }
+
+/* The measure. 68ch is the reading line length; it is not a layout width. */
 .prose { max-width: 68ch; }
+.measure { max-width: 68ch; }
 
 .stack   { display: flex; flex-direction: column; gap: var(--s-4); }
 .stack-lg{ display: flex; flex-direction: column; gap: var(--s-6); }
@@ -125,7 +183,29 @@ code {
 .section { padding-top: var(--s-6); margin-top: var(--s-6); border-top: 1px solid var(--hairline); }
 .section:first-of-type { border-top: 0; margin-top: 0; }
 
+/*
+ * A divider is a page-width element; a measure is a text width. Putting both on
+ * one element made the rule above a prose section stop at 68ch while every
+ * other rule on the page ran the full width, which reads as a rendering fault.
+ * The section keeps its full width and the cap moves to the text inside it.
+ */
+.section.prose { max-width: none; }
+.section.prose > * { max-width: 68ch; }
+
 .scroll-x { overflow-x: auto; }
+
+/*
+ * Any table wide enough to overflow scrolls inside its own box rather than
+ * pushing the document sideways. tabindex and role are set in the template so
+ * a keyboard user can reach the scroll area; -webkit-overflow-scrolling keeps
+ * momentum on iOS.
+ */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+.table-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------------------------------------------------------- header */
 
@@ -135,13 +215,15 @@ code {
   border-bottom: 1px solid var(--hairline);
 }
 .site-header .bar {
-  display: flex; align-items: center; gap: var(--s-4);
-  min-height: 64px;
+  display: flex; align-items: center; gap: var(--s-3) var(--s-4);
+  min-height: var(--header-h);
+  flex-wrap: wrap;
 }
 .brand {
   display: inline-flex; align-items: center; gap: var(--s-3);
   text-decoration: none; color: var(--text-strong);
   margin-right: auto;
+  min-width: 0;
 }
 .brand svg { display: block; flex: none; }
 .brand .wordmark {
@@ -162,7 +244,7 @@ code {
   display: block;
 }
 
-.nav { display: flex; gap: var(--s-4); align-items: center; flex-wrap: wrap; }
+.nav { display: flex; gap: var(--s-3) var(--s-4); align-items: center; flex-wrap: wrap; min-width: 0; }
 .nav a {
   font-family: var(--f-mono);
   font-size: .66rem;
@@ -175,14 +257,45 @@ code {
 .nav a:hover, .nav a[aria-current="page"] { color: var(--text-strong); }
 
 /* Theme control is a real form, so it works with JavaScript disabled. */
-.theme-form { display: flex; gap: 2px; border: 1px solid var(--hairline); border-radius: var(--r-control); padding: 2px; }
+.theme-form {
+  display: flex; gap: 2px; flex: none;
+  border: 1px solid var(--hairline); border-radius: var(--r-control); padding: 2px;
+}
 .theme-form button {
   font-family: var(--f-mono); font-size: .58rem; letter-spacing: .1em; text-transform: uppercase;
   background: none; border: 0; border-radius: 2px; cursor: pointer;
   color: var(--text-muted); padding: 4px 7px; font-stretch: 80%;
+  white-space: nowrap;
 }
 .theme-form button[aria-pressed="true"] { background: var(--sunken); color: var(--text-strong); }
 .theme-form button:hover { color: var(--text-strong); }
+
+/*
+ * Narrow header. Below this width the brand, six nav links and the three state
+ * theme control cannot share one row: they used to overflow the viewport and
+ * give every page on the site a horizontal scrollbar on a phone. The nav takes
+ * its own full width row underneath, and the brand and the theme control share
+ * the row above it.
+ *
+ * The header is two rows tall here, so --header-h is restated: it is what
+ * scroll-margin-top is derived from, and a stale value tucks a focused card
+ * under the bar.
+ */
+@media (max-width: 720px) {
+  :root { --header-h: 108px; }
+  .site-header .bar { padding-block: var(--s-2); }
+  .nav { order: 3; flex: 1 0 100%; }
+}
+
+/* At the narrowest sizes the wordmark, the strapline under it and the mark
+   together are wider than the space left beside the theme control, so the
+   strapline is dropped rather than allowed to push the layout apart. */
+@media (max-width: 400px) {
+  .brand svg { width: 54px; height: auto; }
+  .brand .sub { display: none; }
+  .brand .wordmark { font-size: 1rem; }
+  .theme-form button { padding: 5px 6px; letter-spacing: .06em; }
+}
 
 /* ---------------------------------------------------------- hero */
 
@@ -237,19 +350,26 @@ code {
   /* A second, non colour channel, so the active filter survives forced-colors
      mode and is not conveyed by colour alone. */
   box-shadow: inset 2px 0 0 var(--accent);
-  font-weight: 600;
+  font-weight: var(--w-med);
 }
 .chip .dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
 
 /* ---------------------------------------------------------- work grid */
 
+/*
+ * min() inside minmax is what makes an auto-fill grid genuinely fluid. A bare
+ * minmax(280px, 1fr) cannot go narrower than 280px, so once the available
+ * width drops below that, the track keeps its floor and pushes the document
+ * sideways. min(280px, 100%) lets the last step collapse to the container.
+ */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: var(--s-3);
   /* Hovering the gutter must not dim the whole grid. */
   pointer-events: none;
 }
+.grid > * { min-width: 0; }
 .card {
   pointer-events: auto;
   display: flex; flex-direction: column; gap: var(--s-2);
@@ -268,7 +388,7 @@ code {
 }
 .card .card-title {
   font-family: var(--f-display);
-  font-weight: 600;
+  font-weight: var(--w-med);
   font-size: 1.0625rem;
   line-height: 1.25;
   color: var(--text-strong);
@@ -284,6 +404,7 @@ code {
   display: flex; flex-wrap: wrap; gap: 4px 10px;
 }
 .card .card-summary { font-size: .9375rem; line-height: 1.55; color: var(--text-body); margin: 0; }
+.card .card-title, .card .card-summary, .card .card-meta { min-width: 0; }
 
 .card:hover, .card:focus-visible {
   border-color: var(--accent);
@@ -307,7 +428,7 @@ code {
 .grid:has(> .card:focus-within) > .card:not(:focus-within) .card-title,
 .grid[data-filtering] > .card[data-match="false"] .card-title {
   color: var(--dim-title);
-  font-weight: 500;
+  font-weight: var(--w-dim);
 }
 .grid:has(> .card:hover) > .card:not(:hover) .card-summary,
 .grid:has(> .card:focus-within) > .card:not(:focus-within) .card-summary,
@@ -348,7 +469,7 @@ code {
 
 .metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
   gap: 1px;
   background: var(--hairline);
   border: 1px solid var(--hairline);
@@ -394,26 +515,183 @@ code {
 
 .rail { border-left: 2px solid var(--accent); padding-left: var(--s-4); }
 
+/* The row layout lives on the inner .wrap, which is where the gutter is. The
+   footer element only supplies the rule, the rhythm and the type. */
 .site-footer {
+  flex: none;
   margin-top: var(--s-7);
   border-top: 1px solid var(--hairline);
-  padding: var(--s-5) 0 var(--s-6);
+  padding-block: var(--s-5) var(--s-6);
   font-family: var(--f-mono);
   font-size: .6rem;
   font-stretch: 80%;
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--text-muted);
-  display: flex; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap;
+}
+.site-footer .wrap {
+  display: flex; justify-content: space-between; gap: var(--s-2) var(--s-4); flex-wrap: wrap;
 }
 .site-footer a { color: var(--text-muted); }
 
-/* Resume and print. Also gives a browser generated PDF for free. */
+/* ---------------------------------------------------------- controls
+ *
+ * Forms, buttons and panels live here rather than in admin.css.
+ *
+ * They used to live in the admin sheet, which the public layout does not load.
+ * The public contact form therefore rendered as raw user-agent widgets: labels
+ * inline beside 170px default-width inputs anchored to the left of a full width
+ * panel, with an unstyled Send button. It looked like a broken stylesheet
+ * because it was one. Anything a public page can use belongs in this file, and
+ * admin.css keeps only what is genuinely admin-specific.
+ */
+
+.panel {
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  padding: var(--s-4);
+}
+
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: var(--s-4); min-width: 0; }
+.field:last-child { margin-bottom: 0; }
+.field > label {
+  font-family: var(--f-mono); font-size: .6rem; font-stretch: 80%;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
+}
+.field .hint { font-size: .82rem; color: var(--text-muted); line-height: 1.45; }
+
+/*
+ * One selector for every text-entry control, so a field added later cannot
+ * quietly fall back to the user-agent widget. width:100% plus the global
+ * border-box is what makes an input fill its column instead of sitting at its
+ * default size against the left edge.
+ *
+ * The floor of 16px is not cosmetic: iOS Safari zooms the viewport on focus
+ * for any input below 16px, and the page never zooms back out.
+ */
+.input,
+.field input[type="text"], .field input[type="email"], .field input[type="password"],
+.field input[type="search"], .field input[type="url"], .field input[type="tel"],
+.field input[type="number"], .field input[type="date"], .field input[type="file"],
+.field textarea, .field select {
+  font-family: var(--f-body);
+  font-size: max(1rem, 16px);
+  line-height: 1.4;
+  padding: 9px 11px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--text-body);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  transition: border-color var(--t-hover) var(--ease);
+}
+.input:hover,
+.field input:hover, .field textarea:hover, .field select:hover { border-color: var(--rule); }
+.input:focus-visible,
+.field input:focus-visible, .field textarea:focus-visible, .field select:focus-visible {
+  border-color: var(--accent);
+}
+.field input::placeholder, .field textarea::placeholder, .input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;   /* Firefox dims placeholders by default, below AA. */
+}
+.field textarea, textarea.input { min-height: 8rem; resize: vertical; line-height: 1.55; }
+.field select, select.input {
+  /* A native select keeps its own disclosure arrow; only the box is restyled. */
+  cursor: pointer;
+}
+.field input[type="file"] { padding: 7px 9px; cursor: pointer; }
+
+/* A checkbox or radio beside its own wording, rather than under a field label. */
+.check {
+  display: flex; gap: var(--s-2); align-items: flex-start;
+  margin-bottom: var(--s-4); font-size: .95rem; line-height: 1.45;
+}
+.check input { margin-top: .3em; flex: none; width: 1rem; height: 1rem; }
+.check .hint { display: block; color: var(--text-muted); font-size: .85rem; }
+
+.btn {
+  font-family: var(--f-mono); font-size: .66rem; font-stretch: 80%;
+  letter-spacing: .12em; text-transform: uppercase;
+  padding: 9px 15px; border-radius: var(--r-control); cursor: pointer;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent);
+  text-decoration: none; display: inline-block; line-height: 1.2;
+  text-align: center;
+  transition: border-color var(--t-hover) var(--ease), filter var(--t-hover) var(--ease);
+}
+.btn:hover { filter: brightness(1.06); color: var(--on-accent); }
+.btn-quiet { background: transparent; color: var(--text-body); border-color: var(--hairline); }
+.btn-quiet:hover { border-color: var(--accent); color: var(--text-strong); filter: none; }
+.btn-danger { background: transparent; color: var(--ch-business); border-color: var(--ch-business); }
+.btn-sm { padding: 5px 9px; font-size: .58rem; }
+/* A row of buttons wraps rather than overflowing a narrow column. */
+.btn-row { display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; }
+
+/*
+ * Two columns on a comfortable width, one column when there is not room. The
+ * collapse is on the container, not the viewport, so the same class works
+ * inside a narrow panel on a wide screen.
+ *
+ * The gap and the field's own margin both applied, so once the row collapsed on
+ * a phone the two fields inside it sat 40px apart while the field after the row
+ * sat 20px away. The row owns the spacing; the fields inside it do not.
+ */
+.row2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  gap: var(--s-4);
+  margin-bottom: var(--s-4);
+}
+.row2 > .field { margin-bottom: 0; }
+.row2:last-child { margin-bottom: 0; }
+
+.flash {
+  border-left: 2px solid var(--patina);
+  padding: var(--s-2) var(--s-3);
+  background: var(--sunken);
+  border-radius: var(--r-control);
+  margin-bottom: var(--s-4);
+  font-size: .92rem;
+}
+.flash.error { border-left-color: var(--ch-business); color: var(--text-strong); }
+.flash p:last-child { margin-bottom: 0; }
+
+/* A search box and its button. Used by /search and by the in-document search,
+   which each carried their own copy of these declarations inline. */
+.searchbar { display: flex; gap: var(--s-2); flex-wrap: wrap; max-width: 34rem; }
+.searchbar .input { flex: 1 1 14rem; }
+.searchbar .btn { flex: none; }
+
+/* Prevents the reduced-motion rule below from being the only place these are
+   named, and keeps UI feedback under the 200ms budget in DESIGN.md. */
+@media (prefers-reduced-motion: reduce) {
+  .btn, .input, .field input, .field textarea, .field select { transition-duration: 1ms !important; }
+}
+
+/*
+ * Resume and print. Also gives a browser generated PDF for free.
+ *
+ * The palette is swapped in tokens.css rather than hardcoded here, so a reader
+ * printing with the dark theme active does not get its ink values on white
+ * paper. Colours below come from tokens like everywhere else.
+ *
+ * .chips is NOT hidden. It carries the status badge and the discipline links
+ * on a project page, which is content: hiding it lost the reader the whole
+ * per-discipline framing of the page they printed. Only the controls that
+ * cannot work on paper are dropped, and the resume marks its own action row
+ * .no-print.
+ */
 @media print {
-  .site-header, .site-footer, .skip-link, .theme-form, .chips { display: none !important; }
-  body { background: #fff; color: #000; font-size: 11pt; }
+  .site-header, .site-footer, .skip-link, .theme-form, .no-print { display: none !important; }
+  body { background: var(--canvas); color: var(--text-body); font-size: 11pt; }
+  a { text-decoration: underline; }
   a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; word-break: break-all; }
-  .card, .section { page-break-inside: avoid; }
+  .card, .section, .discipline-row, .res-row, figure { page-break-inside: avoid; }
+  h1, h2, h3 { break-after: avoid-page; }
+  .card, .panel, .metrics, .metric { box-shadow: none !important; }
   @page { margin: 0.6in; }
 }
 
@@ -421,7 +699,7 @@ code {
 
 .discipline-row {
   display: grid;
-  grid-template-columns: 11rem minmax(0, 1fr);
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
   gap: var(--s-4);
   align-items: baseline;
 }
@@ -431,9 +709,21 @@ code {
 
 .figure-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: var(--s-3);
 }
+.figure-grid > * { min-width: 0; }
+
+/* The discipline index row: icon, text, count. The text column carries the
+   measure; the row keeps the full width so the count stays flush right. */
+.facet-row-link { text-decoration: none; }
+.facet-row-link .facet-text { max-width: 68ch; }
+.facet-row-link .facet-label {
+  font-family: var(--f-display); font-weight: var(--w-med); font-size: 1.1rem;
+  color: var(--text-strong); display: block;
+}
+.facet-row-link .facet-blurb { color: var(--text-muted); font-size: .95rem; }
+.facet-row-link:hover .facet-label { color: var(--accent-ink); }
 
 .prose h2 { margin-top: var(--s-5); }
 .prose h3 { margin-top: var(--s-4); }
@@ -444,10 +734,11 @@ code {
 
 .doc-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: var(--s-3);
   pointer-events: none;
 }
+.doc-grid > * { min-width: 0; }
 .doc-card {
   pointer-events: auto;
   display: grid;
@@ -482,13 +773,13 @@ code {
 /* A resume is a list of label/value rows, which a paragraph handles badly. */
 .res-row {
   display: grid;
-  grid-template-columns: 17rem minmax(0, 1fr);
+  grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
   gap: var(--s-4);
   margin: 0 0 .5em;
   align-items: baseline;
 }
 @media (max-width: 720px) { .res-row { grid-template-columns: 1fr; gap: 2px; } }
-.res-row .res-k { font-family: var(--f-display); font-weight: 600; color: var(--text-strong); }
+.res-row .res-k { font-family: var(--f-display); font-weight: var(--w-med); color: var(--text-strong); }
 .res-row .res-v { color: var(--text-muted); }
 
 .prose h3 { font-size: 1.0625rem; margin-top: var(--s-4); }

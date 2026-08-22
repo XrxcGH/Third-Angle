@@ -1,4 +1,4 @@
-<article class="wrap" style="padding-top: var(--s-6);">
+<article class="wrap pad-top">
   <p class="eyebrow">
     Document
     <% if (doc.project_title) { %>
@@ -25,7 +25,7 @@
     </div>
   </div>
 
-  <div style="display:flex; gap: var(--s-2); margin-top: var(--s-4); flex-wrap: wrap;">
+  <div class="btn-row" style="margin-top: var(--s-4);">
     <%
       /* Served with Content-Disposition: attachment from the media route,
          because a PDF rendered inline is the residual vector once every other
@@ -41,12 +41,12 @@
   <section class="section">
     <p class="eyebrow">Search inside this document</p>
     <form method="get" action="/documents/<%= doc.slug %>" role="search"
-          style="display:flex; gap: var(--s-2); max-width: 32rem; margin-top: var(--s-3);">
+          class="searchbar" style="margin-top: var(--s-3);">
       <label class="visually-hidden" for="q">Search inside <%= doc.title %></label>
-      <input id="q" name="q" type="search" value="<%= q %>" autocomplete="off" spellcheck="false"
-             placeholder="retention, crimp, inspection"
-             style="flex:1; font-family: var(--f-body); font-size: 1rem; padding: 10px 12px; border-radius: var(--r-control); border:1px solid var(--hairline); background: var(--surface); color: var(--text-body);">
-      <button type="submit" style="font-family: var(--f-mono); font-size:.66rem; letter-spacing:.12em; text-transform:uppercase; padding: 10px 16px; border-radius: var(--r-control); border:1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor:pointer;">Find</button>
+      <input class="input" id="q" name="q" type="search" value="<%= q %>"
+             autocomplete="off" spellcheck="false"
+             placeholder="retention, crimp, inspection">
+      <button class="btn" type="submit">Find</button>
     </form>
 
     <% if (q) { %>

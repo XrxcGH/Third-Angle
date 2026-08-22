@@ -18,6 +18,7 @@ const multer = require('multer');
 const media = require('../media');
 const documents = require('../documents');
 const contact = require('../contact');
+const markup = require('../markup');
 
 /* In memory, because every upload is validated and re-encoded before it ever
    touches the disk. multer 2.2.0 or newer: earlier versions carry CVE-2026-2359
@@ -161,6 +162,168 @@ router.post('/logout', form, loadSession, requireCsrf, (req, res) => {
 /* Everything below requires a session. */
 router.use(loadSession, requireAuth);
 
+/*
+ * A temporary password is a hand-over, not a chosen credential, so it is
+ * flagged rather than trusted. The flag drives a banner on every admin page
+ * and clears itself the moment a password is set from the account page.
+ *
+ * Deliberately a warning and not a lock. A hard redirect to the account page
+ * would make the flag useless for its actual purpose, which is handing someone
+ * a working login so they can walk the admin surface before choosing a
+ * permanent password. What it must not do is stay invisible.
+ */
+router.use((req, res, next) => {
+  res.locals.mustChangePassword = Boolean(req.session.must_change_password);
+  next();
+});
+
+/* ---------------------------------------------------------------- account */
+
+/* Enough to recognise a device you do not own, not an audit log. Sessions last
+   fourteen days, so an unbounded list turns into hundreds of rows of the same
+   browser and stops being readable, which is the opposite of the point. */
+const SESSIONS_SHOWN = 12;
+
+function accountView(req, extra = {}) {
+  const user = auth.getUser(req.session.user_id);
+  const all_ = auth.listSessions(user.id).map((s) => ({ ...s, current: s.id === req.session.id }));
+  return view('account', {
+    title: 'Account',
+    user,
+    sessions: all_.slice(0, SESSIONS_SHOWN),
+    sessionCount: all_.length,
+    sessionsHidden: Math.max(0, all_.length - SESSIONS_SHOWN),
+    minPassword: auth.MIN_PASSWORD,
+    error: null,
+    notice: null,
+    /* Present only immediately after enrolling, and never stored in a cookie
+       or a query string: a TOTP secret in a URL ends up in the browser
+       history and in any proxy log between here and the screen. */
+    enrol: null,
+    ...extra,
+  });
+}
+
+router.get('/account', (req, res) => {
+  const flash = {
+    saved: 'Account details updated.',
+    password: 'Password changed. Every other session was signed out.',
+    totp: 'Two factor authentication is on. It is required at the next sign in.',
+    'totp-off': 'Two factor authentication is off.',
+    sessions: 'Other sessions signed out.',
+  }[String(req.query.done || '')] || null;
+  res.render('admin/account', accountView(req, { notice: flash }));
+});
+
+/* Name and address. Deliberately separate from the password form: one of them
+   is routine and the other revokes access, and a single Save button for both
+   makes the destructive one accidental. */
+router.post('/account/profile', form, requireCsrf, (req, res) => {
+  const name = String(req.body.name || '').trim();
+  const email = String(req.body.email || '').trim().toLowerCase();
+
+  const problem =
+    (!name && 'A name is required.') ||
+    auth.emailProblem(email) ||
+    null;
+  if (problem) {
+    return res.status(400).render('admin/account', accountView(req, { error: problem }));
+  }
+
+  try {
+    auth.updateProfile(req.session.user_id, { name, email });
+  } catch (err) {
+    return res.status(400).render('admin/account', accountView(req, {
+      error: /UNIQUE/i.test(err.message)
+        ? 'Another account already uses that address.'
+        : err.message,
+    }));
+  }
+  repo.logChange(req.session.email, 'user', req.session.user_id, 'update', { name, email });
+  res.redirect(303, '/admin/account?done=saved');
+});
+
+router.post('/account/password', form, requireCsrf, (req, res) => {
+  const user = auth.getUser(req.session.user_id);
+  const current = String(req.body.current_password || '');
+  const next_ = String(req.body.new_password || '');
+  const confirm = String(req.body.confirm_password || '');
+
+  /*
+   * The current password is required even though the session is already
+   * authenticated. A session cookie is what an unattended laptop leaks; the
+   * password is what stops that turning into a permanent takeover.
+   */
+  const problem =
+    (!auth.verifyPassword(current, user.password_hash) && 'That is not the current password.') ||
+    auth.passwordProblem(next_) ||
+    (next_ !== confirm && 'The two new passwords do not match.') ||
+    (next_ === current && 'That is already the current password.') ||
+    null;
+
+  if (problem) {
+    return res.status(400).render('admin/account', accountView(req, { error: problem }));
+  }
+
+  auth.setPassword(user.id, next_);
+  auth.destroyOtherSessions(user.id, req.session.id);
+  repo.logChange(req.session.email, 'user', user.id, 'update', { password_changed: true });
+  res.redirect(303, '/admin/account?done=password');
+});
+
+/*
+ * TOTP enrolment is two steps on purpose. Generating a secret and marking it
+ * required in one action locks the operator out whenever the code was never
+ * actually added to an authenticator, and the recovery for that is shell
+ * access to the box.
+ */
+router.post('/account/totp/start', form, requireCsrf, (req, res) => {
+  const user = auth.getUser(req.session.user_id);
+  const secret = auth.generateTotpSecret();
+  auth.setTotpSecret(user.id, secret, 0);
+  res.render('admin/account', accountView(req, {
+    enrol: { secret, uri: auth.totpUri(secret, user.email) },
+    notice: 'Add this to your authenticator, then confirm the first code below. It is not required until you do.',
+  }));
+});
+
+router.post('/account/totp/confirm', form, requireCsrf, (req, res) => {
+  const user = auth.getUser(req.session.user_id);
+  if (!user.totp_secret) {
+    return res.status(400).render('admin/account', accountView(req, {
+      error: 'Nothing to confirm. Start the enrolment first.',
+    }));
+  }
+  if (!auth.verifyTotp(user.totp_secret, req.body.totp)) {
+    return res.status(400).render('admin/account', accountView(req, {
+      enrol: { secret: user.totp_secret, uri: auth.totpUri(user.totp_secret, user.email) },
+      error: 'That code did not verify. Codes expire every thirty seconds, so try the next one.',
+    }));
+  }
+  auth.setTotpSecret(user.id, user.totp_secret, 1);
+  repo.logChange(req.session.email, 'user', user.id, 'update', { totp: 'confirmed' });
+  res.redirect(303, '/admin/account?done=totp');
+});
+
+/* Turning it off asks for the password, because a borrowed session should not
+   be able to remove the second factor that the session itself bypassed. */
+router.post('/account/totp/off', form, requireCsrf, (req, res) => {
+  const user = auth.getUser(req.session.user_id);
+  if (!auth.verifyPassword(String(req.body.current_password || ''), user.password_hash)) {
+    return res.status(400).render('admin/account', accountView(req, {
+      error: 'Enter the current password to turn two factor authentication off.',
+    }));
+  }
+  auth.setTotpSecret(user.id, null, 0);
+  repo.logChange(req.session.email, 'user', user.id, 'update', { totp: 'removed' });
+  res.redirect(303, '/admin/account?done=totp-off');
+});
+
+router.post('/account/sessions/revoke', form, requireCsrf, (req, res) => {
+  auth.destroyOtherSessions(req.session.user_id, req.session.id);
+  res.redirect(303, '/admin/account?done=sessions');
+});
+
 /* -------------------------------------------------------------- dashboard */
 
 router.get('/', (req, res) => {
@@ -220,6 +383,10 @@ router.get('/projects/:id/edit', (req, res, next) => {
   }));
 });
 
+/* Body text is escaped and paragraphed, never parsed as markup. One
+   implementation, in src/markup.js, shared with the seed. */
+const renderInline = markup.paragraphs;
+
 const slugify = (s) =>
   String(s).toLowerCase().trim()
     .replace(/[^\p{L}\p{N}]+/gu, '-')
@@ -245,8 +412,8 @@ const saveProject = transaction((body, actor) => {
       ? body.status : 'in-progress',
     context: String(body.context || '').trim() || null,
     role: String(body.role || '').trim() || null,
-    summary_md: String(body.summary_md || ''),
-    body_md: String(body.body_md || ''),
+    summary_md: markup.normaliseNewlines(body.summary_md),
+    body_md: markup.normaliseNewlines(body.body_md),
     started_on: String(body.started_on || '').trim() || null,
     ended_on: String(body.ended_on || '').trim() || null,
     published: body.published ? 1 : 0,
@@ -302,19 +469,6 @@ const saveProject = transaction((body, actor) => {
   return projectId;
 });
 
-/* Markdown is not wired up yet, so body text is escaped and paragraphed.
-   This is deliberately conservative: it can never emit markup. */
-function renderInline(text) {
-  const esc = (s) => String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  return String(text || '')
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`)
-    .join('\n');
-}
 
 router.post('/projects/save', form, requireCsrf, (req, res) => {
   if (!String(req.body.title || '').trim()) {
@@ -634,14 +788,20 @@ router.get('/pages/:slug', (req, res, next) => {
 
 router.post('/pages/:slug', form, requireCsrf, (req, res, next) => {
   if (!repo.PAGE_SLUGS.includes(req.params.slug)) return next();
-  const md = String(req.body.body_md || '');
+  const md = markup.normaliseNewlines(req.body.body_md);
   repo.savePage(req.params.slug, {
     title: String(req.body.title || '').trim() || req.params.slug,
     subtitle: String(req.body.subtitle || '').trim(),
     body_md: md,
-    // Same conservative renderer the seed uses, so what the admin sees and
-    // what the seed produces cannot diverge.
-    body_html: require('../../scripts/seed-pages.js').render(md),
+    // Same renderer the seed uses, so what the admin saves and what the seed
+    // produces cannot diverge.
+    //
+    // This used to require scripts/seed-pages.js. Requiring a script from a
+    // route runs the script: every page save re-ran assertEnvironment,
+    // migrate and the seeding loop, and would recreate a page the operator had
+    // deliberately deleted. The renderer now lives in src/markup.js and the
+    // script is a script again.
+    body_html: markup.richText(md),
     published: req.body.published ? 1 : 0,
   });
   repo.logChange(req.session.email, 'page', 0, 'update', { slug: req.params.slug });
@@ -659,7 +819,7 @@ router.get('/notes', (req, res) => {
 });
 
 router.post('/notes/save', form, requireCsrf, (req, res) => {
-  const body = String(req.body.body_md || '').trim();
+  const body = markup.normaliseNewlines(req.body.body_md).trim();
   if (!body) return res.redirect(303, '/admin/notes');
   const now = nowIso();
   const slug = `${now.slice(0, 10)}-${slugify(req.body.title || body.slice(0, 40)) || 'note'}`;
@@ -676,7 +836,7 @@ router.post('/notes/save', form, requireCsrf, (req, res) => {
 /* -------------------------------------------------------------------- now */
 
 router.post('/now', form, requireCsrf, (req, res) => {
-  const md = String(req.body.body_md || '').trim();
+  const md = markup.normaliseNewlines(req.body.body_md).trim();
   run(
     `INSERT INTO now_page (id, body_md, body_html, updated_at) VALUES (1, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET body_md = excluded.body_md,

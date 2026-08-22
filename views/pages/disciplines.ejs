@@ -1,4 +1,4 @@
-<section class="wrap" style="padding-top: var(--s-6);">
+<section class="wrap pad-top">
   <p class="eyebrow">Disciplines</p>
   <h1>Eight doors into the same body of work</h1>
   <p class="prose lede" style="color: var(--text-muted);">
@@ -7,11 +7,12 @@
 
   <div class="stack" style="margin-top: var(--s-5);">
     <% for (const d of disciplines) { %>
-      <a class="icon-host" href="/disciplines/<%= d.slug %>" style="text-decoration:none; display:grid; grid-template-columns: 28px minmax(0,1fr) auto; gap: var(--s-4); align-items: start; padding: var(--s-4) 0; border-bottom: 1px solid var(--hairline);">
+      <a class="icon-host facet-row-link" href="/disciplines/<%= d.slug %>"
+         style="display:grid; grid-template-columns: 28px minmax(0,1fr) auto; gap: var(--s-4); align-items: start; padding-block: var(--s-4); border-bottom: 1px solid var(--hairline);">
         <span style="color: var(--<%= d.color_token %>); margin-top:3px;"><%- include('../partials/icon', { name: d.slug, size: 26 }) %></span>
-        <span>
-          <span style="font-family: var(--f-display); font-weight:650; font-size:1.1rem; color: var(--text-strong); display:block;"><%= d.label %></span>
-          <% if (d.blurb) { %><span style="color: var(--text-muted); font-size:.95rem;"><%= d.blurb %></span><% } %>
+        <span class="facet-text">
+          <span class="facet-label"><%= d.label %></span>
+          <% if (d.blurb) { %><span class="facet-blurb"><%= d.blurb %></span><% } %>
         </span>
         <span class="mono tnum" style="font-size:.7rem; color: var(--text-muted);"><%= counts[d.slug] || 0 %></span>
       </a>

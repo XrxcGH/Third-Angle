@@ -12,7 +12,7 @@
   <div class="stat"><b><%= counts.errors %></b><span>New errors</span></div>
 </div>
 
-<div style="display:flex; gap: var(--s-2); margin-top: var(--s-4); flex-wrap: wrap;">
+<div class="btn-row" style="margin-top: var(--s-4);">
   <a class="btn" href="/admin/projects/new">New project</a>
   <a class="btn btn-quiet" href="/admin/projects">Reorder projects</a>
   <a class="btn btn-quiet" href="/admin/notes">Add a log entry</a>
@@ -20,7 +20,7 @@
 
 <section style="margin-top: var(--s-6);">
   <h2 style="font-size:1.2rem;">Recent changes</h2>
-  <div class="panel" style="margin-top: var(--s-3); padding: 0;">
+  <div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="margin-top: var(--s-3); padding: 0;">
     <table class="admin-table">
       <thead><tr><th>When</th><th>Who</th><th>What</th><th>Action</th></tr></thead>
       <tbody>

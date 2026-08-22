@@ -1,13 +1,13 @@
-<section class="wrap" style="padding-top: var(--s-6);">
+<section class="wrap pad-top">
   <p class="eyebrow">Search</p>
   <h1>Find anything</h1>
 
-  <form method="get" action="/search" role="search" style="margin-top: var(--s-4); display:flex; gap: var(--s-2); max-width: 34rem;">
+  <form method="get" action="/search" role="search" class="searchbar" style="margin-top: var(--s-4);">
     <label class="visually-hidden" for="q">Search projects, documents and disciplines</label>
-    <input id="q" name="q" type="search" value="<%= q %>" placeholder="swerve, CAN bus, governance, MegaTag2"
-           autocomplete="off" spellcheck="false"
-           style="flex:1; font-family: var(--f-body); font-size: 1rem; padding: 10px 12px; border-radius: var(--r-control); border:1px solid var(--hairline); background: var(--surface); color: var(--text-body);">
-    <button type="submit" style="font-family: var(--f-mono); font-size:.66rem; letter-spacing:.12em; text-transform:uppercase; padding: 10px 16px; border-radius: var(--r-control); border:1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor:pointer;">Search</button>
+    <input class="input" id="q" name="q" type="search" value="<%= q %>"
+           placeholder="swerve, CAN bus, governance, MegaTag2"
+           autocomplete="off" spellcheck="false">
+    <button class="btn" type="submit">Search</button>
   </form>
 
   <% if (q) { %>
@@ -21,7 +21,7 @@
       <% for (const r of results) { %>
         <a href="<%= r.url %>" style="text-decoration:none; display:block; padding: var(--s-3) 0; border-bottom: 1px solid var(--hairline);">
           <span class="eyebrow" style="margin:0;"><%= r.kind %></span>
-          <span style="display:block; font-family: var(--f-display); font-weight:650; font-size:1.05rem; color: var(--text-strong);"><%= r.title %></span>
+          <span style="display:block; font-family: var(--f-display); font-weight: var(--w-head); font-size:1.05rem; color: var(--text-strong);"><%= r.title %></span>
           <% if (r.excerpt) { %><span style="display:block; color: var(--text-muted); font-size:.95rem;"><%- r.excerpt %></span>
           <% } else if (r.subtitle) { %><span style="display:block; color: var(--text-muted); font-size:.95rem;"><%= r.subtitle %></span><% } %>
         </a>

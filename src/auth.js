@@ -233,6 +233,77 @@ function recordLogin(userId) {
   run('UPDATE user SET last_login_at = ? WHERE id = ?', nowIso(), userId);
 }
 
+/* ------------------------------------------------------- account maintenance
+ *
+ * The operator has to be able to change their own address and password from
+ * inside the site. Without this the only route is shell access to the box and
+ * scripts/create-admin.js, which means a hand-over password stays whatever it
+ * was set to, and a compromised address cannot be moved at all.
+ */
+
+function getUser(userId) {
+  return get('SELECT * FROM user WHERE id = ?', userId);
+}
+
+const MIN_PASSWORD = 12;
+
+/** The one place the length floor is stated, so the script and the form agree. */
+function passwordProblem(password) {
+  const p = String(password || '');
+  if (p.length < MIN_PASSWORD) return `Use at least ${MIN_PASSWORD} characters. This is the only credential on the site.`;
+  if (p.length > 512) return 'That is longer than 512 characters.';
+  return null;
+}
+
+/*
+ * Deliberately permissive. A validator that rejects a legitimate address is a
+ * worse failure than one that accepts a typo, because the typo is visible on
+ * the account page and the rejection is not fixable from inside the app.
+ */
+function emailProblem(email) {
+  const e = String(email || '').trim();
+  if (!e) return 'An email address is required.';
+  if (e.length > 200) return 'That address is too long.';
+  if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(e)) return 'That does not look like an email address.';
+  return null;
+}
+
+function updateProfile(userId, { name, email }) {
+  run(
+    'UPDATE user SET name = ?, email = ? WHERE id = ?',
+    String(name).trim(), String(email).toLowerCase().trim(), userId
+  );
+}
+
+/**
+ * Setting a password always clears must_change_password: the flag exists to
+ * force exactly this action, so leaving it set afterwards would lock the
+ * operator into the account page permanently.
+ */
+function setPassword(userId, password) {
+  run(
+    'UPDATE user SET password_hash = ?, must_change_password = 0 WHERE id = ?',
+    hashPassword(password), userId
+  );
+}
+
+function listSessions(userId) {
+  return all(
+    'SELECT id, created_at, expires_at, user_agent, ip FROM session WHERE user_id = ? ORDER BY created_at DESC',
+    userId
+  );
+}
+
+/**
+ * Ends every session except the one calling. A password change that leaves
+ * older sessions alive has not actually revoked anything, which is the whole
+ * reason someone changes a password they think was seen.
+ */
+function destroyOtherSessions(userId, keepSessionId) {
+  const res = run('DELETE FROM session WHERE user_id = ? AND id != ?', userId, keepSessionId);
+  return Number(res.changes || 0);
+}
+
 module.exports = {
   hashPassword, verifyPassword,
   generateTotpSecret, verifyTotp, totpAt, totpUri, base32Encode, base32Decode,
@@ -240,4 +311,6 @@ module.exports = {
   recordAttempt, isRateLimited, clearAttempts,
   csrfToken, checkCsrf,
   findUserByEmail, countUsers, createUser, setTotpSecret, recordLogin,
+  getUser, updateProfile, setPassword, listSessions, destroyOtherSessions,
+  passwordProblem, emailProblem, MIN_PASSWORD,
 };

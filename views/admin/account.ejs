@@ -1,0 +1,194 @@
+<p class="eyebrow">Admin</p>
+<h1>Account</h1>
+<p class="measure" style="color: var(--text-muted);">
+  The single operator account. Changing the address here changes the address you
+  sign in with, so it takes effect immediately and there is no second copy of it
+  anywhere else in the system.
+</p>
+
+<% if (user.must_change_password) { %>
+  <div class="flash error" style="margin-top: var(--s-4);">
+    <p style="margin:0;">
+      <strong>This password is temporary.</strong>
+      It was handed over rather than chosen, which means it has been typed
+      somewhere it should not live. Set a password of at least <%= minPassword %>
+      characters below; doing so clears this warning and signs out every other
+      session.
+    </p>
+  </div>
+<% } %>
+
+<% if (error) { %><p class="flash error" role="alert" style="margin-top: var(--s-4);"><%= error %></p><% } %>
+<% if (notice) { %><p class="flash" role="status" style="margin-top: var(--s-4);"><%= notice %></p><% } %>
+
+<div class="stack-lg" style="margin-top: var(--s-5); max-width: 44rem;">
+
+  <%# ------------------------------------------------------------- identity %>
+  <section>
+    <h2>Who you are</h2>
+    <p class="measure" style="color: var(--text-muted); font-size: .92rem;">
+      The name appears in the audit log against every change. The address is the
+      sign in credential.
+    </p>
+    <form class="panel" method="post" action="/admin/account/profile" style="margin-top: var(--s-3);">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="row2">
+        <div class="field">
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" required maxlength="120"
+                 autocomplete="name" value="<%= user.name %>">
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required maxlength="200"
+                 autocomplete="username" value="<%= user.email %>">
+        </div>
+      </div>
+      <button class="btn" type="submit">Save details</button>
+    </form>
+  </section>
+
+  <%# ------------------------------------------------------------- password %>
+  <section>
+    <h2>Password</h2>
+    <p class="measure" style="color: var(--text-muted); font-size: .92rem;">
+      The current password is required even though you are already signed in: a
+      session cookie is what an unattended laptop leaks, and the password is what
+      stops that becoming permanent. Changing it signs out every other session.
+    </p>
+    <form class="panel" method="post" action="/admin/account/password" style="margin-top: var(--s-3);">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="field">
+        <label for="current_password">Current password</label>
+        <input id="current_password" name="current_password" type="password" required
+               autocomplete="current-password">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="new_password">New password</label>
+          <input id="new_password" name="new_password" type="password" required
+                 minlength="<%= minPassword %>" autocomplete="new-password">
+          <span class="hint">At least <%= minPassword %> characters. A passphrase beats a short scramble.</span>
+        </div>
+        <div class="field">
+          <label for="confirm_password">Repeat the new password</label>
+          <input id="confirm_password" name="confirm_password" type="password" required
+                 minlength="<%= minPassword %>" autocomplete="new-password">
+        </div>
+      </div>
+      <button class="btn" type="submit">Change password</button>
+    </form>
+  </section>
+
+  <%# ----------------------------------------------------------------- totp %>
+  <section>
+    <h2>Two factor authentication</h2>
+    <p class="measure" style="color: var(--text-muted); font-size: .92rem;">
+      A six digit code from an authenticator app, on top of the password.
+      Enrolment is two steps on purpose: a secret that is generated and made
+      mandatory in one action locks you out whenever it never reached the app.
+    </p>
+
+    <div class="panel" style="margin-top: var(--s-3);">
+      <p style="margin-top:0;">
+        Status
+        <% if (user.totp_confirmed) { %>
+          <span class="badge" style="border-color: var(--patina); color: var(--patina);">required at sign in</span>
+        <% } else if (user.totp_secret) { %>
+          <span class="badge" style="border-color: var(--accent); color: var(--accent-ink);">enrolled, not confirmed</span>
+        <% } else { %>
+          <span class="badge">off</span>
+        <% } %>
+      </p>
+
+      <% if (enrol) { %>
+        <div class="field">
+          <label for="totp-secret">Secret</label>
+          <input id="totp-secret" class="input mono" type="text" readonly value="<%= enrol.secret %>">
+          <span class="hint">
+            Type this into your authenticator, or paste the URI below into a QR
+            generator you trust. It is shown once and never written to a log.
+          </span>
+        </div>
+        <div class="field">
+          <label for="totp-uri">Enrolment URI</label>
+          <input id="totp-uri" class="input mono" type="text" readonly value="<%= enrol.uri %>">
+        </div>
+      <% } %>
+
+      <% if (user.totp_secret && !user.totp_confirmed) { %>
+        <form method="post" action="/admin/account/totp/confirm">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div class="field">
+            <label for="totp">First code</label>
+            <input id="totp" name="totp" type="text" inputmode="numeric" pattern="[0-9]{6}"
+                   maxlength="6" autocomplete="one-time-code" required
+                   style="font-family: var(--f-mono); letter-spacing: .3em; max-width: 12rem;">
+            <span class="hint">Confirming is what makes it required at sign in.</span>
+          </div>
+          <button class="btn" type="submit">Confirm and require it</button>
+        </form>
+      <% } %>
+
+      <% if (!user.totp_secret) { %>
+        <form method="post" action="/admin/account/totp/start">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <button class="btn btn-quiet" type="submit">Set up two factor authentication</button>
+        </form>
+      <% } %>
+
+      <% if (user.totp_confirmed) { %>
+        <form method="post" action="/admin/account/totp/off" style="margin-top: var(--s-4);">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div class="field">
+            <label for="totp_off_password">Current password</label>
+            <input id="totp_off_password" name="current_password" type="password" required
+                   autocomplete="current-password" style="max-width: 22rem;">
+            <span class="hint">Required, so a borrowed session cannot remove the factor it bypassed.</span>
+          </div>
+          <button class="btn btn-danger" type="submit">Turn it off</button>
+        </form>
+      <% } %>
+    </div>
+  </section>
+
+  <%# ------------------------------------------------------------- sessions %>
+  <section>
+    <h2>Signed in devices</h2>
+    <p class="measure" style="color: var(--text-muted); font-size: .92rem;">
+      <%= sessionCount %> session<%= sessionCount === 1 ? '' : 's' %> can currently reach the admin.
+      A session lasts fourteen days from sign in.<%
+        if (sessionsHidden) { %> The <%= sessions.length %> most recent are listed.<% } %>
+    </p>
+
+    <div class="panel table-wrap" tabindex="0" role="region" aria-label="Sessions, scrolls sideways"
+         style="padding:0; margin-top: var(--s-3);">
+      <table class="admin-table">
+        <thead>
+          <tr><th>Started</th><th>Expires</th><th>Address</th><th>Device</th></tr>
+        </thead>
+        <tbody>
+          <% for (const s of sessions) { %>
+            <tr>
+              <td class="mono tnum" style="font-size:.72rem; white-space:nowrap;">
+                <%= s.created_at.slice(0, 16).replace('T', ' ') %>
+                <% if (s.current) { %><span class="badge" style="border-color: var(--patina); color: var(--patina);">this one</span><% } %>
+              </td>
+              <td class="mono tnum" style="font-size:.72rem; white-space:nowrap;"><%= s.expires_at.slice(0, 10) %></td>
+              <td class="mono" style="font-size:.72rem;"><%= s.ip || 'unknown' %></td>
+              <td style="font-size:.8rem;"><%= (s.user_agent || 'unknown').slice(0, 90) %></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if (sessionCount > 1) { %>
+      <form method="post" action="/admin/account/sessions/revoke" style="margin-top: var(--s-3);">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <button class="btn btn-quiet" type="submit">Sign out the other <%= sessionCount - 1 %></button>
+      </form>
+    <% } %>
+  </section>
+
+</div>

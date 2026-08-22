@@ -1,22 +1,24 @@
-<article class="wrap" style="padding-top: var(--s-6);">
+<article class="wrap pad-top">
   <p class="eyebrow"><%= page.slug === 'resume' ? 'Resume' : 'About' %></p>
   <h1><%= page.title %></h1>
   <% if (page.subtitle) { %>
     <p class="lede prose" style="color: var(--text-muted); margin-top: var(--s-3);"><%= page.subtitle %></p>
   <% } %>
 
-  <% if (pdf) { %>
-    <div class="chips" style="margin-top: var(--s-4);">
-      <%
-        /* Both formats, and neither gated. A PDF alone is nearly invisible to
-           a name search, and a recruiter should not have to download a file to
-           read one page. Gating a student resume behind an email form costs
-           exactly the reviewer you want. */
-      %>
-      <a class="chip" href="<%= pdf %>">Open the PDF</a>
-      <a class="chip" href="/contact">Get in touch</a>
-    </div>
-  <% } %>
+  <%
+    /* Both formats, and neither gated. A PDF alone is nearly invisible to a
+       name search, and a recruiter should not have to download a file to read
+       one page. Gating a student resume behind an email form costs exactly the
+       reviewer you want.
+
+       The PDF chip appears only when the file is actually on disk. The contact
+       chip is not conditional on it: tying the two together meant a fresh
+       install with no PDF uploaded also lost its only call to action. */
+  %>
+  <div class="chips no-print" style="margin-top: var(--s-4);">
+    <% if (pdf) { %><a class="chip" href="<%= pdf %>">Open the PDF</a><% } %>
+    <a class="chip" href="/contact">Get in touch</a>
+  </div>
 
   <div class="prose section"><%- page.body_html %></div>
 

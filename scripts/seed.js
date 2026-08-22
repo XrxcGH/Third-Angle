@@ -24,6 +24,7 @@ if (RESET) {
 
 const db = require('../src/db');
 const repo = require('../src/repo');
+const markup = require('../src/markup');
 const { generateNKeysBetween } = require('fractional-indexing');
 
 db.assertEnvironment();
@@ -82,13 +83,14 @@ const PROJECTS = [
       'Two alliances of three robots climb opposite flanks of the same peak, ferrying supplies to a 90 inch spire ' +
       'that lights tier by tier as camps are established. A randomised forecast at the start of the match forces ' +
       'genuinely branching autonomous routines, and the last thirty seconds are a climb on a truss leaning at 15 degrees.',
-    body_md:
-      '<p>The package contains a design research foundation, a locked design specification, a full game manual that went ' +
+    body_md: [
+      'The package contains a design research foundation, a locked design specification, a full game manual that went ' +
       'through a red team pass, per element field CAD with bills of materials in both an official and a low cost plywood ' +
       'version, dimensioned SVG drawings of the field and game pieces, and a 26 tag AprilTag 36h11 layout with mounting ' +
-      'and simulation guidance for PhotonVision and Limelight.</p>' +
-      '<p>The hardest constraint was buildability. A game that cannot be built out of plywood by a team with a circular saw ' +
-      'is not an off-season game, it is a wish. Every field element carries two bills of materials for that reason.</p>',
+      'and simulation guidance for PhotonVision and Limelight.',
+      'The hardest constraint was buildability. A game that cannot be built out of plywood by a team with a circular saw ' +
+      'is not an off-season game, it is a wish. Every field element carries two bills of materials for that reason.',
+    ].join('\n\n'),
     metrics: [
       ['Game manual', '1,375', 'lines'],
       ['Concepts scored', '8', ''],
@@ -117,13 +119,14 @@ const PROJECTS = [
       'A batteries-included Java robot template for teams starting a season from scratch. Swerve, PathPlanner and ' +
       'Choreo autonomous with on-the-fly pathfinding, AdvantageKit logging into AdvantageScope, physics simulation ' +
       'and unit tests, all driven from one Constants file and coordinated by one Superstructure state machine.',
-    body_md:
-      '<p>Every subsystem, including the swerve drivetrain, sits behind an IO hardware abstraction layer, so a recorded ' +
+    body_md: [
+      'Every subsystem, including the swerve drivetrain, sits behind an IO hardware abstraction layer, so a recorded ' +
       'match replays bit for bit. Every mechanism has both a Kraken X60 and a NEO implementation, switchable with one ' +
-      'constant, and the vision backend switches between Limelight and PhotonVision the same way.</p>' +
-      '<p>It ships fill-in-the-blank mechanisms for an elevator, arm, wrist, turret, shooter, intake, indexer, end ' +
+      'constant, and the vision backend switches between Limelight and PhotonVision the same way.',
+      'It ships fill-in-the-blank mechanisms for an elevator, arm, wrist, turret, shooter, intake, indexer, end ' +
       'effector, climber and CANdle LEDs. It builds, tests and simulates out of the box with placeholders, which is the ' +
-      'part most templates skip and the part a team starting in January actually needs.</p>',
+      'part most templates skip and the part a team starting in January actually needs.',
+    ].join('\n\n'),
     metrics: [
       ['Java files', '80', ''],
       ['Mechanisms', '10', ''],
@@ -150,11 +153,12 @@ const PROJECTS = [
       'A curriculum covering the hazards of a 12V system delivering several hundred amps, component identification, ' +
       'the power path from battery to motor and the signal path from driver station to motor controller, crimp and ' +
       'wire routing standards, and first line triage of a robot that will not move.',
-    body_md:
-      '<p>The design decision that matters: this is written for the whole team, not the electrical subteam. On a ' +
+    body_md: [
+      'The design decision that matters: this is written for the whole team, not the electrical subteam. On a ' +
       'competition field the person standing next to a robot that will not move is usually not the person who wired it, ' +
-      'and the failure is usually a connector.</p>' +
-      '<p>Delivered as both slides and a printable PDF, and taught live to Pirate Robolution, FRC 5430.</p>',
+      'and the failure is usually a connector.',
+      'Delivered as both slides and a printable PDF, and taught live to Pirate Robolution, FRC 5430.',
+    ].join('\n\n'),
     metrics: [
       ['Sessions', '2', ''],
       ['System voltage', '12', 'V'],
@@ -180,11 +184,12 @@ const PROJECTS = [
     summary_md:
       'Domains and licensing, organisational units, groups and email addresses, ten shared drives with full folder trees, ' +
       'a permissions matrix, naming conventions and a retention schedule, all mapped to the structure of the new website.',
-    body_md:
-      '<p>The interesting part is not the architecture, it is that the wireframe and the workbook are both generated by ' +
+    body_md: [
+      'The interesting part is not the architecture, it is that the wireframe and the workbook are both generated by ' +
       'Python from a single shared folder tree definition rather than hand maintained. Two artefacts that describe the same ' +
-      'structure will drift the moment a human edits one of them. These cannot.</p>' +
-      '<p>Shipped with a phased 90 day rollout, a security baseline, onboarding and offboarding checklists, and a risk register.</p>',
+      'structure will drift the moment a human edits one of them. These cannot.',
+      'Shipped with a phased 90 day rollout, a security baseline, onboarding and offboarding checklists, and a risk register.',
+    ].join('\n\n'),
     metrics: [
       ['Folders', '182', ''],
       ['Shared drives', '10', ''],
@@ -213,21 +218,22 @@ const PROJECTS = [
       'The A robot runs a Phoenix 6 swerve drivetrain on a 30 inch square frame with mixed SDS MK4i and MK4n modules, ' +
       'Kraken X60 drive and steer motors, CANcoders and a Pigeon 2. On top sits a dual-NEO elevator with closed loop ' +
       'height control in inches and a pivoting arm that finds its angle off an absolute encoder.',
-    body_md:
-      '<p>Three Limelights fuse MegaTag2 pose estimates into odometry. Game piece detection runs off a CANrange rather ' +
-      'than a beam break, which survives a collision better.</p>' +
-      '<p>The B robot shares the drivetrain and adds a KitBot roller and a pivoting ground intake that holds position ' +
-      'under closed loop control. Both codebases are kept current with each year of WPILib and vendor libraries.</p>',
+    body_md: [
+      'Three Limelights fuse MegaTag2 pose estimates into odometry. Game piece detection runs off a CANrange rather ' +
+      'than a beam break, which survives a collision better.',
+      'The B robot shares the drivetrain and adds a KitBot roller and a pivoting ground intake that holds position ' +
+      'under closed loop control. Both codebases are kept current with each year of WPILib and vendor libraries.',
+    ].join('\n\n'),
     metrics: [
       ['Frame', '30', 'in sq'],
       ['Limelights', '3', ''],
-      ['Seasons', '3', ''],
+      ['Codebases', '2', ''],
     ],
     facets: [
       ['controls', 'primary', 'Swerve kinematics, closed loop elevator height control in inches, absolute encoder homing, and MegaTag2 pose estimates fused into odometry from three cameras.'],
       ['software', 'primary', 'Two Java codebases on Phoenix 6 and REVLib, maintained across WPILib versions.'],
       ['mechanical', 'significant', 'Drivetrain and mechanism design on a 30 inch square frame with mixed SDS MK4i and MK4n modules.'],
-      ['electrical', 'significant', 'CAN bus layout, motor controller addressing, sensor wiring and the harness that survived three competition seasons.'],
+      ['electrical', 'significant', 'CAN bus layout, motor controller addressing, sensor wiring, and the harness behind both robots.'],
     ],
     links: [
       ['A robot', 'https://github.com/XrxcGH/9143-2025-A-Updated', 'repo'],
@@ -249,14 +255,15 @@ const PROJECTS = [
       'Grew the programme from a school club to a competitive team and then to a recognised co-ed non-athletic varsity ' +
       'sport, working with administration on recognition, recruiting and parent volunteer coordination. Membership ranged ' +
       'from roughly 15 to 50 students across three seasons.',
-    body_md:
-      '<p>Secured a $45,000 annual base budget from the school in the second and third years, an increase driven by ' +
+    body_md: [
+      'Secured a $45,000 annual base budget from the school in the second and third years, an increase driven by ' +
       'competition results, supplemented by sponsorships, grants, individual donations and a crowdfunding campaign. ' +
       'Submitted grant applications to the Bayer Fund, REV Robotics, Intuitive, BAE Systems and the YMCA Youth ' +
-      'Empowerment Fund among others.</p>' +
-      '<p>Authored or co-authored the team business plan, sponsorship programme, handbook, EDI plan, branding guide, ' +
+      'Empowerment Fund among others.',
+      'Authored or co-authored the team business plan, sponsorship programme, handbook, EDI plan, branding guide, ' +
       'accounting and inventory sheets, and the 2023 Entrepreneurship Award submission, which was presented in a judged ' +
-      'interview at CalGames.</p>',
+      'interview at CalGames.',
+    ].join('\n\n'),
     metrics: [
       ['Annual budget', '$45,000', ''],
       ['Members', '15 to 50', ''],
@@ -283,14 +290,15 @@ const PROJECTS = [
     summary_md:
       'Built across eight milestones covering resume ingestion, discovery, matching, a review queue, the writing engine, ' +
       'form filling, a tracker and packaging, each with its own test suite.',
-    body_md:
-      '<p>The part worth pointing at is the verification gate: it refuses to generate any sentence it cannot trace back to ' +
-      'a stored fact in the profile. An application tool that invents a credential is worse than no tool.</p>' +
-      '<p>The README names what is still untested rather than claiming completeness, because a number written down in a ' +
-      'README rots and a test count does not.</p>',
+    body_md: [
+      'The part worth pointing at is the verification gate: it refuses to generate any sentence it cannot trace back to ' +
+      'a stored fact in the profile. An application tool that invents a credential is worse than no tool.',
+      'The README names what is still untested rather than claiming completeness, because a number written down in a ' +
+      'README rots and a test count does not.',
+    ].join('\n\n'),
     metrics: [
       ['Milestones', '8', 'of 8'],
-      ['Commits', '124', ''],
+      ['Test suites', '8', ''],
     ],
     facets: [
       ['software', 'primary', 'A TypeScript monorepo on React, Fastify, SQLite with Drizzle, Playwright and Zod, built across eight milestones each with its own tests.'],
@@ -301,7 +309,11 @@ const PROJECTS = [
     slug: 'pumpkinlib',
     title: 'PumpkinLib',
     subtitle: 'A 22,778 line design specification for an FRC vendor library. No implementation, deliberately and visibly.',
-    tier: 'note',
+    // 'build', not 'note'. A note renders three blocks, which hid the three
+    // metrics that are the entire point of the record (22,778 lines of
+    // specification against zero lines of Java) and the link to the repository
+    // those numbers describe. The tier is a padding guard, not a content gate.
+    tier: 'build',
     status: 'specification',
     context: 'Open source',
     role: 'Author',
@@ -311,12 +323,13 @@ const PROJECTS = [
       'A Java library that would pre-wire AdvantageKit, PathPlanner, Choreo, PhotonVision, Limelight, Phoenix 6, REVLib, ' +
       'SysId and WPILib into one coherent seam. Currently design documents only, revised twice: once after an adversarial ' +
       'four lens review and again after a six lens independent expert review.',
-    body_md:
-      '<p>The roadmap states a realistic solo delivery estimate rather than an optimistic one, and nothing will be announced ' +
-      'anywhere until v0.1 is tagged. If you found this repository, you found a plan, not a product.</p>' +
-      '<p>Listed here as a specification rather than as software on purpose. The artefact is the decision record: scope and ' +
+    body_md: [
+      'The roadmap states a realistic solo delivery estimate rather than an optimistic one, and nothing will be announced ' +
+      'anywhere until v0.1 is tagged. If you found this repository, you found a plan, not a product.',
+      'Listed here as a specification rather than as software on purpose. The artefact is the decision record: scope and ' +
       'non-goals, alternatives considered and rejected, and open questions. Those are the sections someone who did not ' +
-      'think the problem through cannot fabricate.</p>',
+      'think the problem through cannot fabricate.',
+    ].join('\n\n'),
     metrics: [
       ['Specification', '22,778', 'lines'],
       ['Review passes', '2', ''],
@@ -344,7 +357,7 @@ const seedProjects = db.transaction(() => {
           started_on, ended_on, published, featured, sort_key, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`,
       p.slug, p.title, p.subtitle, p.tier, p.status, p.context, p.role,
-      p.summary_md, `<p>${p.summary_md}</p>`, p.body_md, p.body_md,
+      p.summary_md, markup.paragraphs(p.summary_md), p.body_md, markup.paragraphs(p.body_md),
       p.started_on || null, p.ended_on || null, p.featured || 0, pKeys[i], now, now
     );
     const id = Number(res.lastInsertRowid);
@@ -382,6 +395,29 @@ const seedProjects = db.transaction(() => {
 
 seedProjects();
 console.log(`projects: ${PROJECTS.length}`);
+
+/*
+ * The seed writes published = 1 directly, which means it does not pass through
+ * the evidence gate the admin enforces on every save. That is deliberate: a
+ * seed that refused to publish would leave the site empty on a fresh install.
+ * What it must not do is stay quiet about it, because the first time the owner
+ * opens one of these records and presses Save the gate demotes it to a draft
+ * with no warning that anything was ever different.
+ */
+{
+  const mediaGate = require('../src/media');
+  const blocked = db.all('SELECT id, slug FROM project WHERE published = 1')
+    .map((row) => ({ slug: row.slug, blockers: mediaGate.publishBlockers(row.id) }))
+    .filter((r) => r.blockers.length);
+
+  if (blocked.length) {
+    console.log(`\nEvidence gate: ${blocked.length} published project${blocked.length === 1 ? '' : 's'} would be`);
+    console.log('demoted to a draft the next time it is saved from the admin, because it');
+    console.log('leads on physical work and has no photography of your own attached yet:');
+    for (const b of blocked) console.log(`  ${b.slug}`);
+    console.log('Upload evidence at /admin/media, or set the status to specification.');
+  }
+}
 
 /* ------------------------------------------------------------------- now */
 

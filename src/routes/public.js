@@ -141,6 +141,20 @@ router.get('/search', (req, res) => {
  * a file to read one page. Both are public: gating a student resume behind an
  * email form costs exactly the reviewer you want.
  */
+const RESUME_PDF = 'Eric_Dean_Resume.pdf';
+
+/**
+ * True only when the file is actually on disk. Offering "Open the PDF" on a
+ * page where the PDF has never been uploaded sends a recruiter to a 404 from
+ * the most prominent control on the page.
+ */
+function resumePdfPath() {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const { DATA_DIR } = require('../db');
+  return fs.existsSync(path.join(DATA_DIR, 'resume', RESUME_PDF)) ? `/resume/${RESUME_PDF}` : null;
+}
+
 router.get('/resume', (req, res, next) => {
   const page = repo.getPage('resume');
   if (!page) return next();
@@ -149,7 +163,7 @@ router.get('/resume', (req, res, next) => {
     title: page.title,
     description: page.subtitle || 'Resume for Eric J. Dean.',
     page,
-    pdf: '/resume/Eric_Dean_Resume.pdf',
+    pdf: resumePdfPath(),
     jsonLd: seo.jsonLd(res.locals.siteUrl, {
       trail: [{ name: 'Home', url: '/' }, { name: 'Resume', url: '/resume' }],
     }),

@@ -1,4 +1,11 @@
-<section class="wrap" style="padding-top: var(--s-6); max-width: 46rem;">
+<%
+  /* The narrow measure goes on an inner column, not on .wrap. Capping .wrap
+     itself also re-centres it, because .wrap carries margin-inline:auto: the
+     whole page then sat 220px to the right of every other page on the site,
+     so navigating from search to contact shifted the column sideways. */
+%>
+<section class="wrap pad-top">
+ <div style="max-width: 46rem;">
   <p class="eyebrow">Contact</p>
 
   <% if (sent) { %>
@@ -76,4 +83,5 @@
       <a href="https://linkedin.com/in/edean07" rel="me noopener">LinkedIn</a> works too.
     </p>
   <% } %>
+ </div>
 </section>

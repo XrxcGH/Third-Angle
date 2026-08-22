@@ -15,7 +15,10 @@ const require = createRequire(import.meta.url);
 const contact = require('../src/contact.js');
 const repo = require('../src/repo.js');
 const db = require('../src/db.js');
-const { render } = require('../scripts/seed-pages.js');
+// The renderer moved to src/markup.js. Importing it from the seed script ran
+// the script: assertEnvironment, migrate and the seeding loop all fired just to
+// reach one function.
+const { richText: render } = require('../src/markup.js');
 
 /* A stamp older than the minimum, so the speed check is satisfied. */
 function agedStamp(secondsAgo) {

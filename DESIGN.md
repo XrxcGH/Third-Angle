@@ -23,7 +23,7 @@ electrical, safety and shop work. Copper and patina are the quiet supports.
 
 All values live in `public/css/tokens.css`. Nothing else defines a colour.
 
-Four rules that are load bearing:
+Five rules that are load bearing:
 
 1. **`color-scheme: light dark` must stay on `:root`.** Without it `light-dark()`
    silently returns the light value forever and the entire dark theme fails with
@@ -40,6 +40,11 @@ Four rules that are load bearing:
    twice: under `prefers-color-scheme` for the un-stamped default, and under
    `[data-theme="dark"]` for the explicit toggle. Drift is invisible until
    someone flips the toggle on a light OS. A test asserts it.
+5. **The print palette is part of the palette.** Every element takes its colour
+   from a token, so forcing white paper in `app.css` does nothing about the ink:
+   printing with the dark theme active put `#D9DED6` body text onto white. The
+   `@media print` block in `tokens.css` restates the whole palette, and a test
+   asserts it covers every token the screen palettes define.
 
 Contrast target is WCAG 2.2 AA. APCA was pulled from the WCAG 3 draft in 2023
 and the WCAG 3 contrast algorithm is still undetermined, so APCA is a design
@@ -70,6 +75,58 @@ Technical typography, non negotiable:
   otherwise healed into a glyph the reader cannot retype.
 - Use U+2212 MINUS for negative tolerances, not a hyphen. Minus is drawn at
   digit height; a column of tolerance values will not align otherwise.
+
+## Layout
+
+`public/css/app.css` is the component layer. Everything a **public** page can
+use lives there; `public/css/admin.css` holds only what is genuinely
+admin-specific, because the public layout never loads it. Forms, buttons, panels
+and flashes belong to app.css: when they lived in the admin sheet the contact
+form rendered as bare user-agent widgets, and it looked exactly like a
+stylesheet had failed to load.
+
+Four things that will silently break a page rather than error:
+
+1. **`padding` shorthand on `.wrap`.** The gutter is `padding-inline`, and an
+   inline `padding: <y> 0` is a shorthand that resets it to zero. Use
+   `padding-block`, or the `.pad-top` / `.pad-page-lg` classes. A test scans the templates.
+2. **`minmax(280px, 1fr)` in an auto-fill grid.** The track cannot go below its
+   floor, so once the column is narrower the document scrolls sideways. Always
+   `minmax(min(280px, 100%), 1fr)`.
+3. **A divider and a measure on the same element.** `.section` is page width,
+   `.prose` is 68ch. An element with both stops its rule at 68ch while every
+   other rule runs full width, which reads as a rendering fault.
+4. **Anything below 16px in a text input.** iOS Safari zooms the viewport on
+   focus and never zooms back.
+
+The site must work from a 320px phone to a 1920px monitor with no horizontal
+scrollbar anywhere. The public header and the admin bar both drop their
+navigation onto its own row below 720px and 860px respectively; `--header-h` is
+restated at that breakpoint because `scroll-margin-top` is derived from it.
+
+## Text that gets stored
+
+`src/markup.js` holds both renderers and is the only place either is defined.
+
+- `paragraphs()` for project summaries and bodies, log entries and `/now`.
+  Blank lines separate paragraphs, single newlines are line breaks, nothing else
+  is interpreted.
+- `richText()` for the fixed editorial pages: h2 to h4, lists, bold, inline
+  code, http(s) or site-relative links, and a `label :: value` row.
+
+Both escape first and add markup back afterwards, and both normalise line
+endings before doing anything else. That last part is not cosmetic: the HTML
+form specification requires a browser to submit textarea content with CRLF,
+so a splitter written `/\n{2,}/` never fires on posted text, every body saved
+from the admin collapsed into one paragraph of line breaks, and the collapsed
+text is what got stored back.
+
+Never store HTML in a `*_md` column. The renderer escapes what it is given, so
+the first save from the admin publishes the tags as visible text.
+
+Never `require()` a file from `scripts/` inside a route. Requiring a script runs
+it: the page editor used to reach its renderer that way and re-ran the
+environment assertion, the migration and the seeding loop on every save.
 
 ## Banned
 
@@ -129,6 +186,8 @@ branch has to exist in JavaScript. See risk R4 in the proposal.
 | R6 single writer | SIGTERM drain, no blue/green, measured restore | `RESTORE.md` |
 | R8 hollow sections | `project.tier` CHECK selects 3, 6 or 12 blocks | `tests/schema.test.mjs` |
 | R9 stale prices | `costs.yml` with dated evidence | `npm run check:costs` |
+| R10 silent layout break | gutter, grid floor, measure and control-layer assertions | `tests/layout.test.mjs` |
+| R11 stored text corruption | one renderer, line endings normalised on the way in | `tests/markup.test.mjs` |
 
 ## Things that will bite
 
