@@ -1,0 +1,284 @@
+/*
+ * Third Angle, motion layer.
+ *
+ * Everything that moves is in this one file, so the whole behaviour of the site
+ * can be read, reasoned about, or deleted in one place. Nothing here carries
+ * information: remove this stylesheet and every page still says exactly what it
+ * said before, in the same order, at the same size.
+ *
+ * Four rules hold throughout.
+ *
+ * 1. No JavaScript. Page transitions, scroll reveals, the read-progress line
+ *    and the header settle are all CSS. There is no script on this site and
+ *    this layer did not introduce one.
+ * 2. Entrances use `translate`, interactions use `transform`. They are separate
+ *    properties that compose, so a card that is still fading in can be hovered
+ *    without the two fighting over one value. A single `transform` for both is
+ *    the usual cause of a tile that snaps instead of easing.
+ * 3. Anything that starts an element invisible is inside
+ *    `@media (prefers-reduced-motion: no-preference)` AND
+ *    `@supports (animation-timeline: view())`. A browser that cannot finish the
+ *    animation never starts it, so text cannot be left hidden by a feature that
+ *    did not load.
+ * 4. Nothing loops. Every animation here is driven by a pointer, a page load,
+ *    or the reader's own scrolling, which sidesteps WCAG 2.2.2 entirely.
+ */
+
+/* ---------------------------------------------------------- page transitions
+ *
+ * Cross-document view transitions. Chrome and Safari cross-fade between two
+ * pages of the site; every other browser navigates the way it always did, with
+ * no fallback to maintain. The header is given its own transition name, which
+ * takes it out of the cross-fade: it is identical on both pages, so fading it
+ * out and back in is a flicker that reads as a page flash.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+}
+
+::view-transition-old(root) {
+  animation-duration: 140ms;
+  animation-timing-function: var(--ease);
+}
+::view-transition-new(root) {
+  animation-duration: var(--t-group);
+  animation-timing-function: var(--ease);
+}
+.site-header { view-transition-name: site-header; }
+
+/* ---------------------------------------------------------- scrolling */
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+/* An anchored jump must not land under the sticky header. Set here rather than
+   with the header, because it only matters once the jump is animated. */
+html { scroll-padding-top: calc(var(--header-h) + var(--s-3)); }
+
+/* ---------------------------------------------------------- entrances
+ *
+ * The first block of every page: eyebrow, headline, lede, and the title block
+ * on the home page. Staggered by 60ms, which is enough to read as a sequence
+ * and short enough that the whole thing is over in under half a second.
+ *
+ * This is the one entrance that does not wait for a scroll, because it is
+ * already in view when the page loads. DESIGN.md allows one hero moment per
+ * page and this is it.
+ */
+@keyframes rise-in {
+  from { opacity: 0; translate: 0 var(--rise); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  main > section:first-of-type :is(.eyebrow, h1, .lede, .titleblock) {
+    animation: rise-in var(--t-entrance) var(--ease) both;
+  }
+  main > section:first-of-type h1 { animation-delay: 60ms; }
+  main > section:first-of-type .lede { animation-delay: 120ms; }
+  main > section:first-of-type .titleblock { animation-delay: 180ms; }
+}
+
+/* ---------------------------------------------------------- scroll reveals
+ *
+ * Scroll-driven, not timer-driven: each element is tied to its own position in
+ * the scrollport, so it animates exactly as the reader arrives at it and it
+ * rewinds if they scroll back up. There is no observer, no threshold and no
+ * class being toggled, because there is no script.
+ *
+ * `entry 0%` is the instant the element's leading edge reaches the bottom of
+ * the window, so nothing is ever transparent before it is on screen.
+ *
+ * The close of the range is `min(100%, 220px)`, and both halves of that are
+ * load bearing.
+ *
+ * A percentage of `entry` is a percentage of the element's own height, so a
+ * section taller than the window would still be fading in after the reader had
+ * been reading it for half a screen. A bare length has the opposite fault: a
+ * 60px metric tile is fully on screen after 60px of scrolling, so a 220px fade
+ * would still be running on something the reader can already see whole.
+ *
+ * The minimum of the two is the invariant that matters: nothing that is
+ * entirely inside the window is ever less than fully opaque, and nothing takes
+ * more than a thumb's worth of scrolling to arrive. A test asserts the first
+ * half at five scroll positions on thirteen pages.
+ *
+ * Sections that contain a grid, a wall or a metric row are excluded, because
+ * their children reveal individually and revealing both would fade the same
+ * pixels twice.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    main > section:not(:first-of-type):not(:has(.grid, .doc-grid, .collage, .metrics)),
+    main .grid > .card,
+    main .doc-grid > .doc-card,
+    main .metrics > .metric,
+    main .repo,
+    main .panel {
+      animation: rise-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry min(100%, 220px);
+    }
+
+    /*
+     * The wall fades but does not rise. A hundred tiles arriving from below at
+     * slightly different times reads as a page that has not finished loading,
+     * and the tiles are already packed against each other, so there is nowhere
+     * for them to travel that does not open a seam.
+     */
+    .collage > .collage-item {
+      animation: fade-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry min(100%, 150px);
+    }
+  }
+}
+
+@keyframes fade-in { from { opacity: 0; } }
+
+/* ---------------------------------------------------------- the header
+ *
+ * Two scroll-driven effects, both on the root scroller.
+ *
+ * The settle: at the top of a page the header is part of the page and has only
+ * its hairline. Once the reader has moved, it is a layer over the page and
+ * takes a shadow to say so. 90px is about one line of a heading, so it happens
+ * immediately but never on a page that does not scroll.
+ *
+ * The progress line: how far through the page the reader is, on the one element
+ * that is always visible. It is the read position, not a loading bar, and it is
+ * driven by the scroll itself rather than by a timer, so it cannot lie.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll()) {
+    .site-header {
+      animation: header-settle linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 90px;
+    }
+
+    .site-header::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: -1px;
+      height: 2px;
+      background: var(--accent);
+      transform-origin: 0 50%;
+      transform: scaleX(0);
+      animation: read-progress linear both;
+      animation-timeline: scroll(root);
+      /* Decorative. The same information is in the scrollbar. */
+      pointer-events: none;
+    }
+  }
+}
+
+@keyframes header-settle {
+  from { box-shadow: none; }
+  to { box-shadow: var(--lift-shadow); }
+}
+@keyframes read-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* ---------------------------------------------------------- pointer feedback
+ *
+ * Under 200ms, every one of them, because this is acknowledgement rather than
+ * animation: the control has to feel connected to the finger, and anything
+ * slower feels like lag rather than like motion.
+ */
+
+/* A link changes colour; the change should not be instantaneous. */
+a { transition: color var(--t-hover) var(--ease), text-decoration-color var(--t-hover) var(--ease); }
+
+/* Prose links carry an underline already. It thickens rather than appears, so
+   nothing on the line moves. */
+.prose a, .lede a, .measure a {
+  text-underline-offset: 2px;
+  transition:
+    color var(--t-hover) var(--ease),
+    text-decoration-color var(--t-hover) var(--ease),
+    text-underline-offset var(--t-hover) var(--ease);
+}
+.prose a:hover, .lede a:hover, .measure a:hover { text-underline-offset: 3px; }
+
+/*
+ * Navigation. The rule under the current page is permanent and quiet; the one
+ * under a hovered link wipes in from the left. Both occupy the same 1px, so
+ * the header never changes height and the links never move.
+ */
+.nav a { position: relative; }
+.nav a::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -5px;
+  height: 1px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--t-hover) var(--ease);
+}
+.nav a:hover::after,
+.nav a:focus-visible::after { transform: scaleX(1); }
+.nav a[aria-current="page"]::after { transform: scaleX(1); background: var(--rule); }
+
+/* Press. One pixel, on everything that can be pressed, so a tap is confirmed
+   before the next page has begun to load. */
+.btn:active,
+.chip:active,
+.card:active,
+.doc-card:active,
+.theme-form button:active { transform: translateY(1px); }
+.btn, .chip, .card, .doc-card, .theme-form button {
+  transition-property: border-color, background-color, box-shadow, color, filter, transform;
+  transition-duration: var(--t-hover);
+  transition-timing-function: var(--ease);
+}
+
+/* A row of a table is a target as much as a card is. */
+tbody tr { transition: background-color var(--t-hover) var(--ease); }
+tbody tr:hover { background: var(--sunken); }
+
+/* A disclosure that opens instantly is the one control on a page that feels
+   broken. Only the marker can be animated without a script, so it is. */
+summary { transition: color var(--t-hover) var(--ease); }
+summary:hover { color: var(--text-strong); }
+
+/* ---------------------------------------------------------- guards */
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * Everything above that hides an element is already behind a
+   * no-preference query, so nothing here can strand content. This is the
+   * catch-all for the rest: state changes still happen, instantly.
+   */
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+  html { scroll-behavior: auto !important; }
+}
+
+@media (forced-colors: active) {
+  /* Author colours are stripped, so the two rules that are colour become
+     system colours rather than disappearing. */
+  .nav a::after { background: Highlight; }
+  .site-header::after { background: Highlight; }
+  tbody tr:hover { background: Canvas; color: CanvasText; }
+}
+
+@media print {
+  /* Paper does not scroll. An element mid-reveal would print half transparent,
+     and the progress line would print as a bar across the top of page one. */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    translate: none !important;
+  }
+  .site-header::after { display: none; }
+  .site-header { box-shadow: none; }
+}

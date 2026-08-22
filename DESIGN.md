@@ -212,15 +212,49 @@ Adding a photograph re-packs everything below it for free.
 
 ## Motion
 
-One hero motion moment per page. Motion only on state change or first entry into
-view. Nothing loops autonomously, which sidesteps WCAG 2.2.2 entirely. UI
-feedback under 200ms, entrances 300 to 500ms. Never more than two elements
-animating at once. No parallax on text. Every animation must be removable
-without losing information.
+All of it is in `public/css/motion.css`, and all of it is CSS. There is no
+script on this site, and the motion layer did not introduce one: page
+transitions, scroll reveals, the read-progress line and the header settle are
+browser features, not a library.
+
+One hero motion moment per page: the first block of every page rises in on
+load, staggered by 60ms. Everything below it is tied to the reader's own
+scrolling rather than to a timer, so an element animates exactly as they arrive
+at it and rewinds if they scroll back. Nothing loops autonomously, which
+sidesteps WCAG 2.2.2 entirely. UI feedback under 200ms, entrances 300 to 500ms.
+No parallax on text. Every animation must be removable without losing
+information.
+
+Four rules hold the layer together:
+
+- **Entrances use `translate`, interactions use `transform`.** They are separate
+  properties that compose. Sharing one means a card still fading in cannot also
+  be pressed, because the animation holds the value and the interaction is
+  dropped.
+- **Anything that starts an element invisible is behind two guards**, a
+  `prefers-reduced-motion: no-preference` query and an
+  `@supports (animation-timeline: view())`. A browser that cannot finish an
+  animation never starts it, so text is never stranded by a feature that did not
+  load.
+- **A reveal range closes at `min(100%, 220px)`.** A bare percentage is a
+  percentage of the element's own height, so a section taller than the window is
+  still arriving while it is being read. A bare length is worse for a short one:
+  a 60px tile is fully visible after 60px of scrolling and would still be at a
+  third of its opacity. The minimum of the two is the invariant that matters:
+  nothing entirely inside the window is ever less than fully opaque.
+- **Paper and preference both switch it off.** `@media print` forces opacity
+  back to 1, because a page printed mid-reveal prints half transparent.
 
 Under `prefers-reduced-motion: reduce`, transition durations drop to 1ms rather
-than being removed. The state change still happens because it is information,
-not decoration. Nothing moves.
+than being removed, and every reveal is switched off rather than accelerated.
+The state change still happens because it is information, not decoration.
+Nothing moves.
+
+`tests/motion.test.mjs` asserts the guards from the source. The browser-level
+check scrolls thirteen pages at five positions each and asserts the invariant
+above; a full-page screenshot captures beyond the viewport without scrolling, so
+the screenshot sweep runs under reduced motion deliberately, or every page
+photographs half empty.
 
 A CSS `prefers-reduced-motion` block **cannot** stop a Lottie or Rive animation,
 because those render into a canvas from a JavaScript loop CSS cannot reach. That

@@ -109,6 +109,15 @@
   --ease: cubic-bezier(.2, 0, 0, 1);
   --t-hover: 140ms;
   --t-group: 260ms;
+  /* Entrances, in DESIGN.md's 300 to 500ms band. */
+  --t-entrance: 420ms;
+  /* How far an entrance travels. Small on purpose: a long slide is a page that
+     looks like it is still arriving. */
+  --rise: 10px;
+  /* The sticky header once the page has moved under it. A shadow rather than a
+     heavier rule, because the rule is already doing the separating and two
+     lines would read as a seam. */
+  --lift-shadow: 0 10px 26px -22px rgba(10, 14, 9, .5);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -142,6 +151,9 @@
     --dim-title:   #A8AFA5;
     --dim-border:  #252A22;
     --dim-surface: #111510;
+
+    /* A dark canvas swallows a soft shadow, so the lift is deeper here. */
+    --lift-shadow: 0 12px 30px -20px rgba(0, 0, 0, .72);
 
     --ch-mechanical: #81E977;
     --ch-electrical: #FFB935;
@@ -191,6 +203,9 @@
   --dim-title:   #A8AFA5;
   --dim-border:  #252A22;
   --dim-surface: #111510;
+
+  /* A dark canvas swallows a soft shadow, so the lift is deeper here. */
+  --lift-shadow: 0 12px 30px -20px rgba(0, 0, 0, .72);
 
   --ch-mechanical: #81E977;
   --ch-electrical: #FFB935;

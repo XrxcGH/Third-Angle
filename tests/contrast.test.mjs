@@ -233,7 +233,7 @@ test('the search highlight is a token pair and reads in both themes', () => {
 test('no stylesheet outside tokens.css names a colour', () => {
   // DESIGN.md: nothing else defines a colour. app.css used to carry #fff and
   // #000 in its print block, which is how the dark-theme printing bug survived.
-  const files = ['app.css', 'admin.css', 'icons.css'];
+  const files = ['app.css', 'admin.css', 'icons.css', 'motion.css'];
   for (const f of files) {
     const css = readFileSync(path.join(ROOT, 'public', 'css', f), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '');

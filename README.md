@@ -138,6 +138,15 @@ row changing height or the page reflowing. Below 700px it becomes two masonry
 columns instead of squeezing, because a single justified tile crops every
 photograph to the same band and that destroys a portrait.
 
+**The site moves, and none of it is JavaScript.** Pages cross-fade into each
+other with view transitions, the first block of each page rises in, sections and
+cards arrive as the reader scrolls to them, the header takes a shadow once the
+page has moved under it, and a hairline across the header tracks how far through
+the page you are. All of it is `public/css/motion.css`, all of it switches off
+under `prefers-reduced-motion`, and none of it can strand content: anything that
+starts an element invisible is behind both a preference query and an `@supports`
+for the feature that finishes it.
+
 **A contact message is stored before it is sent.** The inbox is the record and
 the email is a copy. A relay that is down, misconfigured or not set up yet costs
 a notification and never a message, and the admin shows every row's delivery
