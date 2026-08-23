@@ -42,8 +42,10 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 # tmux is here for the restore drill and any other step long enough that an
 # SSH connection dropping mid-operation would matter. The Oracle image is
-# minimized and ships no multiplexer at all.
-apt-get install -y -qq curl ca-certificates gnupg git ufw ripgrep ne rclone tmux >/dev/null
+# minimized and ships no multiplexer at all. qrencode draws the TOTP enrolment
+# QR in the terminal, so the secret never leaves the machine to become one.
+apt-get install -y -qq curl ca-certificates gnupg git ufw ripgrep ne rclone tmux \
+  qrencode >/dev/null
 
 log "Node ${NODE_MAJOR}"
 if ! command -v node >/dev/null || [ "$(node -p 'process.versions.node.split(".")[0]')" -lt "$NODE_MAJOR" ]; then

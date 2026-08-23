@@ -292,7 +292,27 @@ cd /srv/third-angle
 sudo -u app npm run admin -- you@ericjdean.com "Eric J. Dean" "a long passphrase"
 ```
 
-Then enrol TOTP with the printed `otpauth://` URI and confirm it:
+The command prints a base32 secret and an `otpauth://` URI. To enrol, draw the
+URI as a QR code in the terminal and scan it with the authenticator app on your
+phone:
+
+```sh
+qrencode -t ANSIUTF8 'PASTE THE otpauth:// URI HERE IN SINGLE QUOTES'
+```
+
+The single quotes matter: the URI contains `?` and `&`, which the shell would
+otherwise treat as its own.
+
+**Do not paste that URI into an online QR generator.** It carries the secret in
+plain text, and handing it to a website hands over the second factor. `qrencode`
+runs locally, which is the whole reason provisioning installs it. If you would
+rather not scan anything, every authenticator can take the base32 secret typed
+by hand instead: choose "enter a setup key", and the defaults it asks about are
+the ones the URI declares -- time based, SHA1, six digits, thirty seconds.
+
+It appears in the app as **Third Angle** with your address underneath.
+
+Then confirm it, which is what makes it required at sign in:
 
 ```sh
 sudo -u app npm run admin -- --confirm you@ericjdean.com 123456
