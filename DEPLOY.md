@@ -70,14 +70,35 @@ rules only apply to traffic Cloudflare receives, and Email Routing requires
 Cloudflare nameservers. A domain that merely points an A record at Cloudflare
 gets none of it.
 
-1. In Cloudflare, **Add a site**, enter `ericjdean.com`, choose the **Free**
-   plan. Cloudflare scans the existing records and shows you two nameservers,
-   something like `xxx.ns.cloudflare.com`.
-2. In Squarespace: **Domains → ericjdean.com → DNS → Nameservers**, switch from
+1. **Turn DNSSEC off at Squarespace first**, under the domain's security or
+   advanced settings, if it is on. This is the one step here that can take the
+   domain completely off the internet rather than merely leaving it unreachable.
+   DNSSEC signs the answers a nameserver gives; the registry holds a DS record
+   saying which key to trust. Move the nameservers without clearing it and every
+   resolver gets an answer signed by Cloudflare's key, checks it against
+   Squarespace's, finds a mismatch, and returns SERVFAIL — which is not "site
+   down", it is "this domain does not resolve at all", including its mail.
+   Cloudflare's own DNSSEC can be switched on later, once the zone is active.
+2. In Cloudflare, **Add a site**, enter `ericjdean.com`, choose the **Free**
+   plan. It scans the existing records and shows two nameservers, of the form
+   `xxx.ns.cloudflare.com`.
+3. **Delete the records it imported**, unless you recognise one. A domain fresh
+   from a registrar carries parking records pointing at the registrar's "coming
+   soon" page, and carrying those across means Cloudflare faithfully serves
+   Squarespace's placeholder. Add nothing by hand: the tunnel creates the records
+   it needs in step 4.
+4. In Squarespace: **Domains → ericjdean.com → DNS → Nameservers**, switch from
    Squarespace's defaults to **Custom nameservers**, and enter exactly those
-   two. Remove any others.
-3. Wait for Cloudflare to report the zone **Active**. Usually minutes; the
-   registrar is allowed to take up to 48 hours.
+   two. Remove any others. Squarespace will warn that its own DNS features stop
+   working, which is the point. The registration stays with Squarespace; only
+   the answering moves.
+5. Wait for Cloudflare to report the zone **Active** — it emails you. Usually
+   minutes; the registrar is allowed 48 hours. **Check nameservers now** on the
+   Cloudflare overview page prompts it to re-check rather than waiting.
+
+Until the tunnel exists in step 4, the domain will answer with a Cloudflare
+error page rather than the site. That is correct: DNS is pointing at Cloudflare
+and Cloudflare has nothing behind it yet.
 
 Do this first. The tunnel step below creates DNS records through the Cloudflare
 API, and it cannot until Cloudflare is authoritative for the zone.
