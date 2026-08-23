@@ -62,7 +62,8 @@ const SCHOOLS = [
     honours: 'Magna Cum Laude · 4.321 weighted, 3.968 unweighted',
     blurb:
       'Eleven Advanced Placement and honours subjects, the maximum the school '
-      + 'allows, alongside the four year Engineering Program and its capstone.',
+      + 'allows, alongside the four year Engineering Program and its capstone. '
+      + 'The list below is the whole transcript, not a selection from it.',
   },
 ];
 
@@ -103,13 +104,17 @@ const COURSES = [
   /*
    * ---- high school ---------------------------------------------------------
    *
-   * The transcript carries thirty-four entries across four years. What is here
-   * is the academic record an engineering portfolio is read for: the eleven
-   * Advanced Placement and honours subjects, the four year Engineering Program,
-   * the mathematics and science sequence under them, and the four years of a
-   * language. The religion sequence the school requires of everyone, and the
-   * arts and homeroom entries, are on the transcript and not here — this is a
-   * portfolio, not a copy of the registrar's file.
+   * The complete transcript, all thirty three entries across four years, in the
+   * school's own course titles. An earlier version listed only the Advanced
+   * Placement subjects, the honours ones, and the Engineering Program, on the
+   * argument that a portfolio is not a copy of the registrar's file. It reads
+   * better complete: the religion sequence, the language sequence, and the arts
+   * are what four years actually looked like, and leaving them out made the
+   * record look curated rather than reported.
+   *
+   * Units are not carried. Riordan awards 10.00 for a year long class on its own
+   * scale, which is not comparable to a UCLA quarter unit, and printing both in
+   * the same column would invite the comparison.
    */
 
   // ---- 2024-25, senior year ------------------------------------------------
@@ -119,6 +124,10 @@ const COURSES = [
   { school: 'archbishop-riordan', code: 'AP', title: 'AP Statistics', term: '2024\u201325', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Engineering', title: 'Engineering Capstone', term: '2024\u201325', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Language', title: 'American Sign Language IV', term: '2024\u201325', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'English', title: 'California Dreaming', term: '2024\u201325', status: 'completed',
+    note: 'A UC a-g approved English course.' },
+  { school: 'archbishop-riordan', code: 'Religious Studies', title: 'World Religions of the East and West', term: '2024\u201325', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Advisory', title: 'R-Time', term: '2024\u201325', status: 'completed' },
 
   // ---- 2023-24, junior year ------------------------------------------------
   { school: 'archbishop-riordan', code: 'AP', title: 'AP Biology', term: '2023\u201324', status: 'completed' },
@@ -127,6 +136,7 @@ const COURSES = [
   { school: 'archbishop-riordan', code: 'AP', title: 'AP United States History', term: '2023\u201324', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Engineering', title: 'Civil Engineering and Architecture', term: '2023\u201324', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Language', title: 'American Sign Language III', term: '2023\u201324', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Religious Studies', title: 'Life Issues: Ethics and Social Ethics', term: '2023\u201324', status: 'completed' },
 
   // ---- 2022-23, sophomore year ---------------------------------------------
   { school: 'archbishop-riordan', code: 'AP', title: 'AP World History: Modern', term: '2022\u201323', status: 'completed' },
@@ -136,6 +146,7 @@ const COURSES = [
   { school: 'archbishop-riordan', code: 'Mathematics', title: 'Math Analysis', term: '2022\u201323', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Science', title: 'Chemistry', term: '2022\u201323', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Language', title: 'American Sign Language II', term: '2022\u201323', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Religious Studies', title: 'Scripture and Church 2K', term: '2022\u201323', status: 'completed' },
 
   // ---- 2021-22, freshman year ----------------------------------------------
   { school: 'archbishop-riordan', code: 'Honours', title: 'Introduction to Composition and Literature Honors', term: '2021\u201322', status: 'completed' },
@@ -143,6 +154,10 @@ const COURSES = [
   { school: 'archbishop-riordan', code: 'Mathematics', title: 'Algebra II and Trigonometry', term: '2021\u201322', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Science', title: 'Biology', term: '2021\u201322', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Language', title: 'American Sign Language I', term: '2021\u201322', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Social Studies', title: 'Global Ethnic Studies', term: '2021\u201322', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Religious Studies', title: 'Marianist Education and Sacraments, and Hebrew Scripture', term: '2021\u201322', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Arts', title: 'Dance I', term: '2021\u201322', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Seminar', title: 'Lyceum: An Examination of Truth', term: '2021\u201322', status: 'completed' },
 ];
 
 const ACTIVITIES = [

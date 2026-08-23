@@ -336,6 +336,42 @@ code {
 }
 .nav a:hover, .nav a[aria-current="page"] { color: var(--text-strong); }
 
+/*
+ * Tap targets on a phone.
+ *
+ * The chrome is set in a small mono face with no padding, which reads correctly
+ * and gives a finger nothing to hit: measured at 390px, the nav links were
+ * 17.4px tall, the theme buttons 21px, and the footer links 12px, against the
+ * 40px a touch target is supposed to clear.
+ *
+ * Real height, not a pseudo-element reaching past the box. The reach was tried
+ * first and it collides with itself: the nav wraps to two rows at 390px and
+ * three at 320px, so a target growing 14px up and down covers the row above it
+ * and steals its taps. Measured seven such thefts.
+ *
+ * Which makes the header taller, so below 700px it stops being sticky. A
+ * sticky header was already 171px at 320px, a fifth of the screen, and paying
+ * another 60px of it to hold a nav in place is the wrong trade on a phone: it
+ * costs a fifth of every page to save one scroll to the top.
+ */
+@media (max-width: 700px) {
+  .site-header { position: static; }
+  /* No row gap: each link now carries its own height, and a gap on top of that
+     is space between rows of targets rather than between rows of text. */
+  .nav { gap: 0 var(--s-4); }
+  .nav a,
+  .site-footer a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+  .site-footer .wrap { gap: 0 var(--s-4); }
+  .theme-form button { min-height: 40px; padding-inline: 10px; }
+  /* The header no longer covers anything, so an anchor does not need to clear
+     it. A little room so the target does not sit against the top edge. */
+  [id] { scroll-margin-top: var(--s-3); }
+}
+
 /* Theme control is a real form, so it works with JavaScript disabled. */
 .theme-form {
   display: flex; gap: 2px; flex: none;
@@ -600,15 +636,38 @@ code {
 /* ---------------------------------------------------------- metrics */
 
 .metrics {
+  /*
+   * The separators are borders on the cells, not the container showing through
+   * one pixel gaps.
+   *
+   * With the gap technique, a row that is not completely filled — three metrics
+   * in a two column grid, four in a three column grid — leaves the container's
+   * background covering the empty slot at full size, and it reads as a broken
+   * cell rather than as absence. Measured: a 279x69 flat block beside "SINCE"
+   * on /professional at 1024, and 142x69 on /education at 320.
+   *
+   * Each cell draws its own top and left line and pulls itself a pixel up and
+   * left, so the first row and column land under the container's own border and
+   * every interior edge carries exactly one line. An empty slot now shows the
+   * surface, which is what it is.
+   */
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
-  gap: 1px;
-  background: var(--hairline);
+  gap: 0;
+  background: var(--surface);
   border: 1px solid var(--hairline);
   border-radius: var(--r-card);
   overflow: hidden;
 }
-.metric { background: var(--surface); padding: var(--s-3) var(--s-4); }
+.metric {
+  background: var(--surface);
+  padding: var(--s-3) var(--s-4);
+  /* One line per interior edge: each cell draws its top and left and pulls
+     itself under the container's border, which overflow: hidden then clips. */
+  border-top: 1px solid var(--hairline);
+  border-left: 1px solid var(--hairline);
+  margin: -1px 0 0 -1px;
+}
 .metric-value {
   font-family: var(--f-display);
   font-weight: var(--w-strong);
@@ -883,8 +942,25 @@ code {
     break-inside: avoid;
   }
   .collage-item figcaption {
-    left: 0; right: 0; bottom: 0;
+    /*
+     * static, and this is the load bearing line.
+     *
+     * The tile above is position: static in this block, which removes the
+     * containing block the caption was absolutely positioned against — so all
+     * twelve captions resolved against the initial containing block instead
+     * and stacked in one full width pile near the top of the page, on top of
+     * the photographs and each other. Measured at 390px: twelve captions, all
+     * at top 863 left 0 width 390, sixty six pairwise overlaps. The print
+     * block already did this correctly; the screen block was missing the one
+     * declaration.
+     */
+    position: static;
     opacity: 1;
+    /* In the flow now, so it sits under its photograph rather than over it,
+       and the gradient that existed to lift it off the image is not needed. */
+    background: none;
+    color: var(--text-muted);
+    padding: 6px 2px 0;
   }
   /* Nothing reflows on a tap, and a scale under a finger is just a jump. */
   .collage-item:hover, .collage-item:focus-visible { transform: none; }
