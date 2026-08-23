@@ -87,7 +87,7 @@ and any secret that was ever pushed has to be treated as burned and rotated.
 
 `default-src 'self'` with no `'unsafe-inline'` on scripts, `frame-ancestors
 'none'`, `nosniff`, `strict-origin-when-cross-origin`, a `Permissions-Policy`
-that switches off camera, microphone and geolocation, `Cross-Origin-Opener-Policy:
+that switches off camera, microphone, and geolocation, `Cross-Origin-Opener-Policy:
 same-origin`, and HSTS in production only, without `preload`.
 
 The only third party connection the site can make is the LinkedIn badge, which

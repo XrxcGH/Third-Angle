@@ -34,13 +34,30 @@ router.get('/', (req, res) => {
     now: repo.getNow(),
     notes: repo.listNotes(3),
     jsonLd: seo.jsonLd(res.locals.siteUrl),
+    /*
+     * The card reads the same slots the page does.
+     *
+     * It used to carry its own copy of the headline, which meant editing the
+     * headline in the admin changed the page and never the card — and the copy
+     * had already drifted, dropping the fourth clause. The key is a hash of the
+     * text, so an edit produces a new card URL rather than a stale cached one.
+     */
     ogImage: registerOg({
-      title: 'I build the machine, wire it, and write the code that runs it',
-      subtitle: 'Mechanical engineering at UCLA. Four seasons of FIRST Robotics.',
-      eyebrow: 'Eric J. Dean',
+      title: content.value('home.headline'),
+      subtitle: content.value('home.lede'),
+      eyebrow: content.value('site.brand.name'),
     }),
   });
 });
+
+/*
+ * Small numbers as words, which is what the rest of the copy does. Only used
+ * where a number sits in a sentence beside another written as a word; a metric
+ * or a count in a heading stays a digit.
+ */
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven',
+  'eight', 'nine', 'ten', 'eleven', 'twelve'];
+const spellOut = (n) => NUMBER_WORDS[n] || String(n);
 
 /* ------------------------------------------------------------------- work */
 
@@ -75,7 +92,12 @@ router.get('/work', (req, res) => {
     active,
     matchCount,
     jsonLd: seo.jsonLd(res.locals.siteUrl, { trail: [{ name: 'Home', url: '/' }, { name: 'Work', url: '/work' }] }),
-    ogImage: registerOg({ title: 'Work', subtitle: String(projects.length) + ' projects across eight disciplines.', eyebrow: 'Eric J. Dean' }),
+    ogImage: registerOg({
+      title: 'Work',
+      /* Both counts as words, so one sentence does not mix "8" with "eight". */
+      subtitle: `${spellOut(projects.length)} projects across eight disciplines.`,
+      eyebrow: content.value('site.brand.name'),
+    }),
   });
 });
 
@@ -236,9 +258,10 @@ router.get('/professional', (req, res) => {
 /* ------------------------------------------------------------------ education */
 
 router.get('/education', (req, res) => {
-  /* Alphabetical unless asked otherwise. A GET form with a submit button, so
-     the control works with no JavaScript, same as every other control here. */
-  const sort = req.query.sort === 'term' ? 'term' : 'name';
+  /* Term order unless asked otherwise: most recent term first, alphabetical
+     inside a term. A GET form with a submit button, so the control works with
+     no JavaScript, same as every other control here. */
+  const sort = req.query.sort === 'name' ? 'name' : 'term';
   const schools = repo.listSchools().map((sch) => ({
     ...sch,
     groups: repo.coursesByStatus(sch.slug, sort),
@@ -528,15 +551,29 @@ router.get('/og/:key.png', async (req, res, next) => {
   const key = raw === 'default' ? 'default' : raw.replace(/[^a-f0-9]/g, '');
   if (key !== 'default' && key.length !== 16) return next();
 
+  /*
+   * A key nobody registered gets the default card, and gets it WITHOUT a file
+   * being written under the requested name.
+   *
+   * This route is unauthenticated, and it used to render and then cache under
+   * whatever key was asked for. Every request for an unused key was therefore
+   * one SVG rasterisation and one 33 KB disk write, from anyone, over a 2^64
+   * key space: a few thousand requests fill the volume the SQLite file lives
+   * on, and SQLite starts failing its writes. Only a key this process actually
+   * registered — or the default — may create a file.
+   *
+   * A crawler that reaches an image before the page that registers it still
+   * gets a valid card, which was the reason for the fallback in the first
+   * place; it just gets the shared one.
+   */
+  const spec = key === 'default' ? DEFAULT_OG : ogSpecs.get(key);
+  if (!spec) return res.redirect(302, '/og/default.png');
+
   const dir = path.join(DATA_DIR, 'og');
   const file = path.join(dir, key + '.png');
 
   if (!fs.existsSync(file)) {
-    const spec = key === 'default' ? DEFAULT_OG : ogSpecs.get(key);
-    // An unknown key means the page that would have registered it has not been
-    // rendered in this process. Fall back rather than 404, because a crawler
-    // may hit the image before it ever hits the page.
-    const svg = seo.ogSvg(spec || DEFAULT_OG);
+    const svg = seo.ogSvg(spec);
     fs.mkdirSync(dir, { recursive: true });
     const png = await sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer();
     fs.writeFileSync(file, png);

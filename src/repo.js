@@ -606,20 +606,32 @@ function termSortValue(term) {
  * the grouping: a class whose term nobody wrote down still belongs on the page.
  */
 /*
- * `sort` is 'name' or 'term'.
+ * `sort` is 'term' or 'name'.
  *
- * Alphabetical is the default because a class list is looked up rather than
- * read: somebody scanning for "did they take statics" wants the S, and a term
- * order makes them read all of it. Term order is the other question, most
- * recent first, and it is one click away.
+ * Term order is the default, most recent term first, and alphabetical inside a
+ * term. A class list is a record of what somebody is doing and has done, and
+ * the first question a reader has is what they are taking now — which an
+ * alphabetical list buries somewhere in the middle. Alphabetical is the other
+ * question, for somebody scanning for "did they take statics", and it is one
+ * click away.
  */
-function coursesByStatus(schoolSlug, sort = 'name') {
+function coursesByStatus(schoolSlug, sort = 'term') {
   const rows = listCourses(schoolSlug);
   const order = ['in-progress', 'completed', 'planned'];
 
+  /*
+   * Alphabetical means alphabetical in the column the reader is actually
+   * scanning, which is the code: it is the left hand column of every row and
+   * the thing the eye tracks down the list. Sorting by title first put MECH&AE
+   * 101 after STATS 10 because "Statics" follows "Statistical", and a list that
+   * is correctly sorted by a key nobody can see reads as unsorted.
+   *
+   * numeric, so PHYSICS 1B comes before PHYSICS 4AL and MECH&AE 1 before
+   * MECH&AE 101 rather than in string order.
+   */
   const byName = (a, b) =>
-    String(a.title || '').localeCompare(String(b.title || ''), 'en', { sensitivity: 'base' })
-    || String(a.code || '').localeCompare(String(b.code || ''), 'en');
+    String(a.code || '').localeCompare(String(b.code || ''), 'en', { numeric: true, sensitivity: 'base' })
+    || String(a.title || '').localeCompare(String(b.title || ''), 'en', { sensitivity: 'base' });
 
   const byTerm = (a, b) => {
     const ta = termSortValue(a.term);

@@ -7,7 +7,7 @@
   <% if (facet.blurb) { %><p class="lede prose" style="color: var(--text-muted); margin-top: var(--s-3);"><%= facet.blurb %></p><% } %>
 
   <div class="section">
-    <p class="eyebrow"><%= projects.length %> <%= c('discipline.noun') %><%= projects.length === 1 ? '' : 's' %> <%= c('discipline.sort') %></p>
+    <p class="eyebrow"><%= projects.length %> <%= c('discipline.noun') %><%= projects.length === 1 ? '' : 's' %>, <%= c('discipline.sort') %></p>
     <div class="grid" style="margin-top: var(--s-4);">
       <% for (const p of projects) { %><%- include('../partials/card', { p }) %><% } %>
     </div>

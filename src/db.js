@@ -128,6 +128,9 @@ function assertEnvironment() {
  * would be more machinery than the problem has.
  */
 const ADDED_COLUMNS = [
+  // The counter a TOTP code was last accepted from, so the same six digits
+  // cannot be replayed inside their ninety second window. See src/auth.js.
+  ['user', 'totp_last_counter', 'INTEGER'],
   // A photo belongs to at most one album. The collage pages render an album,
   // so setting this IS publishing the photo.
   ['media', 'album_slug', 'TEXT REFERENCES album(slug) ON DELETE SET NULL'],

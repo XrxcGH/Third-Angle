@@ -60,6 +60,16 @@ test('a form submitted faster than a human could type is rejected', () => {
   assert.equal(r.reason, 'too-fast');
 });
 
+/*
+ * Change the last character to a DIFFERENT one.
+ *
+ * This was `.replace(/.$/, 'A')`, which is only a tamper when the signature did
+ * not already end in an A — so roughly one run in thirty six the "forged" stamp
+ * was the genuine one and the suite failed for no reason anybody could
+ * reproduce. A flaky test in a deploy pipeline is worse than no test.
+ */
+const flipLast = (s) => s.slice(0, -1) + (s.at(-1) === 'a' ? 'b' : 'a');
+
 test('a forged or unsigned timestamp is rejected', () => {
   for (const t of [
     'abc.deadbeefdeadbeefdeadbe',           // wrong signature
@@ -67,7 +77,7 @@ test('a forged or unsigned timestamp is rejected', () => {
     '',
     undefined,
     'notbase36.' + 'x'.repeat(24),
-    agedStamp(10).replace(/.$/, 'A'),        // tampered signature
+    flipLast(agedStamp(10)),                 // tampered signature
   ]) {
     const r = contact.validate({ ...good(), t }, '1.2.3.4');
     assert.equal(r.ok, false, `accepted stamp ${JSON.stringify(t)}`);

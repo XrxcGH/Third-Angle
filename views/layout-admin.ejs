@@ -55,10 +55,11 @@
      page, because the account page is the one page the operator is least
      likely to open. */
 %>
-<% if (typeof mustChangePassword !== 'undefined' && mustChangePassword && path !== '/admin/account') { %>
+<% if (typeof mustChangePassword !== 'undefined' && mustChangePassword) { %>
   <p class="flash error" role="status">
-    This account is still on a temporary password.
-    <a href="/admin/account">Set a permanent one</a> before the site goes public.
+    This account is still on a temporary password, so the rest of the admin is
+    closed until it is replaced. Set a permanent one below, and turn on two
+    factor authentication while you are here.
   </p>
 <% } %>
 <%- body %>

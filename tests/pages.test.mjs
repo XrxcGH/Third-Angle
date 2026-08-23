@@ -229,6 +229,47 @@ test('the gap between photographs is a hairline', () => {
   assert.ok(max && Number(max[1]) <= 5, `the gap tops out at ${decl[1]}, which is a gutter`);
 });
 
+test('a class list is term order by default, alphabetical inside a term', () => {
+  /*
+   * The first question a reader has of a class list is what somebody is taking
+   * now, which an alphabetical list buries in the middle. And "alphabetical"
+   * has to mean the column the eye actually tracks: the code is the left hand
+   * column of every row, so sorting by title first produced a list that was
+   * correctly sorted by a key nobody can see.
+   */
+  const groups = repo.coursesByStatus('ucla');
+  assert.ok(groups.length, 'the UCLA record must have classes');
+
+  const rank = (t) => {
+    const v = repo.termSortValue(t);
+    return v.year * 10 + v.season;
+  };
+
+  for (const g of groups) {
+    let previousTerm = Infinity;
+    let previousCode = null;
+    for (const c of g.courses) {
+      const r = rank(c.term);
+      if (r < previousTerm) { previousCode = null; }         // a new term starts
+      assert.ok(r <= previousTerm, `${c.code} is out of term order in ${g.status}`);
+      if (previousCode !== null) {
+        assert.ok(
+          previousCode.localeCompare(c.code, 'en', { numeric: true, sensitivity: 'base' }) <= 0,
+          `${c.code} follows ${previousCode} inside one term, which is not alphabetical`
+        );
+      }
+      previousTerm = r;
+      previousCode = c.code;
+    }
+  }
+
+  // MECH&AE 1 before MECH&AE 101, not after it, which is what a plain string
+  // comparison would do.
+  const codes = ['MECH&AE 101', 'MECH&AE 1', 'MECH&AE M20']
+    .sort((a, b) => a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' }));
+  assert.deepEqual(codes, ['MECH&AE 1', 'MECH&AE 101', 'MECH&AE M20']);
+});
+
 test('a class list sorted by term is actually in term order', () => {
   /*
    * A school that runs on academic years writes its terms as "2024-25", not as

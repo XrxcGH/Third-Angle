@@ -134,7 +134,9 @@ test('TOTP enrolment is two steps, so a lost secret cannot lock the account', ()
     ADMIN.indexOf("router.post('/account/totp/confirm'"),
     ADMIN.indexOf("router.post('/account/totp/off'")
   );
-  assert.match(confirm, /verifyTotp\(/);
+  // verifyTotpOnce, not verifyTotp: a code is spent when it is accepted, so the
+  // same six digits cannot be replayed inside their ninety second window.
+  assert.match(confirm, /verifyTotpOnce\(/);
   assert.match(confirm, /setTotpSecret\(user\.id, user\.totp_secret, 1\)/);
 });
 

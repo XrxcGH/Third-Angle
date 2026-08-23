@@ -90,8 +90,8 @@
           <form class="sortbar" method="get" action="/education#<%= s.slug %>">
             <label for="sort-<%= s.slug %>"><%= c('education.sort.label') %></label>
             <select id="sort-<%= s.slug %>" name="sort">
-              <option value="name"<%= sort === 'name' ? ' selected' : '' %>><%= c('education.sort.name') %></option>
               <option value="term"<%= sort === 'term' ? ' selected' : '' %>><%= c('education.sort.term') %></option>
+              <option value="name"<%= sort === 'name' ? ' selected' : '' %>><%= c('education.sort.name') %></option>
             </select>
             <button class="btn btn-quiet btn-sm" type="submit"><%= c('education.sort.apply') %></button>
           </form>
@@ -221,7 +221,7 @@
         <ul class="stack measure" style="margin-top: var(--s-3); padding-left: 1.2rem;">
           <% for (const a of looseAwards) { %>
             <li>
-              <strong><%= a.title %></strong><% if (a.detail) { %> <%= a.detail %><% } %>
+              <strong><%= a.title %></strong><% if (a.detail) { %>. <%= a.detail %><% } %>
               <% if (a.ended_on || a.started_on) { %>
                 <span class="mono" style="font-size:.66rem; color: var(--text-muted);"><%= a.ended_on || a.started_on %></span>
               <% } %>

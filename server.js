@@ -53,7 +53,7 @@ app.use(require('./src/routes/public'));
 /* 404 */
 app.use((req, res) => {
   res.status(404).render('pages/404', {
-    title: 'Not found',
+    title: 'Not Found',
     description: 'That page does not exist.',
     disciplines: repo.listFacets('discipline'),
     counts: {},
@@ -89,7 +89,7 @@ app.use((err, req, res, _next) => {
      * fallback instead of a page.
      */
     ...require('./src/content').helpers(),
-    title: 'Something broke',
+    title: 'Something Broke',
     description: 'An error occurred.',
     disciplines,
     counts: {},

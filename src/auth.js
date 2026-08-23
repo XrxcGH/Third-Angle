@@ -98,15 +98,39 @@ function totpAt(secret, counter) {
  * Verify a 6 digit code. A one step window either side absorbs clock skew,
  * which is the usual cause of a legitimate code being rejected.
  */
-function verifyTotp(secret, token, atMs = Date.now()) {
+function totpCounterFor(secret, token, atMs = Date.now()) {
   const t = String(token || '').replace(/\s/g, '');
   if (!/^\d{6}$/.test(t)) return false;
   const counter = Math.floor(atMs / 30_000);
   for (let w = -1; w <= 1; w++) {
     const expected = totpAt(secret, counter + w);
-    if (crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(t))) return true;
+    if (crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(t))) return counter + w;
   }
   return false;
+}
+
+function verifyTotp(secret, token, atMs = Date.now()) {
+  return totpCounterFor(secret, token, atMs) !== false;
+}
+
+/**
+ * Verify a code for a user, and spend it.
+ *
+ * A bare verifyTotp accepts the same six digits for as long as they are inside
+ * the window, which is about ninety seconds with the skew allowance either
+ * side. Anyone who sees one code over a shoulder or in a screen share can
+ * replay it in that window if they also have the password, which is exactly the
+ * case the second factor exists for. Recording the counter each code came from
+ * and refusing anything at or below it makes a code good once.
+ *
+ * Returns true only if the code verified AND had not been spent.
+ */
+function verifyTotpOnce(user, token, atMs = Date.now()) {
+  const counter = totpCounterFor(user.totp_secret, token, atMs);
+  if (counter === false) return false;
+  if (user.totp_last_counter != null && counter <= Number(user.totp_last_counter)) return false;
+  run('UPDATE user SET totp_last_counter = ? WHERE id = ?', counter, user.id);
+  return true;
 }
 
 function totpUri(secret, account, issuer = 'Third Angle') {
@@ -312,7 +336,7 @@ function destroyOtherSessions(userId, keepSessionId) {
 
 module.exports = {
   hashPassword, verifyPassword,
-  generateTotpSecret, verifyTotp, totpAt, totpUri, base32Encode, base32Decode,
+  generateTotpSecret, verifyTotp, verifyTotpOnce, totpCounterFor, totpAt, totpUri, base32Encode, base32Decode,
   createSession, getSession, destroySession, purgeExpiredSessions,
   recordAttempt, isRateLimited, clearAttempts,
   csrfToken, checkCsrf,

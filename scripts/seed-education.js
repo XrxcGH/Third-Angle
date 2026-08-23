@@ -41,7 +41,7 @@ const REPLACE = process.argv.includes('--replace');
 const SCHOOLS = [
   {
     slug: 'ucla',
-    name: 'University Of California, Los Angeles',
+    name: 'University of California, Los Angeles',
     kind: 'university',
     credential: 'BS Mechanical Engineering, Expected June 2029',
     location: 'Los Angeles, CA',

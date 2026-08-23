@@ -94,7 +94,7 @@ costs.yml              every price, dated, and sourced
 Read [DESIGN.md](DESIGN.md) before touching the front end, and point any AI
 assistant at it too. The short version:
 
-- Colour direction is **Anodize**: machine tool gray green at OKLCH hue 135,
+- Colour direction is **Anodize**: machine tool grey green at OKLCH hue 135,
   hazard orange at hue 52 as the single loud accent.
 - Type is TASA Orbiter, Literata, and Martian Mono, all SIL OFL, all self hosted.
 - **`--on-accent` is never white.** White on hazard orange fails AA at 3.30:1.
@@ -152,7 +152,7 @@ rendering an empty heading, and a field that no longer reaches a page is caught
 rather than left in the editor changing nothing.
 
 **The photo wall is one wall.** `/personal` drops every photograph in together
-at the full width of the window and scrolls; there are no albums, sections or
+at the full width of the window and scrolls; there are no albums, sections, or
 filters to maintain, and the only decision on an upload is whether it is on the
 wall. `/admin/photos` is that one switch.
 

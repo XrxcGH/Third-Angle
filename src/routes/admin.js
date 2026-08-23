@@ -141,7 +141,7 @@ router.post('/login', form, loadSession, (req, res) => {
 
   if (user.totp_secret && user.totp_confirmed) {
     if (!totp) return fail('Enter the six digit code from your authenticator.', true);
-    if (!auth.verifyTotp(user.totp_secret, totp)) {
+    if (!auth.verifyTotpOnce(user, totp)) {
       auth.recordAttempt(email, ip, false);
       return fail('That code is not right. Codes expire every thirty seconds.', true);
     }
@@ -169,17 +169,28 @@ router.use(loadSession, requireAuth);
 
 /*
  * A temporary password is a hand-over, not a chosen credential, so it is
- * flagged rather than trusted. The flag drives a banner on every admin page
- * and clears itself the moment a password is set from the account page.
+ * flagged AND it is a lock.
  *
- * Deliberately a warning and not a lock. A hard redirect to the account page
- * would make the flag useless for its actual purpose, which is handing someone
- * a working login so they can walk the admin surface before choosing a
- * permanent password. What it must not do is stay invisible.
+ * This used to be a banner only, on the argument that somebody handed a working
+ * login should be able to walk the admin surface before choosing a permanent
+ * password. That argument does not survive the site being public: a hand-over
+ * credential is by definition one that has been transmitted somewhere, it is
+ * exempt from the twelve character floor that a chosen password has to clear
+ * (see scripts/create-admin.js), and a banner is dismissed by scrolling. Until
+ * it is replaced, the only pages that answer are the account page that replaces
+ * it and the way out.
+ *
+ * The allowlist is by path prefix rather than by route so that a route added
+ * later is locked by default rather than accidentally exempt.
  */
+const OPEN_WHILE_LOCKED = ['/account', '/logout'];
+
 router.use((req, res, next) => {
-  res.locals.mustChangePassword = Boolean(req.session.must_change_password);
-  next();
+  const locked = Boolean(req.session.must_change_password);
+  res.locals.mustChangePassword = locked;
+  if (!locked) return next();
+  if (OPEN_WHILE_LOCKED.some((p) => req.path === p || req.path.startsWith(p + '/'))) return next();
+  return res.redirect(303, '/admin/account?must=password');
 });
 
 /* ---------------------------------------------------------------- account */
@@ -299,7 +310,7 @@ router.post('/account/totp/confirm', form, requireCsrf, (req, res) => {
       error: 'Nothing to confirm. Start the enrolment first.',
     }));
   }
-  if (!auth.verifyTotp(user.totp_secret, req.body.totp)) {
+  if (!auth.verifyTotpOnce(user, req.body.totp)) {
     return res.status(400).render('admin/account', accountView(req, {
       enrol: { secret: user.totp_secret, uri: auth.totpUri(user.totp_secret, user.email) },
       error: 'That code did not verify. Codes expire every thirty seconds, so try the next one.',

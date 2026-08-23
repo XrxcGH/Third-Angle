@@ -82,7 +82,7 @@ const PROJECTS = [
     summary_md:
       'Two alliances of three robots climb opposite flanks of the same peak, ferrying supplies to a 90 inch spire ' +
       'that lights tier by tier as camps are established. A randomised forecast at the start of the match forces ' +
-      'genuinely branching autonomous routines, and the last thirty seconds are a climb on a truss leaning at 15 degrees.',
+      'genuinely branching autonomous routines, and the last thirty seconds are a climb on a truss leaning at fifteen degrees.',
     body_md: [
       'The package contains a design research foundation, a locked design specification, a full game manual that went ' +
       'through a red team pass, per element field CAD with bills of materials in both an official and a low cost plywood ' +
@@ -170,7 +170,7 @@ const PROJECTS = [
       ['Peak current', '300+', 'A'],
     ],
     facets: [
-      ['electrical', 'primary', 'Power and signal paths, crimp and connectorisation standards to through hole assembly practice, breaker and fuse sizing, and multimeter triage.'],
+      ['electrical', 'primary', 'Power and signal paths, crimp and connectorisation standards, through hole assembly practice, breaker and fuse sizing, and multimeter triage.'],
       ['teaching', 'primary', 'Two sessions written and taught live, aimed at students with no prior electrical background, then handed over so someone else can run them.'],
       ['documentation', 'significant', 'Published as slides and a printable PDF so a mentor who was not in the room can deliver the same session.'],
     ],
@@ -306,7 +306,7 @@ const PROJECTS = [
       ['Test suites', '8', ''],
     ],
     facets: [
-      ['software', 'primary', 'A TypeScript monorepo on React, Fastify, SQLite with Drizzle, Playwright, and Zod, built across eight milestones each with its own tests.'],
+      ['software', 'primary', 'A TypeScript monorepo on React, Fastify, SQLite with Drizzle, Playwright, and Zod, built across eight milestones, each with its own tests.'],
     ],
     links: [['Repository', 'https://github.com/XrxcGH/Internship-Applier', 'repo']],
   },
@@ -326,7 +326,7 @@ const PROJECTS = [
     started_on: '2026-08',
     summary_md:
       'A Java library that would pre-wire AdvantageKit, PathPlanner, Choreo, PhotonVision, Limelight, Phoenix 6, REVLib, ' +
-      'SysId and WPILib into one coherent seam. Currently design documents only, revised twice: once after an adversarial ' +
+      'SysId, and WPILib into one coherent seam. Currently design documents only, revised twice: once after an adversarial ' +
       'four lens review and again after a six lens independent expert review.',
     body_md: [
       'The roadmap states a realistic solo delivery estimate rather than an optimistic one, and nothing will be announced ' +

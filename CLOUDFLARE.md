@@ -1,4 +1,4 @@
-# Hosting Third Angle On Cloudflare
+# Hosting Third Angle on Cloudflare
 
 **Nothing in this document has been implemented.** It is the answer to "can this
 run free on Cloudflare Pages and Workers", plus the routes available if you want
@@ -39,10 +39,10 @@ other twenty-nine routes have nothing to render.
 
 ## The three routes
 
-### Option A — Cloudflare Containers
+### Option A: Cloudflare Containers
 
 **Cost: $5/month.** Workers Paid, which includes 25 GiB-hours of memory,
-375 vCPU-minutes and 200 GB-hours of disk per month.
+375 vCPU-minutes, and 200 GB-hours of disk per month.
 
 Cloudflare Containers runs an actual Docker image on their network. The app goes
 in essentially unchanged: Node 24, `node:sqlite`, `sharp`, Express, the lot.
@@ -58,7 +58,7 @@ in essentially unchanged: Node 24, `node:sqlite`, `sharp`, Express, the lot.
   for is $0 and does not sleep. $5/month buys you a better network and one less
   machine to patch. It does not buy you a capability you are missing.
 
-### Option B — Full port to Workers, D1, and R2
+### Option B: Full port to Workers, D1, and R2
 
 **Cost: $0 within the free limits.** D1 gives 5 GB of storage and 5 M row reads
 a day, R2 gives 10 GB and 10 M reads a month with no egress charge, and Workers
@@ -69,7 +69,7 @@ gives 100 K requests a day. A portfolio does not come close to any of those.
 Right now there is one process on one machine holding one SQLite file and one
 uploads directory. A Worker is not a machine: it is a function that runs in a
 V8 isolate near whoever asked, with no disk, no long-lived memory, and a CPU
-budget per request. So the port is not "move the files" — it is "take the two
+budget per request. So the port is not "move the files"; it is "take the two
 things that were on the disk and put them behind network APIs":
 
 | Today | After |
@@ -79,8 +79,9 @@ things that were on the disk and put them behind network APIs":
 | `node server.js`, always running | A Worker, cold-started per request, no state between them |
 | `npm start` | `wrangler deploy`, and `wrangler dev` locally |
 
-Everything else — the routes, the templates, the search, the admin, the content
-editor, the motion layer — is ordinary code that does not care where it runs.
+Everything else, meaning the routes, the templates, the search, the admin, the
+content editor, and the motion layer, is ordinary code that does not care where
+it runs.
 
 #### What changes, file by file
 
@@ -90,7 +91,7 @@ editor, the motion layer — is ordinary code that does not care where it runs.
   assumes that. This is the single largest mechanical edit in the port.
 - **`src/repo.js`**, 790 lines and every query in the project, changes shape but
   not content: the SQL is the same, the functions become `async`. This is the
-  part the project was designed for — nothing above `repo.js` knows what the
+  part the project was designed for: nothing above `repo.js` knows what the
   database is.
 - **`db.transaction()`** becomes `D1.batch()`. This is a real change rather than
   a rename: the current helper wraps an arbitrary function body, and a batch is
@@ -173,7 +174,7 @@ tests, plus a decision on images. The site's behaviour should not change at
 all, which is exactly what makes it tedious: the whole job is to get back to
 where you already are, on somebody else's computer, for free.
 
-### Option C — Split: static shell on Pages, dynamic app elsewhere
+### Option C: Split, a static shell on Pages with the dynamic app elsewhere
 
 **Cost: $0 on Cloudflare, plus whatever hosts the app.**
 

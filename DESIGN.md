@@ -16,7 +16,7 @@ portfolio's whole thesis. One person, eight disciplines, one record per project.
 
 ## Colour
 
-Direction **ANODIZE**. Machine tool enamel gray green at OKLCH hue 135, the
+Direction **ANODIZE**. Machine tool enamel grey green at OKLCH hue 135, the
 colour of a Bridgeport, nowhere near slate at 257 or Tailwind's near black at
 265. Hazard orange at hue 52 is the single loud accent and reads instantly as
 electrical, safety, and shop work. Copper and patina are the quiet supports.
