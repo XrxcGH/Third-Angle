@@ -121,7 +121,7 @@ test('the collage is packed by CSS, not by a stored order', () => {
   assert.match(css, /flex-basis: calc\(var\(--ar\)/);
   assert.match(css, /flex-grow: var\(--ar\)/);
   // The hovered tile grows and its neighbours give up the width.
-  assert.match(css, /\.collage-item:hover[\s\S]{0,120}flex-grow: calc\(var\(--ar\) \* var\(--tile-hover\)\)/);
+  assert.match(css, /\.collage-item:hover[\s\S]{0,160}transform: scale\(var\(--tile-hover\)\)/);
 });
 
 test('the last row is not stretched across the whole width', () => {
@@ -204,7 +204,7 @@ test('the Content Security Policy opens only for what is switched on', () => {
 
 /* --------------------------------------------------------------- github */
 
-test('repositories rank by stars, then recency, with forks and archives last', () => {
+test('repositories rank by most recent push, with forks and archives last', () => {
   const ranked = github.rankRepos([
     { name: 'archived', stars: 99, archived: true, fork: false, pushedAt: '2026-08-01' },
     { name: 'fork', stars: 50, archived: false, fork: true, pushedAt: '2026-08-01' },
@@ -301,12 +301,20 @@ test('the LinkedIn badge is off by default and says why', () => {
   assert.match(src, /settings\.linkedin_badge/);
 });
 
-test('the GitHub avatar is proxied rather than hotlinked', () => {
-  // img-src is 'self', and telling GitHub the address of every visitor to
-  // render one 56px square is a poor trade.
-  const src = read('views', 'pages', 'professional.ejs');
-  assert.match(src, /src="\/avatar\/github\.png"/);
-  // Comments stripped: the reason it is NOT hotlinked names the host.
-  const markup = src.replace(/<%#[\s\S]*?%>/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+test('no page hotlinks a third party image', () => {
+  // The profile card shows the GitHub mark, drawn inline, rather than an
+  // avatar fetched from another origin. img-src in the CSP is 'self' and
+  // data:, and a page that hotlinked would render a broken image with nothing
+  // in the server log.
+  const markup = (function all(dir, acc = []) {
+    for (const e of readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
+      const rel = path.join(dir, e.name);
+      if (e.isDirectory()) all(rel, acc);
+      else if (e.name.endsWith('.ejs')) acc.push(readFileSync(path.join(ROOT, rel), 'utf8'));
+    }
+    return acc;
+  })('views').join('\n');
   assert.equal(/avatars\.githubusercontent\.com/.test(markup), false);
+  assert.equal(/<img[^>]+src="https?:/.test(markup), false);
 });
+

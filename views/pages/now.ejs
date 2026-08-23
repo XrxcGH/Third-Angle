@@ -5,7 +5,7 @@
   <% if (now && now.body_html) { %>
     <div class="rail" style="margin-top: var(--s-4);"><%- now.body_html %></div>
     <p class="eyebrow" style="margin-top: var(--s-3);">
-      <%= c('site.updated') %> <time datetime="<%= now.updated_at %>"><%= now.updated_at.slice(0,10) %></time>
+      <%= c('site.updated') %> <time datetime="<%= now.updated_at %>"><%= fmtDate(now.updated_at) %></time>
     </p>
   <% } else { %>
     <p style="color: var(--text-muted);"><%= c('now.empty') %></p>
@@ -17,7 +17,7 @@
       <div class="stack" style="margin-top: var(--s-3);">
         <% for (const n of notes) { %>
           <div style="border-bottom:1px solid var(--hairline); padding-bottom: var(--s-3);">
-            <p class="eyebrow" style="margin-bottom:4px;"><time datetime="<%= n.created_at %>"><%= n.created_at.slice(0,10) %></time></p>
+            <p class="eyebrow" style="margin-bottom:4px;"><time datetime="<%= n.created_at %>"><%= fmtDate(n.created_at) %></time></p>
             <% if (n.title) { %><strong><%= n.title %></strong><% } %>
             <div><%- n.body_html %></div>
           </div>

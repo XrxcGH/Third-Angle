@@ -161,17 +161,23 @@ function shapeRepo(r) {
 /**
  * Rank for display.
  *
- * Stars first, then most recently pushed. Forks and archives sink rather than
- * disappear: a fork can be real work, and hiding it would be the page deciding
- * what counts on the owner's behalf.
+ * Most recently pushed first, then stars. This was the other way round, and
+ * the other way round answers a different question: stars are what other
+ * people thought of work that may be two years old, and the panel is there to
+ * show what is being worked on now.
+ *
+ * Forks and archives still sink rather than disappear: a fork can be real
+ * work, and hiding it would be the page deciding what counts on the owner's
+ * behalf.
  */
 function rankRepos(repos) {
   return [...repos].sort((a, b) => {
     const penalty = (r) => (r.archived ? 2 : 0) + (r.fork ? 1 : 0);
     const p = penalty(a) - penalty(b);
     if (p !== 0) return p;
-    if (b.stars !== a.stars) return b.stars - a.stars;
-    return String(b.pushedAt || '').localeCompare(String(a.pushedAt || ''));
+    const pushed = String(b.pushedAt || '').localeCompare(String(a.pushedAt || ''));
+    if (pushed !== 0) return pushed;
+    return b.stars - a.stars;
   });
 }
 
@@ -310,6 +316,16 @@ async function avatar() {
   const profile = readCache('profile');
   const url = profile && profile.payload && profile.payload.avatar;
   if (!url) return null;
+
+  /*
+   * The URL comes from GitHub's own API response rather than from anything a
+   * visitor typed, so this is not the usual server-side request forgery shape.
+   * It is still the one place this process fetches an address it did not
+   * write, and the cost of pinning the host is two lines.
+   */
+  let host;
+  try { host = new URL(url).hostname; } catch { return null; }
+  if (!/(^|\.)githubusercontent\.com$|(^|\.)github\.com$/.test(host)) return null;
 
   try {
     const ac = new AbortController();

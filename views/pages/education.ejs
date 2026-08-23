@@ -41,31 +41,31 @@
       </p>
       <h2><%= s.name %></h2>
 
-      <div class="titleblock" style="margin-top: var(--s-3); max-width: 34rem;">
-        <% if (s.credential) { %>
-          <div><span class="k"><%= c('education.tb.credential') %></span><span class="v"><%= s.credential %></span></div>
-        <% } %>
-        <% if (s.location) { %>
-          <div><span class="k"><%= c('education.tb.location') %></span><span class="v"><%= s.location %></span></div>
-        <% } %>
-        <% if (s.started_on || s.ended_on) { %>
+      <%
+        /*
+         * Facts across the page, not a narrow two column box in the left half
+         * of the screen. Each is a label and a value at reading size, wrapping
+         * to as many columns as the window has room for.
+         */
+        const facts = [
+          [c('education.tb.credential'), s.credential],
+          [c('education.tb.location'), s.location],
+          [c('education.tb.dates'), (s.started_on || '') + (s.ended_on ? ' to ' + s.ended_on : '')],
+          [c('education.tb.honours'), s.honours],
+          [c('education.tb.classes'), s.counts.total
+            ? s.counts.completed + ' ' + c('education.done')
+              + (s.counts['in-progress'] ? ', ' + s.counts['in-progress'] + ' ' + c('education.inprogress') : '')
+            : ''],
+        ].filter(([, v]) => v && String(v).trim());
+      %>
+      <dl class="facts">
+        <% for (const [k, v] of facts) { %>
           <div>
-            <span class="k"><%= c('education.tb.dates') %></span>
-            <span class="v"><%= s.started_on || '' %><% if (s.ended_on) { %> to <%= s.ended_on %><% } %></span>
+            <dt><%= k %></dt>
+            <dd><%= v %></dd>
           </div>
         <% } %>
-        <% if (s.honours) { %>
-          <div><span class="k"><%= c('education.tb.honours') %></span><span class="v"><%= s.honours %></span></div>
-        <% } %>
-        <% if (s.counts.total) { %>
-          <div>
-            <span class="k"><%= c('education.tb.classes') %></span>
-            <span class="v tnum">
-              <%= s.counts.completed %> <%= c('education.done') %><% if (s.counts['in-progress']) { %>, <%= s.counts['in-progress'] %> <%= c('education.inprogress') %><% } %>
-            </span>
-          </div>
-        <% } %>
-      </div>
+      </dl>
 
       <% if (s.blurb) { %>
         <p class="measure" style="margin-top: var(--s-4);"><%= s.blurb %></p>
@@ -80,7 +80,22 @@
         const STATUS_LABEL = (v) => label('courseStatus', v);
       %>
       <% if (s.groups.length) { %>
-        <h3 style="margin-top: var(--s-5);"><%= c('education.coursework') %></h3>
+        <div class="section-head">
+          <h3><%= c('education.coursework') %></h3>
+          <%
+            /* A real form with a submit, because there is no JavaScript on this
+               site. The anchor takes the reader back to the school they were
+               reading rather than to the top of the page. */
+          %>
+          <form class="sortbar" method="get" action="/education#<%= s.slug %>">
+            <label for="sort-<%= s.slug %>"><%= c('education.sort.label') %></label>
+            <select id="sort-<%= s.slug %>" name="sort">
+              <option value="name"<%= sort === 'name' ? ' selected' : '' %>><%= c('education.sort.name') %></option>
+              <option value="term"<%= sort === 'term' ? ' selected' : '' %>><%= c('education.sort.term') %></option>
+            </select>
+            <button class="btn btn-quiet btn-sm" type="submit"><%= c('education.sort.apply') %></button>
+          </form>
+        </div>
         <% for (const g of s.groups) { %>
           <div class="term-block">
             <p class="eyebrow">
@@ -102,7 +117,6 @@
                     <% if (c.term) { %>
                       <span class="mono" style="font-size:.66rem; color: var(--text-muted);"><%= c.term %></span>
                     <% } %>
-                    <span class="badge" data-course="<%= c.status %>"><%= STATUS_LABEL(c.status) %></span>
                   </span>
                 </div>
               <% } %>
@@ -118,11 +132,16 @@
       %>
       <% if (acts.length) { %>
         <h3 style="margin-top: var(--s-5);"><%= c('education.activities') %></h3>
-        <div class="stack" style="margin-top: var(--s-3);">
+        <%
+          /* A grid, not a two column list. The old layout gave every name a
+             narrow left column, so "California Scholarship Federation" broke
+             over three lines while the right half of the window sat empty. */
+        %>
+        <div class="entry-grid">
           <% for (const a of acts) { %>
-            <div class="discipline-row">
+            <div class="entry">
               <div>
-                <span style="font-family: var(--f-display); font-weight: var(--w-med); color: var(--text-strong);"><%= a.title %></span>
+                <span class="entry-title"><%= a.title %></span>
                 <% if (a.role) { %>
                   <span class="eyebrow" style="margin:0; display:block;"><%= a.role %></span>
                 <% } %>
@@ -171,11 +190,11 @@
 
       <% if (loose.length) { %>
         <h2><%= c('education.unattached.heading') %></h2>
-        <div class="stack" style="margin-top: var(--s-4);">
+        <div class="entry-grid">
           <% for (const a of loose) { %>
-            <div class="discipline-row">
+            <div class="entry">
               <div>
-                <span style="font-family: var(--f-display); font-weight: var(--w-med); color: var(--text-strong);"><%= a.title %></span>
+                <span class="entry-title"><%= a.title %></span>
                 <% if (a.role) { %>
                   <span class="eyebrow" style="margin:0; display:block;"><%= a.role %></span>
                 <% } %>
@@ -210,7 +229,7 @@
   <% } %>
 
   <nav class="btn-row" style="margin-top: var(--s-7);">
-    <a class="btn btn-quiet" href="/resume"><%= c('education.cta.resume') %></a>
+    <a class="btn btn-quiet" href="/documents"><%= c('education.cta.resume') %></a>
     <a class="btn btn-quiet" href="/work"><%= c('education.cta.work') %></a>
   </nav>
 </section>

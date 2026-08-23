@@ -82,6 +82,13 @@ app.use((err, req, res, _next) => {
   try { disciplines = repo.listFacets('discipline'); } catch { /* database may be the thing that broke */ }
 
   res.status(500).render('pages/500', {
+    /*
+     * The content helpers explicitly, because res.locals may never have been
+     * populated: if the failure happened in the middleware that sets them, the
+     * 500 template would throw on c() and the reader would get the plain text
+     * fallback instead of a page.
+     */
+    ...require('./src/content').helpers(),
     title: 'Something broke',
     description: 'An error occurred.',
     disciplines,

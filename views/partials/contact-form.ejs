@@ -35,7 +35,12 @@
     <input id="<%= f('company') %>" name="company" type="text" tabindex="-1" autocomplete="off">
   </div>
 
-  <div class="row2">
+  <%
+    /* Three short fields across the top, message underneath. The form is as
+       wide as the page now, and three columns is what stops that meaning three
+       inputs a thousand pixels long. */
+  %>
+  <div class="row3">
     <div class="field">
       <label for="<%= f('name') %>"><%= c('form.name') %></label>
       <input id="<%= f('name') %>" name="name" type="text" required maxlength="120"
@@ -47,11 +52,10 @@
              autocomplete="email" value="<%= values.email %>">
       <span class="hint"><%= c('form.email.hint') %></span>
     </div>
-  </div>
-
-  <div class="field">
-    <label for="<%= f('subject') %>"><%= c('form.subject') %></label>
-    <input id="<%= f('subject') %>" name="subject" type="text" maxlength="200" value="<%= values.subject %>">
+    <div class="field">
+      <label for="<%= f('subject') %>"><%= c('form.subject') %></label>
+      <input id="<%= f('subject') %>" name="subject" type="text" maxlength="200" value="<%= values.subject %>">
+    </div>
   </div>
 
   <div class="field">

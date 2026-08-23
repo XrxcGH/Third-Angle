@@ -41,6 +41,26 @@ db.exec('PRAGMA mmap_size = 268435456;');
  * why they are asserted rather than assumed.
  */
 function assertEnvironment() {
+  /*
+   * The session secret is the CSRF key.
+   *
+   * csrfToken() is an HMAC of the session id under SESSION_SECRET, and it used
+   * to fall back to a fixed development string. In production that string is
+   * public: it is in this repository. Anyone could compute a valid token for a
+   * known session id and every mutating admin route would accept a
+   * cross-site POST. A missing secret is a configuration mistake nobody would
+   * notice from the outside, so it stops the boot rather than the request.
+   */
+  if (process.env.NODE_ENV === 'production') {
+    const secret = String(process.env.SESSION_SECRET || '');
+    if (secret.length < 32) {
+      throw new Error(
+        'SESSION_SECRET must be set to at least 32 characters in production. '
+        + 'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+      );
+    }
+  }
+
   const [major] = process.versions.node.split('.').map(Number);
   if (major < 24) {
     throw new Error(

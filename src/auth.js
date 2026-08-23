@@ -195,6 +195,12 @@ function clearAttempts(email, ip) {
  * side storage and cannot be forged without the secret.
  */
 
+/*
+ * The CSRF key. Production cannot boot without a real one: see
+ * assertEnvironment() in src/db.js. The development fallback is deliberately
+ * named for what it is, because it is in a public repository and is therefore
+ * known to everybody.
+ */
 function csrfToken(sessionId) {
   const secret = process.env.SESSION_SECRET || 'dev-only-insecure-secret';
   return crypto.createHmac('sha256', secret).update(String(sessionId || 'anon')).digest('base64url');

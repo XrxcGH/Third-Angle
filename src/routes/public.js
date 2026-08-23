@@ -139,40 +139,22 @@ router.get('/search', (req, res) => {
 /* ----------------------------------------------------------------- resume */
 
 /*
- * An HTML resume page as well as the PDF, because a PDF alone is nearly
- * invisible for a name search, and a recruiter should never have to download
- * a file to read one page. Both are public: gating a student resume behind an
- * email form costs exactly the reviewer you want.
+ * The resume used to be its own page, with its own copy of the text and its own
+ * PDF under data/resume. It is now one of the documents: pinned at the top of
+ * /documents with an inline reader, a download, and full text search inside it,
+ * which is everything the separate page did, maintained in one place instead of
+ * two.
+ *
+ * A permanent redirect rather than a deletion. This address is on applications
+ * and in email signatures, and those cannot be edited after the fact.
  */
-const RESUME_PDF = 'Eric_Dean_Resume.pdf';
+router.get('/resume', (req, res) => res.redirect(301, '/documents'));
 
-/**
- * True only when the file is actually on disk. Offering "Open the PDF" on a
- * page where the PDF has never been uploaded sends a recruiter to a 404 from
- * the most prominent control on the page.
- */
-function resumePdfPath() {
-  const fs = require('node:fs');
-  const path = require('node:path');
-  const { DATA_DIR } = require('../db');
-  return fs.existsSync(path.join(DATA_DIR, 'resume', RESUME_PDF)) ? `/resume/${RESUME_PDF}` : null;
-}
-
-router.get('/resume', (req, res, next) => {
-  const page = repo.getPage('resume');
-  if (!page) return next();
-  res.render('pages/page', {
-    ...chrome(),
-    title: page.title,
-    description: page.subtitle || 'Resume for Eric J. Dean.',
-    page,
-    pdf: resumePdfPath(),
-    jsonLd: seo.jsonLd(res.locals.siteUrl, {
-      trail: [{ name: 'Home', url: '/' }, { name: 'Resume', url: '/resume' }],
-    }),
-    ogImage: registerOg({ title: 'Resume', subtitle: page.subtitle || '', eyebrow: 'Eric J. Dean' }),
-  });
+router.get(/^\/resume\/[A-Za-z0-9_.-]+\.pdf$/, (req, res) => {
+  const doc = documents.listDocuments().find((d) => d.doc_role === 'resume');
+  res.redirect(301, doc ? `/documents/${doc.slug}/download` : '/documents');
 });
+
 
 router.get('/about', (req, res, next) => {
   const page = repo.getPage('about');
@@ -182,7 +164,6 @@ router.get('/about', (req, res, next) => {
     title: page.title,
     description: page.subtitle || '',
     page,
-    pdf: null,
     jsonLd: seo.jsonLd(res.locals.siteUrl, {
       trail: [{ name: 'Home', url: '/' }, { name: 'About', url: '/about' }],
     }),
@@ -190,25 +171,6 @@ router.get('/about', (req, res, next) => {
   });
 });
 
-/*
- * A stable URL for the PDF, which is the whole point: this address can go on a
- * resume, in an email signature and in an application form, and keep working
- * after the file behind it is replaced.
- */
-router.get('/resume/:file', (req, res, next) => {
-  const fs = require('node:fs');
-  const path = require('node:path');
-  const { DATA_DIR } = require('../db');
-  if (!/^[A-Za-z0-9_.-]+\.pdf$/.test(req.params.file)) return next();
-  const abs = path.join(DATA_DIR, 'resume', req.params.file);
-  if (!abs.startsWith(path.join(DATA_DIR, 'resume') + path.sep) || !fs.existsSync(abs)) return next();
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  // inline, not attachment: a recruiter should be able to glance at it.
-  res.setHeader('Content-Disposition', `inline; filename="${req.params.file}"`);
-  res.setHeader('Cache-Control', 'public, max-age=3600');
-  fs.createReadStream(abs).pipe(res);
-});
 
 /* The one place the LinkedIn handle is written down. */
 const LINKEDIN = {
@@ -261,33 +223,16 @@ router.get('/professional', (req, res) => {
   });
 });
 
-/*
- * The GitHub profile picture, served from this origin.
- *
- * A fixed path rather than the upstream URL, so img-src stays 'self' and
- * GitHub never sees a visitor. Cached on disk for a week; a miss renders the
- * page without a picture rather than blocking on it.
- */
-router.get('/avatar/github.png', async (req, res, next) => {
-  try {
-    const img = await github.avatar();
-    if (!img) return next();
-    res.setHeader('Content-Type', img.mime);
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.setHeader('Content-Length', img.buffer.length);
-    res.end(img.buffer);
-  } catch {
-    next();
-  }
-});
 
 /* ------------------------------------------------------------------ education */
 
 router.get('/education', (req, res) => {
+  /* Alphabetical unless asked otherwise. A GET form with a submit button, so
+     the control works with no JavaScript, same as every other control here. */
+  const sort = req.query.sort === 'term' ? 'term' : 'name';
   const schools = repo.listSchools().map((sch) => ({
     ...sch,
-    groups: repo.coursesByStatus(sch.slug),
+    groups: repo.coursesByStatus(sch.slug, sort),
     counts: repo.courseCounts(sch.slug),
     activities: repo.listActivities(sch.slug),
   }));
@@ -303,6 +248,7 @@ router.get('/education', (req, res) => {
     description: content.value('education.meta.description'),
     schools,
     totals,
+    sort,
     unattached: repo.listActivities(null),
     jsonLd: seo.jsonLd(res.locals.siteUrl, {
       trail: [{ name: 'Home', url: '/' }, { name: 'Education', url: '/education' }],
@@ -759,7 +705,6 @@ router.get('/sitemap.xml', (req, res) => {
     { loc: '/work', pri: '0.9' },
     { loc: '/disciplines', pri: '0.7' },
     { loc: '/log', pri: '0.5' },
-    { loc: '/resume', pri: '0.9' },
     { loc: '/education', pri: '0.8' },
     { loc: '/professional', pri: '0.8' },
     { loc: '/contact', pri: '0.7' },

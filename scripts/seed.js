@@ -35,7 +35,7 @@ const now = db.nowIso();
 /* ---------------------------------------------------------- disciplines */
 
 const DISCIPLINES = [
-  ['mechanical', 'Mechanical and CAD', 'ch-mechanical',
+  ['mechanical', 'Mechanical & CAD', 'ch-mechanical',
     'Part and assembly modelling in Onshape and Fusion 360, mechanism and drivetrain design, dimensioned drawings, bills of materials, and tolerance and fit checks.'],
   ['electrical', 'Electrical', 'ch-electrical',
     'Wiring harness fabrication, crimping and connectorisation, through hole assembly standards, 12V distribution at several hundred amps, breakers and fusing, and first line triage of a robot that will not move.'],

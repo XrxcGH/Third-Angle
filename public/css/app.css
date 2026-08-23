@@ -181,8 +181,11 @@ code {
 /* Vertical page rhythm, as a class rather than a per-template inline style, so
    there is nothing left to hand-roll into the padding shorthand by mistake.
    Both are block-axis only: the gutter is never theirs to touch. */
-.pad-top     { padding-block-start: var(--s-6); }
-.pad-page-lg { padding-block: var(--s-7); }
+/* The gap between the header and the first line of a page. Was 52px, which
+   pushed the eyebrow and the headline down far enough to look like a mistake
+   on a laptop screen. */
+.pad-top     { padding-block-start: var(--s-5); }
+.pad-page-lg { padding-block: var(--s-6); }
 
 /*
  * Text runs the full width of the page.
@@ -203,7 +206,13 @@ code {
 .stack   { display: flex; flex-direction: column; gap: var(--s-4); }
 .stack-lg{ display: flex; flex-direction: column; gap: var(--s-6); }
 
-.section { padding-top: var(--s-6); margin-top: var(--s-6); border-top: 1px solid var(--hairline); }
+/*
+ * The step between sections: 32px of margin above the rule and 32px of padding
+ * below it. This was 52 and 52, which put 104px between the end of one section
+ * and the first line of the next. On a laptop that is a third of the window
+ * spent on a gap, and it was the single most reported thing on the site.
+ */
+.section { padding-top: var(--s-5); margin-top: var(--s-5); border-top: 1px solid var(--hairline); }
 .section:first-of-type { border-top: 0; margin-top: 0; }
 
 /*
@@ -348,12 +357,21 @@ code {
  * is the first thing anybody sees, is the one block on the site whose text
  * runs into the edge of the window. Same defect as the 404 page had.
  */
-.hero { padding-block: var(--s-7) var(--s-6); display: grid; gap: var(--s-5); }
+.hero { padding-block: var(--s-5) var(--s-6); display: grid; gap: var(--s-4) var(--s-5); }
 @media (min-width: 900px) {
-  /* Asymmetric, content left weighted. Not a centred hero. */
-  .hero { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); align-items: end; }
+  /*
+   * The headline spans both columns; the lede and the title block share the
+   * row under it. Asymmetric, content left weighted, and not a centred hero.
+   *
+   * This used to be two columns with the whole heading block in the left one,
+   * which meant the headline broke to five lines while the right column stayed
+   * empty from the top of the page down to the title block. start, not end:
+   * both cells begin at the same line.
+   */
+  .hero { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); align-items: start; }
+  .hero-head { grid-column: 1 / -1; }
 }
-.hero .lede { color: var(--text-muted); margin-top: var(--s-4); }
+.hero .lede { color: var(--text-muted); margin-top: 0; }
 
 .titleblock {
   border: 1px solid var(--rule);
@@ -376,11 +394,18 @@ code {
 /* ---------------------------------------------------------- facet chips */
 
 .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+/*
+ * The row is nine chips: All plus eight disciplines. At 10px of inline padding
+ * and a 7px inner gap it needed 1124px and the column is 1084, so it wrapped a
+ * single chip onto a second line at every desktop width, which reads as an
+ * accident rather than as a layout. Tightened until it fits, and not further:
+ * the target is still 44px tall for a finger.
+ */
 .chip {
-  display: inline-flex; align-items: center; gap: 7px;
+  display: inline-flex; align-items: center; gap: 5px;
   border: 1px solid var(--hairline);
   border-radius: var(--r-control);
-  padding: 5px 10px;
+  padding: 5px 7px;
   background: var(--surface);
   font-family: var(--f-mono);
   font-size: .62rem;
@@ -443,7 +468,13 @@ code {
   color: var(--text-strong);
   transition: color var(--t-group) var(--ease), font-weight var(--t-group) var(--ease);
 }
-.card .card-meta {
+/*
+ * The meta row, wherever it appears. This was scoped to `.card .card-meta`,
+ * so the same class on a document row inherited body type instead: a 9px
+ * badge next to 17px text, which is the mismatch you see before you can name
+ * it. One component, one definition.
+ */
+.card-meta {
   font-family: var(--f-mono);
   font-size: .58rem;
   font-stretch: 80%;
@@ -451,6 +482,14 @@ code {
   text-transform: uppercase;
   color: var(--text-muted);
   display: flex; flex-wrap: wrap; gap: 4px 10px;
+  /*
+   * center, not the default stretch. A badge is taller than bare text because
+   * it carries a border and padding, and stretching the plain spans to match
+   * leaves their text sitting at the top of a tall box while the badge's text
+   * is centred in its own. The boxes line up and the words do not, which is
+   * the version of this bug that survives a screenshot review.
+   */
+  align-items: center;
 }
 .card .card-summary { font-size: .9375rem; line-height: 1.55; color: var(--text-body); margin: 0; }
 .card .card-title, .card .card-summary, .card .card-meta { min-width: 0; }
@@ -546,6 +585,10 @@ code {
 
 /* ---------------------------------------------------------- misc */
 
+/* Inside a meta row every chip is the same size as the words beside it. A
+   badge that is 0.02rem smaller than its neighbours reads as a mistake. */
+.card-meta .badge { font-size: inherit; letter-spacing: inherit; }
+
 .badge {
   display: inline-block;
   font-family: var(--f-mono);
@@ -564,13 +607,27 @@ code {
 
 .rail { border-left: 2px solid var(--accent); padding-left: var(--s-4); }
 
+/*
+ * A block of prose brings its own leading and trailing margins, so a container
+ * with any padding of its own ends up with two gaps at each end and looks like
+ * it was padded twice. The container decides its padding; the text inside it
+ * starts and stops at the edges.
+ */
+.prose > :first-child, .rail > :first-child, .measure > :first-child { margin-top: 0; }
+.prose > :last-child, .rail > :last-child, .measure > :last-child { margin-bottom: 0; }
+
 /* The row layout lives on the inner .wrap, which is where the gutter is. The
    footer element only supplies the rule, the rhythm, and the type. */
 .site-footer {
   flex: none;
-  margin-top: var(--s-7);
+  /*
+   * 32px above the rule and 20px of type under it. This was 84px above and 52
+   * below, which put a screen's worth of nothing between the last thing on a
+   * page and the one line that closes it.
+   */
+  margin-top: var(--s-5);
   border-top: 1px solid var(--hairline);
-  padding-block: var(--s-5) var(--s-6);
+  padding-block: var(--s-4);
   font-family: var(--f-mono);
   font-size: .6rem;
   font-stretch: 80%;
@@ -616,15 +673,18 @@ code {
    */
   --tile-fit: .78;
   /*
-   * How much of a row's spare width a hovered tile claims.
+   * How much a hovered tile grows, and how much its neighbours give back.
    *
-   * Measured rather than guessed: at 3.4 a hovered tile grew by 39% at 1440px
-   * and by 6% in a tightly packed row, which is not an expansion anybody would
-   * notice. At 10 the same tiles grow by up to 2.8x. Higher still changes very
-   * little, because a tile can never take more than the whole of its row's
-   * spare width, and that is the real ceiling.
+   * A scale, not a flex-grow. flex-grow can only redistribute the spare width
+   * a row happens to have, and that varies from a lot to none depending on how
+   * the browser packed the row: measured across four widths, the same setting
+   * grew one tile by 176% and another by 2%, which reads as a bug rather than
+   * as an interaction. A scale is the same everywhere and keeps the tile's
+   * shape, so the hovered photograph is the same photograph, larger, rather
+   * than a wider crop of it.
    */
-  --tile-hover: 10;
+  --tile-hover: 1.12;
+  --tile-recede: 0.965;
   display: flex;
   flex-wrap: wrap;
   gap: var(--collage-gap);
@@ -727,21 +787,21 @@ code {
  */
 .collage-item:hover,
 .collage-item:focus-visible {
-  flex-grow: calc(var(--ar) * var(--tile-hover));
-  /* The resting cap above is about the last row, not about the interaction.
-     Leaving it on would quietly limit how far a tile can open up. */
-  max-width: none;
-  /*
-   * A row that the browser packed to the pixel has no spare width, and in one
-   * flex-grow can do nothing at all. This is the floor under the interaction:
-   * a small lift that does not depend on the row having room, and that costs
-   * no layout because a transform is not laid out. Where there is room, the
-   * width growth above does the visible work and this is barely noticed.
-   */
-  transform: scale(1.05);
+  transform: scale(var(--tile-hover));
   border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent), var(--lift-shadow);
   z-index: 2;
+}
+
+/*
+ * And the rest of the wall gives way. Also a scale, so the amount is the same
+ * for every tile, and also a transform, so nothing is laid out again: the rows
+ * do not move, the page does not change height, and the wall returns exactly
+ * to where it was.
+ */
+.collage:has(.collage-item:hover) .collage-item:not(:hover),
+.collage:has(.collage-item:focus-visible) .collage-item:not(:focus-visible) {
+  transform: scale(var(--tile-recede));
 }
 
 /* The rest of the wall settles back, so the focused photograph is the only one
@@ -774,7 +834,13 @@ code {
  * smaller than the screen can show. The gap is the only inset.
  */
 .collage-full {
-  padding-inline: var(--collage-gap);
+  /*
+   * The page gutter, not the tile gap. The wall is full width in the sense
+   * that it is not capped at the 1180px measure; it is not full bleed. Running
+   * it to the glass made it the one block on the site that did not line up
+   * with everything above and below it.
+   */
+  padding-inline: clamp(18px, 4vw, 48px);
   /* The gap between rows is the same as the gap between tiles, so the wall
      reads as one surface rather than as a set of strips. */
   padding-block: 0;
@@ -863,21 +929,33 @@ code {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
   gap: var(--s-4);
-  align-items: start;
+  /* stretch, not start: two cards of different heights beside each other read
+     as one of them having failed to load. */
+  align-items: stretch;
 }
-.profile-grid > * { min-width: 0; }
+.profile-grid > * { min-width: 0; display: flex; flex-direction: column; }
+/* The last block in a card takes the slack, so the cards end level and the
+   buttons in each of them sit on the same line. */
+.profile-grid > * > :last-child { margin-top: auto; }
 
-.profile-head { display: flex; gap: var(--s-3); align-items: center; margin-bottom: var(--s-3); }
-.profile-head img {
-  width: 56px; height: 56px; flex: none;
-  border-radius: var(--r-card);
-  border: 1px solid var(--hairline);
-  background: var(--sunken);
+.profile-head {
+  display: flex; gap: var(--s-3); align-items: center;
+  margin-bottom: var(--s-4);
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--hairline);
+}
+.profile-mark { flex: none; display: flex; color: var(--text-strong); }
+/* The name and the handle on one line where there is room for them, because
+   two lines for four words is the panel's whole first impression. */
+.profile-title {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--s-3);
+  min-width: 0;
 }
 .profile-head .profile-name {
   font-family: var(--f-display); font-weight: var(--w-med);
-  font-size: 1.0625rem; color: var(--text-strong); display: block;
+  font-size: 1.15rem; color: var(--text-strong);
 }
+.profile-handle { font-size: .78rem; }
 
 /* A repository. Not a .card: those are project records and carry a different
    contract. */
@@ -900,6 +978,69 @@ code {
   background: var(--text-muted); margin-right: 5px; vertical-align: baseline; }
 
 /* ---------------------------------------------------------- education */
+
+/*
+ * Facts about an institution, across the page.
+ *
+ * This was a titleblock: a bordered two column box capped at 34rem, sitting in
+ * the left half of a 1084px column with mono type at 0.62rem. It is a drawing
+ * convention and it suits a five row summary in a hero; it does not suit five
+ * facts that somebody is actually trying to read.
+ */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+  gap: var(--s-3) var(--s-5);
+  margin: var(--s-4) 0 0;
+}
+.facts > div { min-width: 0; }
+.facts dt {
+  font-family: var(--f-mono); font-size: .58rem; font-stretch: 80%;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
+  margin-bottom: 2px;
+}
+.facts dd { margin: 0; color: var(--text-strong); font-size: 1rem; }
+
+/* A heading with a control on the same line, wrapping to two when it must. */
+.section-head {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: var(--s-2) var(--s-4); margin-top: var(--s-5);
+}
+.section-head h3 { margin: 0; }
+.sortbar {
+  display: flex; align-items: center; gap: var(--s-2);
+  margin-left: auto;
+  font-family: var(--f-mono); font-size: .58rem; font-stretch: 80%;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted);
+}
+.sortbar select { font-size: .8rem; padding: 3px 6px; }
+
+/*
+ * Activities and awards, as many columns as the window has room for.
+ *
+ * The previous layout put each name in a fixed narrow column, which broke
+ * "California Scholarship Federation" over three lines and left the right half
+ * of the page empty next to it.
+ */
+.entry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+  gap: var(--s-3) var(--s-5);
+  margin-top: var(--s-3);
+}
+.entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding-block: var(--s-3);
+  border-top: 1px solid var(--hairline);
+  min-width: 0;
+}
+.entry-title {
+  font-family: var(--f-display); font-weight: var(--w-med);
+  color: var(--text-strong); font-size: 1rem;
+}
+.entry p { color: var(--text-body); font-size: .95rem; }
 
 .term-block { border-top: 1px solid var(--hairline); padding-top: var(--s-4); margin-top: var(--s-4); }
 .term-block:first-of-type { border-top: 0; margin-top: 0; padding-top: 0; }
@@ -940,7 +1081,8 @@ code {
   border-bottom: 1px solid var(--hairline);
 }
 @media (max-width: 640px) { .doc-row { grid-template-columns: minmax(0, 1fr); } }
-.doc-row h3 { margin: 0 0 4px; }
+.doc-row h3 { margin: 0 0 4px; font-size: 1.0625rem; }
+.doc-row .card-meta { align-items: center; }
 .doc-row .doc-desc { margin: 0; color: var(--text-muted); font-size: .95rem; }
 
 /*
@@ -1102,15 +1244,20 @@ code {
 
 /* A search box and its button. Used by /search and by the in-document search,
    which each carried their own copy of these declarations inline. */
-.searchbar { display: flex; gap: var(--s-2); flex-wrap: wrap; max-width: 34rem; }
+/* The field takes the width and the button takes what it needs. */
+.searchbar { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.searchbar .input { flex: 1 1 18rem; min-width: 0; }
 
 /*
- * Prose runs the full width; a form does not. A single line input stretched
- * across 1180px is a target the eye has to travel, and the field no longer
- * suggests how much to type. The cap is on the form, so every heading and
- * paragraph around it still runs the page width.
+ * Forms run the page width like everything else, and the fields inside them
+ * are laid out in columns rather than stretched. A 1084px single line input is
+ * a target the eye has to travel; three of them side by side is a form.
  */
-form.panel { max-width: 46rem; }
+.row3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  gap: var(--s-3) var(--s-4);
+}
 .searchbar .input { flex: 1 1 14rem; }
 .searchbar .btn { flex: none; }
 

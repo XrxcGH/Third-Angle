@@ -8,6 +8,7 @@
 
 const { get, all, run, transaction, nowIso } = require('./db');
 const { generateKeyBetween, generateNKeysBetween } = require('fractional-indexing');
+const { escapeHtml } = require('./markup');
 
 /* ---------------------------------------------------------------- facets */
 
@@ -287,11 +288,30 @@ function correctTerms(terms) {
  * which is what gives substring and near-miss matching without paying for it
  * on every query.
  */
+/*
+ * Sentinels rather than tags, because the excerpt is rendered unescaped.
+ *
+ * snippet() wraps matches in whatever it is given and leaves the surrounding
+ * text alone, so any '<' that reached the index would be emitted into the page
+ * as markup. plain() strips HTML on the way in and is the first line of
+ * defence; this is the second, at the boundary where it actually matters. The
+ * two sentinels are control characters, which cannot occur in indexed text and
+ * survive escaping untouched.
+ */
+const MARK_OPEN = '\u0001';
+const MARK_CLOSE = '\u0002';
+
+function highlight(excerpt) {
+  return escapeHtml(String(excerpt || ''))
+    .split(MARK_OPEN).join('<mark>')
+    .split(MARK_CLOSE).join('</mark>');
+}
+
 function runFts(table, matchExpr, limit, withSnippet) {
   const excerpt = withSnippet
-    ? `snippet(search_fts, 2, '<mark>', '</mark>', ' ... ', 18)`
+    ? `snippet(search_fts, 2, '${MARK_OPEN}', '${MARK_CLOSE}', ' ... ', 18)`
     : `''`;
-  return all(
+  const rows = all(
     `SELECT si.kind, si.url, si.title, si.subtitle,
             ${excerpt} AS excerpt,
             bm25(${table}) AS score
@@ -302,6 +322,7 @@ function runFts(table, matchExpr, limit, withSnippet) {
       LIMIT ?`,
     matchExpr, limit
   );
+  return rows.map((r) => ({ ...r, excerpt: highlight(r.excerpt) }));
 }
 
 /**
@@ -564,19 +585,34 @@ function termSortValue(term) {
  * stronger one. Term is shown per row where it is recorded, rather than being
  * the grouping: a class whose term nobody wrote down still belongs on the page.
  */
-function coursesByStatus(schoolSlug) {
+/*
+ * `sort` is 'name' or 'term'.
+ *
+ * Alphabetical is the default because a class list is looked up rather than
+ * read: somebody scanning for "did they take statics" wants the S, and a term
+ * order makes them read all of it. Term order is the other question, most
+ * recent first, and it is one click away.
+ */
+function coursesByStatus(schoolSlug, sort = 'name') {
   const rows = listCourses(schoolSlug);
   const order = ['in-progress', 'completed', 'planned'];
+
+  const byName = (a, b) =>
+    String(a.title || '').localeCompare(String(b.title || ''), 'en', { sensitivity: 'base' })
+    || String(a.code || '').localeCompare(String(b.code || ''), 'en');
+
   const byTerm = (a, b) => {
     const ta = termSortValue(a.term);
     const tb = termSortValue(b.term);
     // A recorded term sorts above an unrecorded one, newest first.
     if (ta.year !== tb.year) return tb.year - ta.year;
     if (ta.season !== tb.season) return tb.season - ta.season;
-    return a.sort_key.localeCompare(b.sort_key);
+    return byName(a, b);
   };
+
+  const compare = sort === 'term' ? byTerm : byName;
   return order
-    .map((status) => ({ status, courses: rows.filter((c) => c.status === status).sort(byTerm) }))
+    .map((status) => ({ status, courses: rows.filter((c) => c.status === status).sort(compare) }))
     .filter((g) => g.courses.length);
 }
 

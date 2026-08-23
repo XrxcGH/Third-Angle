@@ -100,6 +100,17 @@ function securityHeaders(req, res, next) {
   const pdfViewer = pdfViewerEnabled();
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  /*
+   * HSTS, in production only. On http://localhost this header is ignored by
+   * some browsers and cached by others, and a cached one makes local
+   * development unreachable until the reader clears it by hand.
+   *
+   * No preload directive. Preloading is a one way door: removal takes months,
+   * and it commits every future subdomain of the apex to HTTPS as well.
+   */
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
   res.setHeader(
     'Content-Security-Policy',
     [
@@ -193,6 +204,37 @@ function locals(req, res, next) {
    * deploy to change. See src/content.js.
    */
   Object.assign(res.locals, require('./content').helpers());
+  /*
+   * Every date and time on the site reads in Pacific time, because that is
+   * where the work happens and where the reader of a build log entry assumes
+   * "yesterday" was measured from. Stored values stay UTC ISO strings; this is
+   * a display concern and lives at the display boundary.
+   *
+   * A date-only string (2026-08-22) is formatted as a plain date rather than
+   * being parsed as UTC midnight and shifted back a day, which is the classic
+   * off-by-one that makes a log entry appear to have been written before it
+   * was.
+   */
+  const PACIFIC = 'America/Los_Angeles';
+  res.locals.fmtDate = (value) => {
+    const raw = String(value || '');
+    if (!raw) return '';
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw);
+    const d = new Date(dateOnly ? `${raw}T12:00:00Z` : raw);
+    if (Number.isNaN(d.getTime())) return raw;
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: PACIFIC, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(d);
+  };
+  res.locals.fmtWhen = (value) => {
+    const d = new Date(String(value || ''));
+    if (Number.isNaN(d.getTime())) return String(value || '');
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: PACIFIC, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(d).reduce((acc, p) => ({ ...acc, [p.type]: p.value }), {});
+    return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
+  };
   res.locals.path = req.path;
   res.locals.query = req.query;
   res.locals.siteUrl = process.env.SITE_URL || `http://localhost:${process.env.PORT || 3000}`;

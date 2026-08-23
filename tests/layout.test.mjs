@@ -156,19 +156,20 @@ test('--header-h is defined, not merely defaulted', () => {
 
 /* ------------------------------------------------------------ the measure */
 
-test('prose runs the page width, and a form does not', () => {
+test('prose and forms run the page width, in columns', () => {
   /*
    * The measure was removed on purpose: short paragraphs sitting beside full
    * width tables and card grids read as a rendering fault when they stop at
    * half the window. .wrap still caps the column at 1180px, so the line length
    * is bounded by the page rather than by the screen.
    *
-   * A form is the exception. A single line input stretched across 1180px is a
-   * target the eye has to travel and stops suggesting how much to type.
+   * Forms run the full width too, and the fields inside them are laid out in
+   * columns rather than stretched: a 1084px single line input is a target the
+   * eye has to travel and stops suggesting how much to type.
    */
   assert.match(APP, /\.prose\s*\{[^}]*max-width:\s*none/);
   assert.match(APP, /\.measure\s*\{[^}]*max-width:\s*none/);
-  assert.match(APP, /form\.panel\s*\{[^}]*max-width:\s*46rem/);
+  assert.match(APP, /\.row3\s*\{[^}]*grid-template-columns/);
 
   // And no template may put the cap back with an inline style.
   for (const [file, src] of templates()) {

@@ -126,7 +126,6 @@ const SLOTS = [
   ['site.footer.github', 'site', 'line', 'GitHub'],
   ['site.footer.linkedin', 'site', 'line', 'LinkedIn'],
   ['site.footer.contact', 'site', 'line', 'Contact'],
-  ['site.footer.resume', 'site', 'line', 'Resume'],
   ['site.footer.now', 'site', 'line', 'Now'],
   ['site.footer.feed', 'site', 'line', 'Feed'],
   ['site.footer.attributions', 'site', 'line', 'Attributions'],
@@ -148,7 +147,6 @@ const SLOTS = [
   ['documents.library.noun', 'documents', 'line', 'Further Document', 'Follows the count, and takes an s when there is more than one.'],
 
   /* ---- the resume page ---- */
-  ['page.pdf.cta', 'contact', 'line', 'Open the PDF', 'On the resume page.'],
   ['page.contact.cta', 'contact', 'line', 'Get in Touch', 'On the resume page.'],
 
   /* ---- attributions, the whole body ---- */
@@ -177,9 +175,7 @@ const SLOTS = [
     'Follows the document title, for a screen reader.'],
   ['personal.photograph.noun', 'personal', 'line', 'photograph', 'Follows the count.'],
   ['professional.repos.all.pre', 'professional', 'line', 'All', 'Precedes the repository count.'],
-  ['professional.repos.utc', 'professional', 'line', 'UTC'],
-  ['professional.gh.avatar.alt', 'professional', 'line', 'GitHub profile picture for',
-    'Followed by the account name.'],
+  ['professional.repos.utc', 'professional', 'line', 'Pacific'],
   ['search.results.forword', 'search', 'line', 'for', 'Between the count and the query.'],
   ['work.status.of', 'work', 'line', 'of', 'As in "3 of 8 match".'],
   ['work.status.match', 'work', 'line', 'match'],
@@ -274,6 +270,10 @@ const SLOTS = [
   ['education.done', 'education', 'line', 'done', 'As in "9 done, 3 in progress".'],
   ['education.inprogress', 'education', 'line', 'in progress'],
   ['education.coursework', 'education', 'line', 'Coursework'],
+  ['education.sort.label', 'education', 'line', 'Sort By'],
+  ['education.sort.name', 'education', 'line', 'Name'],
+  ['education.sort.term', 'education', 'line', 'Term, Newest First'],
+  ['education.sort.apply', 'education', 'line', 'Apply'],
   ['education.activities', 'education', 'line', 'Activities'],
   ['education.awards', 'education', 'line', 'Awards and Certifications'],
   ['education.unattached.eyebrow', 'education', 'line', 'Beyond the Classroom'],
@@ -312,7 +312,7 @@ const SLOTS = [
   ['professional.repos.eyebrow', 'professional', 'line', 'Repositories'],
   ['professional.repos.heading', 'professional', 'line', 'Most Recent Work on GitHub'],
   ['professional.repos.note', 'professional', 'text',
-    'Ranked by stars, then by the most recent push. Forks and archived repositories sink rather than disappear.'],
+    'Most recently pushed first, so this is what is being worked on rather than what other people starred two years ago. Forks and archived repositories sink rather than disappear.'],
   ['professional.contact.eyebrow', 'professional', 'line', 'Contact'],
   ['professional.contact.heading', 'professional', 'line', 'Get in Touch'],
   ['professional.contact.note', 'professional', 'text',
@@ -371,7 +371,7 @@ const SLOTS = [
   ['search.eyebrow', 'search', 'line', 'Search'],
   ['search.heading', 'search', 'line', 'Find Anything'],
   ['search.label', 'search', 'line', 'Search Projects, Documents, and Disciplines', 'Read out by a screen reader.'],
-  ['search.placeholder', 'search', 'line', 'swerve, CAN bus, governance, MegaTag2'],
+  ['search.placeholder', 'search', 'line', 'Swerve, CAN Bus, Governance, MegaTag2'],
   ['search.button', 'search', 'line', 'Search'],
   ['search.empty', 'search', 'text', 'Nothing matched. Try a discipline name, a part, or a tool.'],
 

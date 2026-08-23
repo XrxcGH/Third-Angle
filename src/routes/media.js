@@ -42,6 +42,19 @@ router.get(/^\/media\/(.+)$/, (req, res, next) => {
   const root = path.resolve(UPLOAD_DIR);
   if (abs !== root && !abs.startsWith(root + path.sep)) return next();
 
+  /*
+   * Documents are never served from here.
+   *
+   * A document row carries a visibility, and /documents/:slug/view and
+   * /download are the two routes that check it. This route checks nothing but
+   * the path, so a private PDF was still readable by anyone holding its
+   * storage key: the check lived in one path to the bytes and not the other.
+   * The key is 128 random bits and appears in no page, so this was a leak
+   * waiting on a leak, but "private" should mean the bytes are refused.
+   */
+  const docsRoot = path.resolve(UPLOAD_DIR, 'docs');
+  if (abs === docsRoot || abs.startsWith(docsRoot + path.sep)) return next();
+
   let stat;
   try {
     stat = fs.statSync(abs);

@@ -12,16 +12,16 @@
       <% if (gh.profile) { %>
         <div class="profile-head">
           <%
-            /* The avatar is proxied through this origin rather than hotlinked
-               from avatars.githubusercontent.com. img-src in the CSP is 'self'
-               and data:, and relaxing it for a third party host to render one
-               56px square would be a poor trade. */
+            /* The mark, not the avatar. This card is the GitHub panel: the
+               reader is looking for the service, and a 56px photograph of a
+               person on a page that is already somebody's portfolio identifies
+               nothing. The account name moves up beside the heading, so the
+               two lines it used to take become one. */
           %>
-          <img src="/avatar/github.png" width="56" height="56" loading="lazy" decoding="async"
-               alt="<%= c('professional.gh.avatar.alt') %> <%= gh.profile.login %>">
-          <span>
-            <span class="profile-name" id="gh-heading"><%= gh.profile.name %></span>
-            <a class="mono" style="font-size:.75rem;" href="<%= gh.profile.url %>" rel="me noopener">
+          <span class="profile-mark"><%- include('../partials/gh-mark', { size: 30 }) %></span>
+          <span class="profile-title">
+            <span class="profile-name" id="gh-heading"><%= c('professional.gh.heading') %></span>
+            <a class="mono profile-handle" href="<%= gh.profile.url %>" rel="me noopener">
               github.com/<%= gh.profile.login %>
             </a>
           </span>
@@ -79,12 +79,12 @@
     <%# ------------------------------------------------------------- LinkedIn %>
     <section class="panel" aria-labelledby="li-heading">
       <div class="profile-head">
-        <span class="icon-host" style="color: var(--patina);">
-          <%- include('../partials/icon', { name: 'business', size: 34 }) %>
+        <span class="profile-mark icon-host" style="color: var(--patina);">
+          <%- include('../partials/icon', { name: 'business', size: 30 }) %>
         </span>
-        <span>
+        <span class="profile-title">
           <span class="profile-name" id="li-heading"><%= c('professional.li.name') %></span>
-          <a class="mono" style="font-size:.75rem;" href="<%= linkedin.url %>" rel="me noopener">
+          <a class="mono profile-handle" href="<%= linkedin.url %>" rel="me noopener">
             linkedin.com/in/<%= linkedin.handle %>
           </a>
         </span>
@@ -127,7 +127,7 @@
 
       <div class="btn-row">
         <a class="btn" href="<%= linkedin.url %>" rel="me noopener"><%= c('professional.li.cta') %></a>
-        <a class="btn btn-quiet" href="/resume"><%= c('professional.li.cta2') %></a>
+        <a class="btn btn-quiet" href="/documents"><%= c('professional.li.cta2') %></a>
       </div>
     </section>
   </div>
@@ -152,7 +152,7 @@
               <% } %>
               <% if (r.stars) { %><span class="tnum"><%= r.stars %> <%= c('professional.repo.stars') %><%= r.stars === 1 ? '' : 's' %></span><% } %>
               <% if (r.forks) { %><span class="tnum"><%= r.forks %> <%= c('professional.repo.forks') %><%= r.forks === 1 ? '' : 's' %></span><% } %>
-              <% if (r.pushedAt) { %><span><%= c('professional.repo.pushed') %> <%= r.pushedAt.slice(0, 10) %></span><% } %>
+              <% if (r.pushedAt) { %><span><%= c('professional.repo.pushed') %> <%= fmtDate(r.pushedAt) %></span><% } %>
               <% if (r.fork) { %><span class="badge"><%= c('professional.repo.fork') %></span><% } %>
               <% if (r.archived) { %><span class="badge"><%= c('professional.repo.archived') %></span><% } %>
             </span>
@@ -168,7 +168,7 @@
 
       <p class="eyebrow" style="margin-top: var(--s-4);">
         <% if (gh.fetchedAt) { %>
-          <%= c('professional.repos.fetched') %> <time datetime="<%= gh.fetchedAt %>"><%= gh.fetchedAt.slice(0, 16).replace('T', ' ') %></time> <%= c('professional.repos.utc') %><%
+          <%= c('professional.repos.fetched') %> <time datetime="<%= gh.fetchedAt %>"><%= fmtWhen(gh.fetchedAt) %></time> <%= c('professional.repos.utc') %><%
             if (gh.refreshing) { %> &middot; <%= c('professional.repos.refreshing') %><% } %>
         <% } %>
       </p>

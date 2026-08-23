@@ -16,13 +16,12 @@
        install with no PDF uploaded also lost its only call to action. */
   %>
   <div class="chips no-print" style="margin-top: var(--s-4);">
-    <% if (pdf) { %><a class="chip" href="<%= pdf %>"><%= c('page.pdf.cta') %></a><% } %>
     <a class="chip" href="/contact"><%= c('page.contact.cta') %></a>
   </div>
 
   <div class="prose section"><%- page.body_html %></div>
 
   <p class="eyebrow" style="margin-top: var(--s-6);">
-    <%= c('site.updated') %> <time datetime="<%= page.updated_at %>"><%= page.updated_at.slice(0, 10) %></time>
+    <%= c('site.updated') %> <time datetime="<%= page.updated_at %>"><%= fmtDate(page.updated_at) %></time>
   </p>
 </article>

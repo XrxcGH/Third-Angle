@@ -1,9 +1,16 @@
 <section class="wrap hero">
-  <div>
+  <%
+    /* Three children, not two. The headline spans the full width and the lede
+       and the title block share the row underneath it. As two columns the
+       headline was confined to the left 1.35fr and ran to five lines, while
+       the column beside it stayed empty down to the title block. */
+  %>
+  <div class="hero-head">
     <p class="eyebrow"><%= c('home.eyebrow') %></p>
     <h1 class="display-1"><%= c('home.headline') %></h1>
-    <p class="lede"><%= c('home.lede') %></p>
   </div>
+
+  <p class="lede"><%= c('home.lede') %></p>
 
   <%
     /* Five rows, every one of them editable, key and value. A titleblock is a
