@@ -1,6 +1,6 @@
 <p class="eyebrow">Admin</p>
 <h1>Media</h1>
-<p style="color: var(--text-muted); max-width: 62ch;">
+<p style="color: var(--text-muted);">
   This is the capture inbox. Upload from a phone at a competition with almost no
   metadata, then curate later. Capture and curation are different jobs, and doing
   them together is why neither happens.
@@ -10,7 +10,7 @@
 <% if (uploaded) { %><p class="flash"><%= uploaded %> file<%= uploaded === 1 ? '' : 's' %> added.</p><% } %>
 
 <form method="post" action="/admin/media/upload" enctype="multipart/form-data"
-      class="panel" style="margin-top: var(--s-4); max-width: 44rem;">
+      class="panel cols" style="margin-top: var(--s-4);">
   <input type="hidden" name="_csrf" value="<%= csrf %>">
 
   <div class="field">

@@ -1,6 +1,6 @@
 <p class="eyebrow">Admin</p>
 <h1>Documents</h1>
-<p style="color: var(--text-muted); max-width: 62ch;">
+<p style="color: var(--text-muted);">
   Every page of every PDF is extracted and indexed on upload, so a search for a
   term returns the document and the page it is on. That is what makes this a
   library rather than a folder.
@@ -10,7 +10,7 @@
 <% if (uploaded) { %><p class="flash"><%= uploaded %> document<%= uploaded === 1 ? '' : 's' %> added and indexed.</p><% } %>
 
 <form method="post" action="/admin/documents/upload" enctype="multipart/form-data"
-      class="panel" style="margin-top: var(--s-4); max-width: 44rem;">
+      class="panel cols" style="margin-top: var(--s-4);">
   <input type="hidden" name="_csrf" value="<%= csrf %>">
 
   <div class="field">

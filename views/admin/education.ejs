@@ -133,7 +133,7 @@
   <%# ----------------------------------------------------- add an institution %>
   <details style="margin-top: var(--s-4);">
     <summary style="cursor:pointer;">Add an Institution</summary>
-    <form class="panel" method="post" action="/admin/education/school" style="margin-top: var(--s-3); max-width: 44rem;">
+    <form class="panel" method="post" action="/admin/education/school" class="cols" style="margin-top: var(--s-3);">
       <input type="hidden" name="_csrf" value="<%= csrf %>">
       <div class="row2">
         <div class="field">
@@ -171,7 +171,7 @@
     an invented term is worse than a missing one.
   </p>
 
-  <form class="panel" method="post" action="/admin/education/course" style="margin-top: var(--s-3); max-width: 44rem;">
+  <form class="panel" method="post" action="/admin/education/course" class="cols" style="margin-top: var(--s-3);">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <% if (editCourse) { %><input type="hidden" name="id" value="<%= editCourse.id %>"><% } %>
 
@@ -275,7 +275,7 @@
     </table>
   </div>
 
-  <form class="panel" method="post" action="/admin/education/activity" style="margin-top: var(--s-4); max-width: 44rem;">
+  <form class="panel" method="post" action="/admin/education/activity" class="cols" style="margin-top: var(--s-4);">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <% if (editActivity) { %><input type="hidden" name="id" value="<%= editActivity.id %>"><% } %>
 

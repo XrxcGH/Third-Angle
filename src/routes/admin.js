@@ -161,8 +161,30 @@ router.post('/login', form, loadSession, (req, res) => {
    */
   repo.logChange(user.email, 'session', user.id, 'insert',
     { event: 'signed in', ip, agent: String(req.get('user-agent') || '').slice(0, 120) });
+  /*
+   * A session cookie: no Max-Age and no Expires, so the browser discards it when
+   * it closes and the next visit starts signed out.
+   *
+   * It used to carry Max-Age of fourteen days, which meant an admin session
+   * survived on disk for a fortnight on whatever machine last signed in. For a
+   * single operator admin that is a long time for a laptop to be quietly
+   * authenticated.
+   *
+   * The server row still expires on its own fourteen day schedule (auth.js
+   * SESSION_DAYS), and that stays: the cookie's lifetime is a convenience, the
+   * row's lifetime is the actual limit, and a stolen cookie is useless once the
+   * row is gone. Dropping Max-Age narrows the window at the client without
+   * touching the guarantee at the server.
+   *
+   * Worth being exact about what this does and does not promise. A session
+   * cookie dies when the BROWSER closes, not when the tab does — cookies are not
+   * scoped to a tab in any browser. And a browser set to reopen its last
+   * session, which Chrome offers as "Continue where you left off", restores
+   * session cookies with it. Sign Out is still the only thing that ends a
+   * session on demand, and it destroys the row rather than just the cookie.
+   */
   res.setHeader('Set-Cookie',
-    `${COOKIE}=${session.id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${14 * 86400}${PROD ? '; Secure' : ''}`);
+    `${COOKIE}=${session.id}; Path=/; HttpOnly; SameSite=Lax${PROD ? '; Secure' : ''}`);
   res.redirect(303, nextUrl);
 });
 

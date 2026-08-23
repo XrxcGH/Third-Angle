@@ -21,7 +21,7 @@
 <% if (error) { %><p class="flash error" role="alert" style="margin-top: var(--s-4);"><%= error %></p><% } %>
 <% if (notice) { %><p class="flash" role="status" style="margin-top: var(--s-4);"><%= notice %></p><% } %>
 
-<div class="stack-lg" style="margin-top: var(--s-5); max-width: 44rem;">
+<div class="stack-lg" style="margin-top: var(--s-5);">
 
   <%# ------------------------------------------------------------- identity %>
   <section>
@@ -143,7 +143,7 @@
           <div class="field">
             <label for="totp_off_password">Current Password</label>
             <input id="totp_off_password" name="current_password" type="password" required
-                   autocomplete="current-password" style="max-width: 22rem;">
+                   autocomplete="current-password">
             <span class="hint">Required, so a borrowed session cannot remove the factor it bypassed.</span>
           </div>
           <button class="btn btn-danger" type="submit">Turn It Off</button>

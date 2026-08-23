@@ -769,6 +769,35 @@ code {
 .badge[data-live="yes"] { border-color: var(--patina); color: var(--patina); }
 .badge[data-live="draft"] { border-color: var(--rule); color: var(--text-muted); }
 
+/* ---- the operator's bar --------------------------------------------------
+ * Shown on the public site to whoever is signed in to the admin, and to nobody
+ * else. Deliberately unlike the site: a working tool sitting on top of the
+ * page, not part of the design being looked at.
+ *
+ * Sticky, because the reason it exists is to be reachable without scrolling
+ * back to anything. It sits above .site-header, which is sticky at top: 0, so
+ * this takes that spot and the header is pushed under it by --op-bar-h.
+ */
+.op-bar {
+  position: sticky; top: 0; z-index: 70;
+  display: flex; align-items: center; gap: var(--s-4);
+  padding: 6px clamp(18px, 4vw, 48px);
+  background: var(--text-strong); color: var(--surface);
+  font-family: var(--f-mono); font-size: .62rem; font-stretch: 80%;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.op-who { opacity: .72; margin-right: auto; text-transform: none; letter-spacing: .04em; }
+.op-link { color: var(--surface); text-decoration: none; border-bottom: 1px solid transparent; }
+.op-link:hover, .op-link:focus-visible { border-bottom-color: currentColor; }
+/* The header stops being the topmost sticky element while the bar is there. */
+.op-bar ~ .site-header { top: var(--op-bar-h, 29px); }
+
+@media (max-width: 700px) {
+  /* The address is the first thing to go: the two links are the point. */
+  .op-who { display: none; }
+}
+@media print { .op-bar { display: none; } }
+
 .rail { border-left: 2px solid var(--accent); padding-left: var(--s-4); }
 
 /*

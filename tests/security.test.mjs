@@ -216,3 +216,25 @@ test('the inline PDF is framable by this site and by nobody else', () => {
   assert.match(route, /default-src 'none'; sandbox/,
     'a PDF carrying script keeps no origin to reach and nothing to load');
 });
+
+test('the operator bar is rendered for a session and for nothing else', () => {
+  /*
+   * The bar puts a link back to the admin on every public page, which is only
+   * correct while it is invisible to everybody who is not signed in. It is
+   * gated on a session the server looked up, never on a cookie's presence: a
+   * visitor can set a cookie called `session` to any value they like, and a
+   * check that trusted that would advertise the admin to the whole internet.
+   */
+  const mwSrc = read('src', 'middleware.js');
+  const fn = mwSrc.slice(mwSrc.indexOf('function operatorBar'), mwSrc.indexOf('/* ---- view locals'));
+
+  assert.match(fn, /getSession\(/, 'the session must be looked up, not inferred from a cookie existing');
+  assert.match(fn, /res\.locals\.operator = null/, 'it must default to absent, so a thrown lookup cannot leave it set');
+  assert.match(fn, /if \(!id\) return next\(\)/, 'no cookie is the common case and must cost nothing');
+
+  /* And the template must ask for the resolved operator, not for the cookie. */
+  const layout = read('views', 'layout.ejs');
+  assert.match(layout, /typeof operator !== 'undefined' && operator/);
+  assert.doesNotMatch(layout, /op-bar[\s\S]{0,400}cookies/,
+    'the bar must not be driven by req.cookies in the template');
+});
