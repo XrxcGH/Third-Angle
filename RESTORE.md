@@ -126,7 +126,7 @@ file is missing, or files with no row.
 ### 5. Point the domain, 1 to 20 minutes
 
 Re-point the tunnel at the new machine: `cloudflared tunnel create third-angle`,
-then `cloudflared tunnel route dns third-angle your-domain.example` for the apex
+then `cloudflared tunnel route dns third-angle ericjdean.com` for the apex
 and again for www, copy the credentials JSON to `/etc/cloudflared/`, and
 `systemctl enable --now cloudflared`. There is no A or AAAA record for the
 origin — the tunnel's records are proxied CNAMEs and the machine's address is
@@ -140,8 +140,8 @@ the TTL is short by default.
 ### 6. Confirm
 
 ```bash
-curl -fsS https://YOURDOMAIN/healthz          # ok facets=8
-curl -sI https://YOURDOMAIN/ | grep -i content-security
+curl -fsS https://ericjdean.com/healthz          # ok facets=8
+curl -sI https://ericjdean.com/ | grep -i content-security
 sudo systemctl status third-angle cloudflared litestream third-angle-backup.timer
 ```
 

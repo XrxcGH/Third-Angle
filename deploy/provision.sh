@@ -121,7 +121,7 @@ if [ ! -f "$ENV_DIR/env" ]; then
   cat > "$ENV_DIR/env" <<EOF
 NODE_ENV=production
 PORT=3000
-SITE_URL=https://example.com
+SITE_URL=https://ericjdean.com
 SESSION_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
 DATA_DIR=$DATA_DIR
 

@@ -9,8 +9,9 @@ are there because of it.
 
 ## What you need
 
-- A domain, added to a Cloudflare account as a zone, using Cloudflare's
-  nameservers.
+- **ericjdean.com**, registered at Squarespace Domains, with its nameservers
+  pointed at Cloudflare. See step 0.
+- A Cloudflare account, free plan.
 - An Oracle Cloud account, and one **VM.Standard.A1.Flex** instance, arm64,
   Ubuntu 24.04. The Always Free shape is 2 OCPU and 12 GB as of June 2026.
 - SSH to that machine.
@@ -53,6 +54,31 @@ of the app and no blue/green. See DESIGN.md risk R6.
 
 ## Steps
 
+### 0. Move DNS to Cloudflare
+
+The domain is registered at Squarespace, and it stays there. What has to move is
+the **DNS**, because everything in this document depends on Cloudflare answering
+for the zone: the tunnel creates proxied CNAME records, the WAF and the cache
+rules only apply to traffic Cloudflare receives, and Email Routing requires
+Cloudflare nameservers. A domain that merely points an A record at Cloudflare
+gets none of it.
+
+1. In Cloudflare, **Add a site**, enter `ericjdean.com`, choose the **Free**
+   plan. Cloudflare scans the existing records and shows you two nameservers,
+   something like `xxx.ns.cloudflare.com`.
+2. In Squarespace: **Domains → ericjdean.com → DNS → Nameservers**, switch from
+   Squarespace's defaults to **Custom nameservers**, and enter exactly those
+   two. Remove any others.
+3. Wait for Cloudflare to report the zone **Active**. Usually minutes; the
+   registrar is allowed to take up to 48 hours.
+
+Do this first. The tunnel step below creates DNS records through the Cloudflare
+API, and it cannot until Cloudflare is authoritative for the zone.
+
+Squarespace will keep trying to sell you a site on this domain. Ignore it: it
+serves nothing here, and the parking page disappears the moment the nameservers
+change.
+
 ### 1. Provision the machine
 
 ```sh
@@ -71,7 +97,7 @@ prints what is left to do by hand.
 ### 2. Set SITE_URL
 
 ```sh
-sudo nano /etc/third-angle/env      # SITE_URL=https://your-domain.example
+sudo nano /etc/third-angle/env      # SITE_URL=https://ericjdean.com
 sudo systemctl restart third-angle
 ```
 
@@ -89,13 +115,13 @@ On any machine signed in to the Cloudflare account:
 ```sh
 cloudflared tunnel login
 cloudflared tunnel create third-angle              # prints the tunnel's ID
-cloudflared tunnel route dns third-angle your-domain.example
-cloudflared tunnel route dns third-angle www.your-domain.example
+cloudflared tunnel route dns third-angle ericjdean.com
+cloudflared tunnel route dns third-angle www.ericjdean.com
 ```
 
 Copy `~/.cloudflared/<ID>.json` to `/etc/cloudflared/` on the origin, then edit
-`/etc/cloudflared/config.yml`: replace `TUNNEL_ID` in both places and
-`example.com` in both hostnames.
+`/etc/cloudflared/config.yml` and replace `TUNNEL_ID` in both places. The
+hostnames are already `ericjdean.com` and `www.ericjdean.com`.
 
 ```sh
 sudo chown root:cloudflared /etc/cloudflared/<ID>.json
@@ -113,8 +139,8 @@ Everything here is on the free plan. **SSL/TLS → Overview → Full (strict)**,
 and **Edge Certificates → Always Use HTTPS on**, **Minimum TLS 1.2**.
 
 **A redirect rule, www to apex.** Rules → Redirect Rules. Hostname equals
-`www.your-domain.example`, dynamic redirect to
-`concat("https://your-domain.example", http.request.uri.path)`, status 301.
+`www.ericjdean.com`, dynamic redirect to
+`concat("https://ericjdean.com", http.request.uri.path)`, status 301.
 This is why the Caddyfile names no domain: the redirect never reaches the
 origin.
 
@@ -153,7 +179,7 @@ earlier and off the origin entirely.
 
 **Email Routing**, under the Email tab, forwarding to an inbox you read. Two
 addresses need to exist: whatever the contact page publishes, and
-`security@your-domain.example` — the site serves an RFC 9116
+`security@ericjdean.com` — the site serves an RFC 9116
 `/.well-known/security.txt` that names it, and an address published for
 reporting vulnerabilities that bounces is worse than not publishing one.
 
@@ -161,13 +187,13 @@ reporting vulnerabilities that bounces is worse than not publishing one.
 
 ```sh
 cd /srv/third-angle
-sudo -u app npm run admin -- you@your-domain.example "Your Name" "a long passphrase"
+sudo -u app npm run admin -- you@ericjdean.com "Eric J. Dean" "a long passphrase"
 ```
 
 Then enrol TOTP with the printed `otpauth://` URI and confirm it:
 
 ```sh
-sudo -u app npm run admin -- --confirm you@your-domain.example 123456
+sudo -u app npm run admin -- --confirm you@ericjdean.com 123456
 ```
 
 Enrolment is two steps on purpose: the secret is stored unconfirmed until you
@@ -240,7 +266,7 @@ sudo -u app third-angle-backup            # always first
 sudo -u app git pull --ff-only
 sudo -u app npm ci --omit=dev
 sudo systemctl restart third-angle
-npm run smoke -- https://your-domain.example
+npm run smoke -- https://ericjdean.com
 ```
 
 Caddy holds connections for up to five seconds while the new process comes up,
@@ -269,7 +295,7 @@ sudo -u app git log --oneline -5          # find the commit that was working
 sudo -u app git checkout <that commit>
 sudo -u app npm ci --omit=dev
 sudo systemctl restart third-angle
-npm run smoke -- https://your-domain.example
+npm run smoke -- https://ericjdean.com
 ```
 
 That returns the code and nothing else. If the deploy also corrupted data,

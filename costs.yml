@@ -40,20 +40,28 @@ items:
       is free and unmetered on this plan.
 
   - name: Domain
-    vendor: Cloudflare Registrar
-    product: one .com, at registry cost
-    amount_usd: 10.46
+    vendor: Squarespace Domains
+    product: ericjdean.com, registered 23 August 2026
+    amount_usd: 20.00
     period: year
-    source_url: https://developers.cloudflare.com/registrar/
-    verified_on: 2026-08-21
+    source_url: https://whatsquare.space/blog/squarespace-domain-renewal-cost
+    verified_on: 2026-08-23
     volatile: true
-    evidence: "you only pay what is charged by registries and ICANN"
+    evidence: ".com $20/year"
     note: >
-      Derived, not read: Cloudflare publishes the at-cost commitment but no .com
-      figure. 10.26 Verisign registry fee plus 0.20 ICANN transaction fee. The
-      registry fee rises to 10.97 on 1 November 2026 at 04:00 UTC. Register, then
-      immediately renew nine more years before that timestamp, which locks about
-      104.60 once. Confirm the quoted total at checkout.
+      NOT read from the vendor. Squarespace publishes no public price sheet for
+      any TLD, so the figure is confirmed only at checkout and at renewal, and
+      this line is a third party reading rather than a quotation. Check the
+      renewal notice against it.
+
+      WHOIS privacy and SSL are included, so there is nothing to add.
+
+      Worth revisiting after 25 October 2026, when the 60 day ICANN transfer
+      lock from registration lifts: Cloudflare Registrar sells at registry cost,
+      which is about 10.46 for a .com, so a transfer roughly halves this. The
+      zone is already on Cloudflare's nameservers for the tunnel, the WAF and
+      Email Routing, so a transfer moves the billing and nothing else. Note that
+      the Verisign registry fee rises to 10.97 on 1 November 2026 at 04:00 UTC.
 
   - name: Media storage
     vendor: Cloudflare
