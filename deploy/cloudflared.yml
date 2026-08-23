@@ -1,0 +1,51 @@
+# Cloudflare Tunnel. Install to /etc/cloudflared/config.yml
+#
+# Replace TUNNEL_ID in both places and example.com in both hostnames, then:
+#   sudo systemctl restart cloudflared
+#
+# This is the only thing on the machine that talks to the internet, and it
+# talks OUTWARD. There is no inbound port: the firewall denies 80 and 443
+# outright, the origin has no A record, and its address is not published
+# anywhere. Nobody can reach this box by finding its IP, because knowing the IP
+# does not help.
+#
+# That is the whole argument for the tunnel over a public origin. The
+# alternative — an A record on the orange cloud, port 443 open, a Cloudflare
+# Origin CA certificate and Authenticated Origin Pulls — ends up at the same
+# place only if the firewall's copy of Cloudflare's IP ranges is kept current,
+# and those ranges change. Here there is no list to keep.
+#
+# To create the tunnel, on any machine signed in to the account:
+#   cloudflared tunnel login
+#   cloudflared tunnel create third-angle          # prints the TUNNEL_ID
+#   cloudflared tunnel route dns third-angle example.com
+#   cloudflared tunnel route dns third-angle www.example.com
+# then copy ~/.cloudflared/<TUNNEL_ID>.json to /etc/cloudflared/ on the origin.
+
+tunnel: TUNNEL_ID
+credentials-file: /etc/cloudflared/TUNNEL_ID.json
+
+# Loopback only, for the liveness check. A dead tunnel stops answering here,
+# and the missing answer is what alerts; tailing the log would not catch the
+# process simply being gone.
+metrics: 127.0.0.1:2100
+
+# systemd owns the lifecycle. A binary that replaces itself underneath a
+# running service decides its own restart time, which is not its decision.
+no-autoupdate: true
+
+originRequest:
+  connectTimeout: 5s
+  # Caddy is doing the retrying during a restart, so this only needs to be long
+  # enough to outlast it. See deploy/Caddyfile.
+  tcpKeepAlive: 30s
+
+ingress:
+  # The Host header is passed through untouched, which is what lets Caddy be a
+  # catch-all on a port instead of a file that has to name the domain.
+  - hostname: example.com
+    service: http://127.0.0.1:8080
+  - hostname: www.example.com
+    service: http://127.0.0.1:8080
+  # Required: cloudflared refuses to start without a catch-all rule.
+  - service: http_status:404

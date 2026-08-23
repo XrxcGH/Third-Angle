@@ -24,6 +24,22 @@ items:
       box as disposable and the backup as the system of record. Re-read this page
       every 15 June.
 
+  - name: DNS, TLS, cache, and WAF
+    vendor: Cloudflare
+    product: Free plan
+    amount_usd: 0
+    period: year
+    source_url: https://www.cloudflare.com/plans/
+    verified_on: 2026-08-23
+    volatile: true
+    evidence: "Free"
+    note: >
+      The front half of the stack: proxied DNS, a universal certificate, edge
+      caching, the free managed WAF ruleset, one rate-limiting rule, and the
+      tunnel that removes every inbound port from the origin. Workers Paid at
+      5/month is NOT used; see CLOUDFLARE.md. Cloudflare Tunnel is free and
+      unmetered on this plan.
+
   - name: Domain
     vendor: Cloudflare Registrar
     product: one .com, at registry cost

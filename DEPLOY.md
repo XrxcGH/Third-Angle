@@ -1,20 +1,19 @@
-# Deploying Third Angle on Cloudflare Containers
+# Deploying Third Angle
 
-Route A from [CLOUDFLARE.md](CLOUDFLARE.md): the same Node process that runs on
-a laptop, in a container, with a Worker in front of it. Nothing is ported and
-nothing behaves differently in production, which is the whole reason for
-choosing it.
+Cloudflare in front, on the free plan, for DNS, TLS, caching and the WAF. The
+origin on an Oracle Cloud Always Free machine. No paid plan on either side; the
+domain is the only thing with a price on it.
 
 Read [SECURITY.md](SECURITY.md) before the first deploy. Two of the steps below
 are there because of it.
 
 ## What you need
 
-- A Cloudflare account on the **Workers Paid** plan, $5 a month.
-- A domain, added to that account as a zone.
-- Docker running locally. Wrangler builds the image on your machine and pushes
-  it to Cloudflare's registry; there is no remote build.
-- Node 24 or newer.
+- A domain, added to a Cloudflare account as a zone, using Cloudflare's
+  nameservers.
+- An Oracle Cloud account, and one **VM.Standard.A1.Flex** instance, arm64,
+  Ubuntu 24.04. The Always Free shape is 2 OCPU and 12 GB as of June 2026.
+- SSH to that machine.
 
 ## The shape of it
 
@@ -22,134 +21,210 @@ are there because of it.
   visitor
      |
      v
-  Worker  (worker/index.js)         routing, TLS, cache, WAF
+  Cloudflare edge          DNS, TLS, cache, WAF, rate limiting     free plan
+     |
+     |  outbound tunnel, opened FROM the origin
+     v
+  cloudflared              deploy/cloudflared.yml
      |
      v
-  Container  (Dockerfile)           the Express app, unchanged
-     |
-     +--> /data   SQLite + uploads, on the container's own disk
+  Caddy 127.0.0.1:8080     deploy/Caddyfile
      |
      v
-  R2 bucket                         where /data is mirrored
+  Node  127.0.0.1:3000     the app, on a disk that persists
+     |
+     +--> data/            SQLite + uploads
+     |
+     v
+  R2 bucket                continuous replication, via Litestream
 ```
 
-The container's disk is **ephemeral**. It goes back to the image every time the
-container sleeps, which it does after fifteen minutes with no traffic. So
-`src/backup.js` pulls `/data` down from R2 before the database is opened, and
-pushes it back on a timer and once more on SIGTERM. Everything else about the
-app is the same as it is on a machine with a disk.
+Nothing on that machine listens on the public internet. The tunnel dials out,
+Caddy is bound to loopback, and the firewall allows SSH and nothing else. The
+origin has no A record and its address is not published anywhere, so finding
+the IP does not help: there is no port to knock on and no way to skip the WAF.
 
-There is exactly one container instance, always. The site is a single SQLite
-file; two instances would be two writers against two copies of it.
+Caddy is still in the middle for the one thing Cloudflare cannot do — hold a
+connection open across a `systemctl restart` and serve a real page instead of a
+502 when Node is genuinely down.
+
+Two processes must never run against one SQLite file, so there is one instance
+of the app and no blue/green. See DESIGN.md risk R6.
 
 ## Steps
 
-### 1. Create the R2 bucket
+### 1. Provision the machine
 
 ```sh
-npx wrangler r2 bucket create third-angle
+ssh ubuntu@<the instance>
+sudo apt-get update && sudo apt-get install -y git
+git clone https://github.com/XrxcGH/Third-Angle.git /tmp/ta
+sudo bash /tmp/ta/deploy/provision.sh
 ```
 
-Then make an R2 API token: Cloudflare dashboard, **R2 → Manage API tokens →
-Create API token**, permission **Object Read & Write**, scoped to that bucket.
-Keep the access key id and the secret; the secret is shown once.
+It is idempotent, so it is safe to run again after any step below. It installs
+Node 24, Caddy, cloudflared and Litestream, creates the `app` user, clones the
+source to `/srv/third-angle`, installs every unit file, and closes the
+firewall. It prints what is left to do by hand.
 
-### 2. Set the secrets
-
-These are the container's environment. `SESSION_SECRET` and `SITE_URL` are both
-checked at boot and the app refuses to start without them in production, which
-is deliberate: see `assertEnvironment` in `src/db.js`.
+### 2. Set SITE_URL
 
 ```sh
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"   # SESSION_SECRET
-
-npx wrangler secret put SESSION_SECRET
-npx wrangler secret put SITE_URL                 # https://your-domain.example, no trailing slash
-npx wrangler secret put R2_ACCOUNT_ID
-npx wrangler secret put R2_BUCKET                # third-angle
-npx wrangler secret put R2_ACCESS_KEY_ID
-npx wrangler secret put R2_SECRET_ACCESS_KEY
-npx wrangler secret put GITHUB_TOKEN             # optional, raises the API rate limit
+sudo nano /etc/third-angle/env      # SITE_URL=https://your-domain.example
+sudo systemctl restart third-angle
 ```
 
 `SITE_URL` is not cosmetic. Every absolute URL on the site derives from it: the
 canonical link, `og:url`, every `<loc>` in the sitemap, the Sitemap line in
-robots.txt, both feeds, and the Contact line in security.txt. None of them
-appear in the browser, so getting it wrong looks perfect and publishes a
-sitemap full of the wrong domain. The boot check refuses `example.com`,
-`localhost`, and anything that is not `https://`.
+robots.txt, both feeds, and the Contact line in security.txt. None of them are
+visible in a browser, so getting it wrong looks perfect and publishes a sitemap
+full of the wrong domain to every crawler that asks. The boot check refuses
+`example.com`, `localhost` and anything that is not `https://`.
 
-### 3. Seed the first database
+### 3. Open the tunnel
 
-The bucket starts empty, so the first boot has nothing to restore and would
-serve an empty site. Build the database locally and upload it once:
-
-```sh
-npm ci
-npm run seed          # projects, disciplines, and the copy
-npm run seed:pages
-npm run seed:edu
-node scripts/create-admin.js you@example.com "Your Name"
-
-npx wrangler r2 object put third-angle/third-angle/db/third-angle.db \
-  --file data/third-angle.db --remote
-```
-
-Uploads (images, the resume and CV PDFs) go under
-`third-angle/uploads/<the path under data/uploads>`. If there are none yet,
-skip it. Anything uploaded through the admin afterwards is pushed up on the
-next snapshot.
-
-### 4. Deploy
+On any machine signed in to the Cloudflare account:
 
 ```sh
-npx wrangler deploy
+cloudflared tunnel login
+cloudflared tunnel create third-angle              # prints the tunnel's ID
+cloudflared tunnel route dns third-angle your-domain.example
+cloudflared tunnel route dns third-angle www.your-domain.example
 ```
 
-Wrangler builds the image, pushes it, and rolls out the Worker. The first
-request after that pays a cold start while the container boots and restores.
+Copy `~/.cloudflared/<ID>.json` to `/etc/cloudflared/` on the origin, then edit
+`/etc/cloudflared/config.yml`: replace `TUNNEL_ID` in both places and
+`example.com` in both hostnames.
 
-### 5. Point the domain at it
+```sh
+sudo chown root:cloudflared /etc/cloudflared/<ID>.json
+sudo chmod 640 /etc/cloudflared/<ID>.json
+sudo systemctl enable --now cloudflared
+sudo systemctl status cloudflared
+```
 
-Dashboard: **Workers & Pages → third-angle → Settings → Domains & Routes → Add
-custom domain**. Cloudflare issues the certificate. `SITE_URL` must match
-exactly what you add here.
+`cloudflared tunnel route dns` creates the DNS records for you, already
+proxied. The site should answer on the domain at this point.
 
-### 6. Close the two things the security review left open
+### 4. Set the zone up
 
-Neither is in the source; both are things only you can do.
+Everything here is on the free plan. **SSL/TLS → Overview → Full (strict)**,
+and **Edge Certificates → Always Use HTTPS on**, **Minimum TLS 1.2**.
 
-1. **Sign in and replace the temporary password.** The admin refuses to show you
-   anything except the account page until you do, because a hand-over credential is
-   one that has been transmitted somewhere and it is exempt from the twelve
-   character floor a chosen password has to clear.
-2. **Turn on two factor authentication** while you are on that page. Enrolment
-   is two steps on purpose: the secret is stored unconfirmed until you prove a
-   code works, so a QR code that never reached an authenticator cannot lock you
-   out.
+**A redirect rule, www to apex.** Rules → Redirect Rules. Hostname equals
+`www.your-domain.example`, dynamic redirect to
+`concat("https://your-domain.example", http.request.uri.path)`, status 301.
+This is why the Caddyfile names no domain: the redirect never reaches the
+origin.
+
+**Cache rules.** Two of them, and the second one matters more than it looks.
+
+1. Cache `/static/*`, `/media/*` and `/og/*`, Edge TTL **"Use cache-control
+   header from origin"**. Those responses are content addressed and already say
+   `immutable, max-age=31536000`.
+2. Bypass cache for `/admin*`.
+
+Do **not** add a "Cache Everything" rule with an Edge TTL that ignores origin
+headers. Every HTML page on this site says `Cache-Control: private`, and it
+means it: the theme is a cookie the server reads to emit
+`<html data-theme="dark">` in the first byte, so one stored copy of the home
+page serves one visitor's theme to the next person behind it. The admin renders
+against a session. An Edge TTL override is the one setting in the dashboard
+that can turn that into a real leak.
+
+**Three toggles that must stay off**, because each injects JavaScript into the
+page: **Rocket Loader**, **Email Address Obfuscation**, and **Bot Fight Mode**.
+The site ships no client-side JavaScript at all — that is a design property, it
+is what lets the CSP say `script-src 'self'` with nothing else in it, and it is
+stated on /attributions. Turning any of these on makes that untrue. Use a WAF
+rule instead of Bot Fight Mode if bots become a problem.
+
+**One rate limiting rule**, which is all the free plan gives, so spend it on the
+sign in form: `http.request.uri.path eq "/admin/login"` and
+`http.request.method eq "POST"`, 5 requests per 10 minutes per IP, action
+Managed Challenge. The app rate limits this too; this stops the traffic a step
+earlier and off the origin entirely.
+
+**The free managed ruleset**, under Security → WAF → Managed rules. On.
+
+### 5. Create the admin account
+
+```sh
+cd /srv/third-angle
+sudo -u app npm run admin -- you@your-domain.example "Your Name" "a long passphrase"
+```
+
+Then enrol TOTP with the printed `otpauth://` URI and confirm it:
+
+```sh
+sudo -u app npm run admin -- --confirm you@your-domain.example 123456
+```
+
+Enrolment is two steps on purpose: the secret is stored unconfirmed until you
+prove a code works, so a QR code that never reached an authenticator cannot
+lock you out.
+
+If you used `--temp` with a short hand-over password, the admin will show you
+nothing except the account page until you replace it. A credential that has
+been transmitted somewhere is exempt from the twelve character floor a chosen
+password has to clear, and it is not allowed to quietly become the permanent
+one.
+
+### 6. Turn on replication
+
+The machine has a real disk, so unlike the container route the database
+survives a reboot on its own. Replication is for the other failure: Oracle
+changing the free tier again, or closing the account. That has happened once
+already — see the note in `costs.yml`.
+
+Put the R2 credentials in `/etc/third-angle/env`, then:
+
+```sh
+sudo systemctl enable --now litestream
+sudo systemctl enable --now litestream-alive.timer
+```
+
+R2's free tier is 10 GB and this database is a rounding error against it. Any
+S3-compatible bucket works, including Oracle Object Storage — but keeping the
+backup at the same provider as the machine defeats the point of it, so use the
+other account.
+
+### 7. Run the restore drill
+
+An unrehearsed backup is a belief, not a backup.
+
+```sh
+sudo third-angle-verify
+```
+
+Record the measured time in [RESTORE.md](RESTORE.md).
 
 ## Afterwards
 
-**Watching it.** `npx wrangler tail` streams the Worker and container logs.
-`restore:` and `final snapshot:` lines are printed on every boot and every
-sleep, and they are what tell you persistence is working.
+**Watching it.** `journalctl -u third-angle -f`, `journalctl -u cloudflared -f`,
+and `/var/log/caddy/third-angle.log`. The tunnel answers on
+`127.0.0.1:2100/metrics`, and the liveness timer scrapes it: a dead tunnel stops
+answering and the missing answer is what alerts, where tailing a log would not
+catch the process simply being gone.
 
-**Checking the backup is real.** The only backup that counts is one you have
-restored from. `npx wrangler r2 object get third-angle/third-angle/db/third-angle.db --file /tmp/check.db --remote`,
-then open it locally and confirm the row counts. Do this once now and once a
-quarter; see [RESTORE.md](RESTORE.md) for the drill.
+**Deploying a change.**
 
-**Cost.** The $5 plan includes 25 GiB-hours of memory a month. At the `basic`
-instance type, 1 GiB, that is about 25 hours of the container actually being
-awake, so the sleep timer is not an optimisation, it is the plan. Traffic
-beyond the included allowance is billed per GiB-hour; check the current rate
-on Cloudflare's pricing page before assuming a busy month is still $5.
+```sh
+cd /srv/third-angle
+sudo -u app git pull --ff-only
+sudo -u app npm ci --omit=dev
+sudo systemctl restart third-angle
+```
 
-**Rolling back.** `npx wrangler rollback` returns the Worker to its previous
-version. The database is not rolled back with it; restore that from R2
-separately if a deploy corrupted data, which is what the object versioning on
-the bucket is for.
+Caddy holds connections for up to five seconds while the new process comes up,
+so a restart is invisible from outside.
 
-**Changing the instance size.** `instance_type` in `wrangler.jsonc`. Move up to
-`standard-1` if an upload of a very large photograph is killed; serving pages
-does not need it, `sharp` re-encoding does.
+**Cost.** Nothing here has a bill attached. The one number to re-read is in
+`costs.yml`, which `npm run check:costs` fails on when it goes stale.
+
+## The other route
+
+[DEPLOY-containers.md](DEPLOY-containers.md) is the Cloudflare Containers
+version of this, which needs the $5/month Workers Paid plan. Its files —
+`Dockerfile`, `worker/index.js`, `wrangler.jsonc`, `src/backup.js` — are still
+in the tree and still work. Nothing in this document uses them.

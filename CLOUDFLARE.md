@@ -1,8 +1,21 @@
 # Hosting Third Angle on Cloudflare
 
-**Nothing in this document has been implemented.** It is the answer to "can this
-run free on Cloudflare Pages and Workers", plus the routes available if you want
-it to. Pick one and I will build it.
+> **Decided, August 2026: none of the three.**
+>
+> The site runs on an Oracle Cloud Always Free machine, with Cloudflare in front
+> of it on the **free** plan for DNS, TLS, caching and the WAF. That gets the
+> network, the certificate and the firewall this document was written to
+> evaluate, for nothing, and keeps the application exactly as it is — one Node
+> process, one SQLite file, a real disk, and `sharp`. The runbook is
+> [DEPLOY.md](DEPLOY.md).
+>
+> Option A was built and is kept as an escape hatch: see
+> [DEPLOY-containers.md](DEPLOY-containers.md). Options B and C were not built.
+> The rest of this document is the analysis they were chosen against, which is
+> worth keeping because the constraints it describes have not changed.
+
+This was the answer to "can this run free on Cloudflare Pages and Workers", plus
+the routes available if you want it to.
 
 Facts checked against Cloudflare's own documentation in August 2026. Where a
 limit is quoted it is the free plan unless stated otherwise.

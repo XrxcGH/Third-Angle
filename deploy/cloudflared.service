@@ -1,0 +1,44 @@
+# Cloudflare Tunnel. Install to /etc/systemd/system/cloudflared.service
+#
+# Written here rather than left to `cloudflared service install` so the unit is
+# in the repository with everything else, and so the hardening below is a
+# decision somebody made rather than a default.
+
+[Unit]
+Description=Cloudflare Tunnel for Third Angle
+After=network-online.target
+Wants=network-online.target
+# Not Requires=. If Caddy is down the tunnel should stay up and serve the
+# maintenance page rather than take the hostname off the internet entirely.
+After=caddy.service
+
+[Service]
+Type=simple
+User=cloudflared
+Group=cloudflared
+ExecStart=/usr/bin/cloudflared --config /etc/cloudflared/config.yml --no-autoupdate tunnel run
+Restart=always
+RestartSec=5
+
+# It makes one outbound connection and reads two files. Nothing else.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/etc/cloudflared
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+MemoryMax=512M
+TasksMax=64
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cloudflared
+
+[Install]
+WantedBy=multi-user.target
