@@ -60,34 +60,118 @@ in essentially unchanged: Node 24, `node:sqlite`, `sharp`, Express, the lot.
 
 ### Option B — Full port to Workers, D1, and R2
 
-**Cost: $0 within the free limits.** D1 gives 5 GB and 5 M row reads a day, R2
-gives 10 GB and 10 M reads a month, Workers gives 100 K requests a day.
+**Cost: $0 within the free limits.** D1 gives 5 GB of storage and 5 M row reads
+a day, R2 gives 10 GB and 10 M reads a month with no egress charge, and Workers
+gives 100 K requests a day. A portfolio does not come close to any of those.
 
-This is a real rewrite of the storage and media layers, and it lands well.
+#### What it actually is
 
-- **Database:** `src/db.js` swaps `node:sqlite` for the D1 binding. This is the
-  one place the project was already designed for: every query lives in
-  `src/repo.js` as a named function and nothing above it touches the driver.
-  **D1 supports FTS5 including `fts5vocab`**, so the three-stage search survives
-  intact, which was the part most at risk.
-  `db.transaction()` becomes `D1.batch()`, which is a real change: the current
-  helper wraps arbitrary function bodies and batches cannot.
-- **Uploads:** `data/uploads` becomes an R2 bucket. `src/media.js` and
-  `src/routes/media.js` change; `/media/:key` becomes an R2 read or a public
-  bucket domain, which the code comments already anticipate.
-- **Images:** `sharp` cannot come. Either resize on upload from the browser
-  before the bytes are sent, or use Cloudflare Images. This is a genuine loss:
-  the current pipeline re-encodes every upload, which is what strips metadata
-  and normalises orientation, and that is a security control rather than a
-  convenience. Re-encoding in the browser is not the same guarantee.
-- **PDF indexing:** extracting 400 pages will not fit in a Worker invocation.
-  It moves to a Queue consumer, or to an upload step you run locally.
-- **Templates:** EJS precompiled at build time into the bundle.
-- **What you lose:** the media re-encode guarantee, the single-file backup story
-  in `RESTORE.md`, and the ability to run the whole site on a laptop with
-  `npm start` and no cloud account.
-- **Effort:** substantial. Roughly the storage layer, the media pipeline, the
-  document indexer and the build, with every test that touches them rewritten.
+Right now there is one process on one machine holding one SQLite file and one
+uploads directory. A Worker is not a machine: it is a function that runs in a
+V8 isolate near whoever asked, with no disk, no long-lived memory, and a CPU
+budget per request. So the port is not "move the files" — it is "take the two
+things that were on the disk and put them behind network APIs":
+
+| Today | After |
+|---|---|
+| `data/third-angle.db`, one SQLite file | **D1**, Cloudflare's SQLite, reached through a binding |
+| `data/uploads/`, files on disk | **R2**, an object store, reached through a binding |
+| `node server.js`, always running | A Worker, cold-started per request, no state between them |
+| `npm start` | `wrangler deploy`, and `wrangler dev` locally |
+
+Everything else — the routes, the templates, the search, the admin, the content
+editor, the motion layer — is ordinary code that does not care where it runs.
+
+#### What changes, file by file
+
+- **`src/db.js`** is the whole driver, and it is the file that changes most.
+  `DatabaseSync` becomes the D1 binding, and every call becomes `await`, which
+  ripples: `get`, `all`, and `run` are synchronous today and every caller
+  assumes that. This is the single largest mechanical edit in the port.
+- **`src/repo.js`**, 790 lines and every query in the project, changes shape but
+  not content: the SQL is the same, the functions become `async`. This is the
+  part the project was designed for — nothing above `repo.js` knows what the
+  database is.
+- **`db.transaction()`** becomes `D1.batch()`. This is a real change rather than
+  a rename: the current helper wraps an arbitrary function body, and a batch is
+  a fixed list of statements decided in advance. The three places that use it
+  (project reorder, document ingest, media delete) each need rewriting so the
+  statements are known up front.
+- **`src/media.js`** and **`src/routes/media.js`** write and read R2 instead of
+  the filesystem. `/media/:key` becomes an R2 `get`, or a public bucket domain,
+  which the existing comments already anticipate.
+- **`src/documents.js`** stores PDFs in R2 the same way.
+- **EJS templates** are compiled at build time into the bundle. EJS reads from
+  `fs` and builds functions at runtime today; a Worker has neither.
+- **`src/mailer.js`** swaps `node:net`/`node:tls` for `connect()` from
+  `cloudflare:sockets`. Ports 587 and 465 both work; the protocol code is
+  unchanged.
+- **`server.js`** becomes a Worker entry point. Express does not run on Workers
+  as-is, so this is either Hono (an Express-shaped router that does) or a small
+  hand-written router over the ~30 routes.
+
+#### The two things that genuinely do not come
+
+**1. `sharp`.** It is a native binary and there is no version of it that runs in
+an isolate. Today every upload is decoded, resized to five widths, re-encoded
+to WebP, and stripped of metadata. That is not a convenience: re-encoding is
+what guarantees an uploaded file is actually an image and not a payload with an
+image's extension, and what removes the GPS coordinates a phone puts in a
+photograph. Three replacements, in order of how much they preserve:
+
+- **Cloudflare Images**, $5/month for 100 K images: keeps the resizing and the
+  variants, and is the closest to what exists.
+- **Resize in the browser before upload**, free: a canvas re-encode in the admin
+  page. It works, and it is not the same guarantee, because the check now
+  happens on the client where it can be skipped.
+- **Store the original and resize on read** with Workers' image resizing.
+
+**2. PDF text extraction.** `pdfjs` extracting 400 pages does not fit in a
+Worker invocation on the free plan. It moves to a Queue consumer (also free at
+this volume) so the upload returns immediately and the pages are indexed a few
+seconds later, or it runs locally before upload. The full text search over
+documents is one of the better things on the site, so this is worth keeping
+rather than dropping.
+
+#### What the day-to-day becomes
+
+- **Deploying** is `wrangler deploy` instead of `git pull && systemctl restart`.
+  Faster, and no machine to patch.
+- **Editing content** is unchanged: the admin still writes to the database, and
+  the database is now D1. Nothing about the content editor, the photo wall, or
+  the education record changes for the person using them.
+- **Backups** change the most. Today the whole site is one SQLite file you can
+  copy, and `RESTORE.md` is a rehearsed restore of that file. D1 has Time Travel
+  (any point in the last 30 days) and R2 has versioning, which is a good story
+  but a different one, and `RESTORE.md` would have to be rewritten and
+  re-rehearsed against it.
+- **Running it on a laptop** still works: `wrangler dev` gives local D1 and R2,
+  but it is a Cloudflare-shaped local environment rather than plain Node.
+
+#### The honest risks
+
+- **The async ripple is the whole job.** Turning ~790 lines of synchronous
+  queries into promises touches every route and every test. It is mechanical
+  rather than difficult, and mechanical work at that volume is where quiet bugs
+  come from: a missing `await` returns a promise that renders as `[object
+  Promise]` or, worse, silently skips a write.
+- **Test suite.** 212 tests run against a real SQLite file in milliseconds.
+  Against D1 they need either `wrangler`'s local D1 (slower, and a different
+  process) or a fake. That is a day's work on its own and it is not optional:
+  those tests are what makes the rest of it safe to change.
+- **CPU limits.** 10 ms per invocation on the free plan is generous for
+  rendering a page and tight for anything that loops over a large result. The
+  search path is three queries and a sort, so it fits, but it has never been
+  measured under that ceiling.
+- **You are on Cloudflare now.** D1 and R2 have no drop-in equivalents
+  elsewhere; moving away later is another port of the same size.
+
+#### Rough effort
+
+Two to four days of focused work, most of it in `db.js`, `repo.js`, and the
+tests, plus a decision on images. The site's behaviour should not change at
+all, which is exactly what makes it tedious: the whole job is to get back to
+where you already are, on somebody else's computer, for free.
 
 ### Option C — Split: static shell on Pages, dynamic app elsewhere
 
