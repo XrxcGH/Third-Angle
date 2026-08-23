@@ -18,6 +18,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const express = require('express');
 const { UPLOAD_DIR } = require('../db');
+const mw = require('../middleware');
 
 const router = express.Router();
 
@@ -73,7 +74,7 @@ router.get(/^\/media\/(.+)$/, (req, res, next) => {
   res.setHeader('Content-Length', stat.size);
   // Storage keys are content addressed random names, so a given URL never
   // changes what it points at and can be cached hard.
-  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  mw.publicAsset(res, 31536000, true);
 
   if (!INLINE_OK.has(mime)) {
     const name = path.basename(abs);

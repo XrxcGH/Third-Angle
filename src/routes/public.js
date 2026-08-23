@@ -2,7 +2,8 @@
 
 const express = require('express');
 const repo = require('../repo');
-const { setTheme } = require('../middleware');
+const mw = require('../middleware');
+const { setTheme } = mw;
 const seo = require('../seo');
 const documents = require('../documents');
 const contact = require('../contact');
@@ -343,7 +344,7 @@ router.get('/contact', (req, res) => {
 });
 
 router.post('/contact', express.urlencoded({ extended: false, limit: '32kb' }), (req, res) => {
-  const ip = (req.ip || req.socket.remoteAddress || 'unknown').toString();
+  const ip = mw.clientIp(req);
   const result = contact.validate(req.body || {}, ip);
 
   if (!result.ok) {
@@ -437,7 +438,7 @@ router.get('/documents/:slug/view', (req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
   res.setHeader('Content-Disposition', `inline; filename="${documents.slugify(doc.title)}.pdf"`);
-  res.setHeader('Cache-Control', 'public, max-age=3600');
+  mw.publicAsset(res, 3600);
   fs.createReadStream(abs).pipe(res);
 });
 
@@ -461,7 +462,7 @@ router.get('/documents/:slug/download', (req, res, next) => {
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Content-Disposition', `attachment; filename="${documents.slugify(doc.title)}.pdf"`);
-  res.setHeader('Cache-Control', 'public, max-age=3600');
+  mw.publicAsset(res, 3600);
   fs.createReadStream(abs).pipe(res);
 });
 
@@ -580,7 +581,7 @@ router.get('/og/:key.png', async (req, res, next) => {
   }
 
   res.setHeader('Content-Type', 'image/png');
-  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  mw.publicAsset(res, 31536000, true);
   fs.createReadStream(file).pipe(res);
 });
 

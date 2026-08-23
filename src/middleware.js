@@ -57,6 +57,79 @@ function setTheme(res, value) {
   );
 }
 
+/* ---- who is asking ------------------------------------------------------
+ * Behind Cloudflare the socket's peer is Cloudflare, not the visitor, so
+ * req.socket.remoteAddress is the same short list of addresses for everybody on
+ * earth. Rate limiting on that number rate limits the whole internet as one
+ * client: the first person to get the sign in form wrong locks out the next.
+ *
+ * CF-Connecting-IP carries the real address, and it is an ordinary request
+ * header, which means anyone who can reach the origin directly can write
+ * whatever they like in it. So it is read ONLY when the connection arrived from
+ * a peer we put there ourselves: the tunnel or the reverse proxy, both of which
+ * sit on loopback. A request that reaches the origin port from the open
+ * internet falls back to the socket address, which cannot be forged.
+ *
+ * That ordering is the whole security property. Trusting the header
+ * unconditionally would hand every attacker a free rate limit reset, one header
+ * at a time.
+ */
+const LOOPBACK = /^(?:::1|(?:::ffff:)?127\.)/;
+const PRIVATE = /^(?:::ffff:)?(?:10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/;
+
+function fromTrustedPeer(req) {
+  const peer = String((req.socket && req.socket.remoteAddress) || '');
+  return LOOPBACK.test(peer) || PRIVATE.test(peer);
+}
+
+function clientIp(req) {
+  if (fromTrustedPeer(req)) {
+    const cf = req.headers && req.headers['cf-connecting-ip'];
+    /* One address, no list. CF-Connecting-IP is single valued by definition;
+       anything with a comma in it did not come from Cloudflare. */
+    if (typeof cf === 'string' && cf.trim() && !cf.includes(',')) return cf.trim();
+  }
+  return String(req.ip || (req.socket && req.socket.remoteAddress) || 'unknown');
+}
+
+/* ---- caching ------------------------------------------------------------
+ * Every HTML page on this site is personal to the person asking for it, and
+ * not in the way that phrase usually means. The theme is a cookie the server
+ * reads to emit <html data-theme="dark"> in the first byte, so a shared cache
+ * holding one copy of the home page serves one visitor's theme to the next.
+ * The admin pages are worse: they are rendered against a session.
+ *
+ * So HTML says `private`, which is the directive Cloudflare honours to mean
+ * "your edge must not keep this", and the admin adds `no-store` on top. Vary
+ * is there for the intermediaries that do read it; Cloudflare does not, which
+ * is exactly why `private` and not Vary alone is doing the work.
+ *
+ * This costs nothing worth having. What makes the site fast at the edge is the
+ * photographs, the fonts and the stylesheets, and those are content addressed
+ * and immutable already. HTML is the small part.
+ */
+function cacheHeaders(req, res, next) {
+  res.setHeader(
+    'Cache-Control',
+    req.path === '/admin' || req.path.startsWith('/admin/')
+      ? 'private, no-store, max-age=0'
+      : 'private, max-age=0, must-revalidate'
+  );
+  res.setHeader('Vary', 'Cookie');
+  next();
+}
+
+/*
+ * The other half of that policy, for the responses that are the same bytes for
+ * everyone. Vary is REMOVED rather than left alone: it was set above as the
+ * safe default, and leaving `Vary: Cookie` on a year long immutable photograph
+ * splits the cache by cookie and quietly undoes the caching.
+ */
+function publicAsset(res, seconds, immutable = false) {
+  res.setHeader('Cache-Control', `public, max-age=${seconds}${immutable ? ', immutable' : ''}`);
+  res.removeHeader('Vary');
+}
+
 /* ---- security headers ---------------------------------------------------
  * Written out rather than pulled from a dependency so each line is a decision
  * someone made on purpose. Verify at securityheaders.com after deploy.
@@ -245,4 +318,7 @@ function locals(req, res, next) {
   next();
 }
 
-module.exports = { theme, setTheme, securityHeaders, redirects, locals, parseCookies };
+module.exports = {
+  theme, setTheme, securityHeaders, redirects, locals, parseCookies,
+  cacheHeaders, publicAsset, clientIp,
+};

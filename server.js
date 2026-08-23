@@ -34,14 +34,31 @@ app.use(expressLayouts);
 app.set('layout', 'layout');
 
 app.use(mw.securityHeaders);
+/*
+ * Before anything renders, and before express.static, because both of those
+ * override it deliberately. The default it sets is the careful one: nothing
+ * shared may keep this. See src/middleware.js.
+ */
+app.use(mw.cacheHeaders);
 app.use(mw.theme);
 app.use(mw.locals);
 
+/*
+ * The stylesheets, the fonts and the favicon.
+ *
+ * The headers are written here rather than left to `maxAge`, because `send`
+ * only sets Cache-Control when the response does not already carry one, and
+ * mw.cacheHeaders above always does. Left to itself that ordering silently
+ * turned a year of edge caching on every font into revalidate-every-time, with
+ * no error and no visible symptom except a slower site.
+ */
+const STATIC_MAX_AGE = process.env.NODE_ENV === 'production' ? 31536000 : 0;
 app.use(
   '/static',
   express.static(path.join(__dirname, 'public'), {
-    maxAge: process.env.NODE_ENV === 'production' ? '365d' : 0,
-    immutable: process.env.NODE_ENV === 'production',
+    setHeaders: (res) => {
+      mw.publicAsset(res, STATIC_MAX_AGE, STATIC_MAX_AGE > 0);
+    },
   })
 );
 

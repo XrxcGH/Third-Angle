@@ -77,7 +77,7 @@ function requireCsrf(req, res, next) {
   next();
 }
 
-const clientIp = (req) => (req.ip || req.socket.remoteAddress || 'unknown').toString();
+const clientIp = require('../middleware').clientIp;
 
 function view(name, extra = {}) {
   return { layout: 'layout-admin', ...extra, view: name };
