@@ -303,13 +303,22 @@ Remaining, by hand:
        cd /srv/third-angle
        sudo -u app npm run admin -- you@domain "Your Name" "a long passphrase"
      then enrol TOTP with the printed otpauth URI and confirm it.
-  4. Put the R2 credentials in /etc/third-angle/env, then:
+  4. Put the content on the box. It provisions empty: the site serves, but
+     every page is bare and /healthz says facets=0.
+       cd /srv/third-angle
+       sudo -u app npm run seed
+       sudo -u app npm run seed:pages
+       sudo -u app npm run seed:edu
+     Photographs and documents are NOT seeded. They are files, not rows, so
+     upload them through the admin, which is also what derives the thumbnails
+     and the PDF page images.
+  5. Put the R2 credentials in /etc/third-angle/env, then:
        systemctl enable --now litestream
-  5. Set the zone up at Cloudflare. DEPLOY.md has the list, and two of the
+  6. Set the zone up at Cloudflare. DEPLOY.md has the list, and two of the
      settings there are the difference between a fast site and a site that
      serves one visitor's theme to the next one.
 
-  6. RUN THE RESTORE DRILL. An unrehearsed backup is a belief, not a backup.
+  7. RUN THE RESTORE DRILL. An unrehearsed backup is a belief, not a backup.
        third-angle-verify
      Record the measured time in RESTORE.md.
 

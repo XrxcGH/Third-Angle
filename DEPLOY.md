@@ -308,7 +308,43 @@ been transmitted somewhere is exempt from the twelve character floor a chosen
 password has to clear, and it is not allowed to quietly become the permanent
 one.
 
-### 7. Turn on replication
+### 7. Put the content on the box
+
+Provisioning leaves an empty database. The site serves, but every page is bare
+and `/healthz` reports `facets=0` instead of `facets=8`. Three seed scripts
+rebuild the written content out of the repository:
+
+```sh
+cd /srv/third-angle
+sudo -u app npm run seed        # projects, disciplines, links, metrics, the now page
+sudo -u app npm run seed:pages  # the written pages
+sudo -u app npm run seed:edu    # schools, courses, activity
+```
+
+Confirm it took:
+
+```sh
+curl -fsS localhost:3000/healthz    # ok facets=8
+```
+
+They need no `DATA_DIR`: it falls back to a path relative to the source, which
+is the same `/srv/third-angle/data` the service reads.
+
+`npm run seed` deletes projects before inserting, and `seed:edu` does the same
+for courses and activity. That is what makes them re-runnable while setting a
+machine up, and it is equally why they are not something to run casually later:
+on a box whose content has been edited since, they discard those edits.
+
+Photographs and documents are not seeded, because they are files rather than
+rows -- the database holds the record, `data/uploads` holds the bytes. Add them
+through the admin once the tunnel is up: Media for the photo wall, Documents for
+the resume and CV. Uploading is also what derives the thumbnails and the PDF
+page images, so copying files into `data/uploads` by hand does not work.
+
+Nothing else needs to move. Sessions, login attempts and the audit log belong to
+the machine that produced them and deliberately do not travel.
+
+### 8. Turn on replication
 
 The machine has a real disk, so the database survives a reboot on its own. Replication is for the other failure: Oracle
 changing the free tier again, or closing the account. That has happened once
@@ -340,7 +376,7 @@ S3-compatible bucket works, including Oracle Object Storage — but keeping the
 backup at the same provider as the machine defeats the point of it, so use the
 other account.
 
-### 8. Run the restore drill
+### 9. Run the restore drill
 
 An unrehearsed backup is a belief, not a backup.
 
