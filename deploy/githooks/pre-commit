@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#
+# Refuses a commit that would add a credential or a piece of personal data.
+#
+# This repository is public, so a key committed once and deleted in the next
+# commit is still in the history, still fetchable, and still burned. The only
+# cheap moment to catch it is before it is written down.
+#
+# Hooks are not cloned, so this file being tracked is not enough. Install it
+# per clone with one command:
+#
+#   git config core.hooksPath deploy/githooks
+#
+# Bypassing it: git commit --no-verify, as with every hook. The point is not to
+# make leaking impossible, it is to make it a deliberate act rather than an
+# ordinary Tuesday.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+node scripts/check-secrets.mjs --staged

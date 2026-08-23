@@ -16,6 +16,12 @@
  *
  * The pattern list is deliberately short. A scanner that cries wolf gets
  * switched off, and a scanner that is switched off finds nothing at all.
+ *
+ *   npm run check:secrets            the working tree and the whole history
+ *   node scripts/check-secrets.mjs --staged    only what is about to be committed
+ *
+ * --staged is what deploy/githooks/pre-commit runs. Remembering to check is not
+ * a control; a hook that runs on every commit is.
  */
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -56,9 +62,20 @@ const problems = [];
  * extended regular expressions have. -e, because a pattern that begins with a
  * dash is otherwise read as an option.
  */
+const STAGED = process.argv.includes('--staged');
+
+/*
+ * This file is excluded from its own scan. It has to spell the patterns out to
+ * search for them, so the date of birth and the student number are literally in
+ * the source below, and without this the scanner reports itself on every run —
+ * which trains whoever sees it to ignore the output.
+ */
+const SELF = ':(exclude)scripts/check-secrets.mjs';
+
 function grep(pattern, revs = []) {
+  const where = STAGED ? ['--cached'] : [];
   try {
-    return execFileSync('git', ['grep', '-I', '-n', '-P', '-e', pattern, ...revs, '--'],
+    return execFileSync('git', ['grep', '-I', '-n', '-P', ...where, '-e', pattern, ...revs, '--', '.', SELF],
       { cwd: ROOT, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 }).split('\n').filter(Boolean);
   } catch (err) {
     if (err.status === 1) return [];
@@ -71,21 +88,26 @@ function grep(pattern, revs = []) {
 for (const [what, pattern] of [...CREDENTIALS, ...PERSONAL]) {
   for (const line of grep(pattern)) {
     if (ALLOWED.some((a) => a.test(line))) continue;
-    problems.push(`tracked: ${what} in ${line.slice(0, 160)}`);
+    problems.push(`${STAGED ? 'staged' : 'tracked'}: ${what} in ${line.slice(0, 160)}`);
   }
 }
 
 /* Then everything that has ever been committed. A key deleted in the next
-   commit is still fetchable and still burned. */
-const revs = execFileSync('git', ['rev-list', '--all'], { cwd: ROOT, encoding: 'utf8' })
+   commit is still fetchable and still burned.
+
+   Skipped in --staged mode: the hook runs on every commit and has to be fast,
+   and the history cannot have changed since the last full run anyway. */
+const revs = STAGED ? [] : execFileSync('git', ['rev-list', '--all'], { cwd: ROOT, encoding: 'utf8' })
   .split('\n').filter(Boolean);
-for (const [what, pattern] of [...CREDENTIALS, ...PERSONAL]) {
-  for (const line of grep(pattern, revs)) {
-    if (ALLOWED.some((a) => a.test(line))) continue;
-    /* Once per file and pattern, however many commits carry it. */
-    const [, file] = /^[0-9a-f]{7,40}:([^:]+):/.exec(line) || [];
-    const key = `history: ${what} in ${file}`;
-    if (!problems.includes(key)) problems.push(key);
+if (revs.length) {
+  for (const [what, pattern] of [...CREDENTIALS, ...PERSONAL]) {
+    for (const line of grep(pattern, revs)) {
+      if (ALLOWED.some((a) => a.test(line))) continue;
+      /* Once per file and pattern, however many commits carry it. */
+      const [, file] = /^[0-9a-f]{7,40}:([^:]+):/.exec(line) || [];
+      const key = `history: ${what} in ${file}`;
+      if (!problems.includes(key)) problems.push(key);
+    }
   }
 }
 
@@ -102,4 +124,6 @@ if (problems.length) {
   console.error('\nAnything in the history is already burned: rotate it, do not just delete it.\n');
   process.exit(1);
 }
-console.log(`OK, nothing private in the working tree or in ${revs.length} commits of history.`);
+console.log(STAGED
+  ? 'OK, nothing private in what is staged.'
+  : `OK, nothing private in the working tree or in ${revs.length} commits of history.`);
