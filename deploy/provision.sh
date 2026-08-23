@@ -151,8 +151,19 @@ fi
 
 log "Dependencies and fonts"
 cd "$APP_DIR"
+# npm ci IS fatal. No node_modules, no site.
 sudo -u "$APP_USER" npm ci --omit=dev --no-audit --no-fund
-sudo -u "$APP_USER" npm run fonts
+# Fetching the self-hosted webfonts is NOT. It reaches out to Google's servers,
+# and losing it costs typography rather than the site: every stack in
+# tokens.css names real fallbacks. This must not be the thing that stops the
+# env file, the services and the firewall from being installed, which is
+# exactly what the Litestream 404 did.
+FONTS_OK=yes
+if ! sudo -u "$APP_USER" npm run fonts; then
+  FONTS_OK=no
+  echo "    Fonts NOT fetched. The site will serve in its fallback stack."
+  echo "    Provisioning continues. See the end of this output."
+fi
 
 log "Environment file"
 if [ ! -f "$ENV_DIR/env" ]; then
@@ -252,6 +263,17 @@ ufw status numbered | sed 's/^/    /'
 log "Status"
 systemctl is-active third-angle && curl -fsS localhost:3000/healthz || true
 
+if [ "$FONTS_OK" = no ]; then
+  cat <<'WARN'
+
+  !! THE WEBFONTS WERE NOT FETCHED, so the site is serving its fallback stack.
+     Nothing is broken, but it will not look right. Retry once the machine can
+     reach fonts.googleapis.com:
+       cd /srv/third-angle && sudo -u app npm run fonts
+       sudo systemctl restart third-angle
+WARN
+fi
+
 if [ "$LITESTREAM_OK" = no ]; then
   cat <<'WARN'
 
@@ -268,7 +290,10 @@ fi
 cat <<'NEXT'
 
 Remaining, by hand:
-  1. Edit /etc/third-angle/env and set SITE_URL to the real domain.
+  1. Check /etc/third-angle/env. SITE_URL is already https://ericjdean.com, so
+     this is a read, not an edit, unless the domain changed. Everything still
+     commented out there (R2, SMTP, the healthcheck URLs) is optional and
+     documented in DEPLOY.md. After any edit:
        systemctl restart third-angle
   2. Create the tunnel, then edit /etc/cloudflared/config.yml with its ID and
      your domain. The file has the four commands in its header.
