@@ -1162,7 +1162,17 @@ code {
 .course {
   background: var(--surface);
   display: grid;
-  grid-template-columns: minmax(0, 7rem) minmax(0, 1fr) auto;
+  /*
+   * 8.5rem, sized to the longest label rather than to the average one.
+   *
+   * Each row is its own grid, so the column cannot be `auto`: that would size
+   * per row and the codes would not line up down the list. It is a fixed track,
+   * and a fixed track has to fit the longest thing that goes in it — which is
+   * "Computer Science" at about 124px, not "MECH&AE 101" at 85px. At 7rem the
+   * one longest label wrapped to two lines while every other row was one, which
+   * reads as that row being different rather than as that label being long.
+   */
+  grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr) auto;
   gap: var(--s-2) var(--s-4);
   align-items: baseline;
   padding: var(--s-3) var(--s-4);
@@ -1171,8 +1181,14 @@ code {
   .course { grid-template-columns: minmax(0, 1fr) auto; }
   .course .course-code { grid-column: 1 / -1; }
 }
-.course-code { font-family: var(--f-mono); font-size: .72rem; font-stretch: 82%;
-  letter-spacing: .04em; color: var(--text-muted); font-variant-numeric: tabular-nums lining-nums; }
+.course-code {
+  font-family: var(--f-mono); font-size: .72rem; font-stretch: 82%;
+  letter-spacing: .04em; color: var(--text-muted); font-variant-numeric: tabular-nums lining-nums;
+  /* One line, always. If a longer label is ever added the track above is what
+     changes, not the wrapping: a code broken across two lines is unreadable
+     as a code. */
+  white-space: nowrap;
+}
 /* The right hand column of a class row: units, then the term. */
 .course-meta {
   display: flex; gap: 5px; align-items: baseline; white-space: nowrap;
@@ -1333,8 +1349,12 @@ code {
   letter-spacing: .12em; text-transform: uppercase;
   padding: 9px 15px; border-radius: var(--r-control); cursor: pointer;
   border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent);
-  text-decoration: none; display: inline-block; line-height: 1.2;
+  text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+  line-height: 1.2;
   text-align: center;
+  /* A button label is one line. "Take Off" broken across two inside a 33px
+     button reads as two buttons that failed to separate. */
+  white-space: nowrap;
   transition: border-color var(--t-hover) var(--ease), filter var(--t-hover) var(--ease);
 }
 .btn:hover { filter: brightness(1.06); color: var(--on-accent); }
@@ -1344,6 +1364,23 @@ code {
 .btn-sm { padding: 5px 9px; font-size: .58rem; }
 /* A row of buttons wraps rather than overflowing a narrow column. */
 .btn-row { display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; }
+
+/*
+ * Forty pixels on a phone, on every button including the small ones.
+ *
+ * Measured at 390px: a .btn was 33px and a .btn-sm 27px, against the 40px a
+ * touch target is supposed to clear. The admin is where this matters most,
+ * because it is a form-heavy surface operated one-handed, but the rule is the
+ * same on both sides of the login and the buttons are the same component.
+ *
+ * min-height rather than padding, so the type does not move and a button in a
+ * tight row does not suddenly become taller than the field beside it.
+ */
+@media (max-width: 700px) {
+  .btn, .btn-sm { min-height: 40px; }
+  /* The admin's brand link is a single small line of type in the header. */
+  .brand { min-height: 40px; align-items: center; }
+}
 
 /*
  * Two columns on a comfortable width, one column when there is not room. The
