@@ -26,6 +26,7 @@ DATA_DIR="$APP_DIR/data"
 ENV_DIR=/etc/third-angle
 NODE_MAJOR=24
 REPO=https://github.com/XrxcGH/third-angle.git
+BRANCH=main
 
 log() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
@@ -127,10 +128,25 @@ chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 chmod 750 "$ENV_DIR"
 
 log "Source"
-if [ -d "$APP_DIR/.git" ]; then
-  sudo -u "$APP_USER" git -C "$APP_DIR" pull --ff-only
-else
-  sudo -u "$APP_USER" git clone --depth 20 "$REPO" "$APP_DIR"
+# NOT git clone. $DATA_DIR is $APP_DIR/data and the step above just created it,
+# so $APP_DIR is never empty by the time we get here and clone refuses to use a
+# non-empty directory. init + fetch + checkout does the same work without that
+# constraint, and it is what makes this step re-runnable over a box that was
+# left half provisioned by an earlier failure.
+if [ ! -d "$APP_DIR/.git" ]; then
+  sudo -u "$APP_USER" git -C "$APP_DIR" init -q -b "$BRANCH"
+  sudo -u "$APP_USER" git -C "$APP_DIR" remote add origin "$REPO"
+fi
+sudo -u "$APP_USER" git -C "$APP_DIR" fetch -q --depth 20 origin "$BRANCH:refs/remotes/origin/$BRANCH"
+sudo -u "$APP_USER" git -C "$APP_DIR" checkout -q -B "$BRANCH" "refs/remotes/origin/$BRANCH"
+sudo -u "$APP_USER" git -C "$APP_DIR" branch -q --set-upstream-to="origin/$BRANCH" "$BRANCH"
+sudo -u "$APP_USER" git -C "$APP_DIR" log --oneline -1 | sed 's/^/    /'
+# Checkout carries a local edit across rather than destroying it, which is the
+# right call for someone's emergency hotfix but means the box can quietly stop
+# matching the branch. Say so; do not silently discard it.
+if [ -n "$(sudo -u "$APP_USER" git -C "$APP_DIR" status --porcelain -uno)" ]; then
+  echo "    WARNING: tracked files differ from $BRANCH. This box is NOT running what is in git:"
+  sudo -u "$APP_USER" git -C "$APP_DIR" status --short -uno | sed 's/^/      /'
 fi
 
 log "Dependencies and fonts"
