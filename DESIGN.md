@@ -94,8 +94,11 @@ Four things that will silently break a page rather than error:
    floor, so once the column is narrower the document scrolls sideways. Always
    `minmax(min(280px, 100%), 1fr)`.
 3. **A divider and a measure on the same element.** `.section` is page width,
-   `.prose` is 68ch. An element with both stops its rule at 68ch while every
-   other rule runs full width, which reads as a rendering fault.
+   `.prose` and `.measure` are `max-width: none`, so text runs the page width too.
+   Reintroducing a measure on an element that also carries a divider stops its
+   rule short while every other rule runs full width, which reads as a rendering
+   fault. `.section.prose` keeps an explicit `none` so a cap has to be put back
+   on purpose rather than inherited by accident.
 4. **Anything below 16px in a text input.** iOS Safari zooms the viewport on
    focus and never zooms back.
 
@@ -179,25 +182,30 @@ database keeps one album row, `personal`, purely so `media.album_slug` still has
 a foreign key to point at; nothing in the interface exposes it, and the only
 control anywhere is on the wall or off it.
 
-The layout is not computed on the server, and that is the design.
+The layout is computed on the server, and that is the design.
 
-A server deciding row breaks has to assume a viewport width it does not know,
-so rows that pack perfectly at 1440px leave a ragged edge at 900px. Each tile
-carries only its aspect ratio as `--ar`; flexbox gives it a natural width at the
-row height and a proportional share of the leftover, so every tile in a row
-lands on the same height and the row fills the width exactly, at any width.
-Adding a photograph re-packs everything below it for free.
+The wall is packed on the server, in `src/collage.js`. Justified rows can only
+vary a tile in one direction, because every tile in a row shares its height, so
+the rectangle is cut in two instead, and each half cut in two again, until every
+photograph has a slot. The split is always at a contiguous point in the list, so
+reading order survives. Each slot is written as four percentages of the wall,
+`--l`, `--t`, `--w` and `--h`, which stays resolution independent: the browser
+still decides the pixel size and the wall still fills whatever width the window
+turns out to have. Adding a photograph re-packs the wall for free.
 
 - Aspect ratios are clamped for layout only, so a 6:1 panorama cannot take a
   whole row and a 1:4 portrait cannot become a sliver. The image keeps its real
   shape and is cropped by `object-fit`.
-- Hover and focus raise one tile's `flex-grow`, so it widens and its neighbours
-  give up the width. The row keeps its height and its total width, so no other
-  row moves and the page never reflows.
-- Below 700px the layout changes rather than shrinking. Justified rows need two
-  tiles to mean anything, and a single tile stretched to the full width at a
-  fixed row height crops every photograph to the same band, which destroys a
-  portrait. Two masonry columns instead, each tile at its true aspect ratio.
+- Hover and focus scale one tile by `--tile-hover`, 1.14, so it lifts over its
+  neighbours instead of pushing them aside, and every other photograph drops in
+  saturation. Nothing is in the flow, so no slot moves, the page does not change
+  height, and it never reflows.
+- Below 700px the packing is thrown away rather than shrunk. A slot computed to
+  sit beside seven others is a sliver when only two fit across, and a tile
+  stretched to the full width at a fixed height crops every photograph to the
+  same band, which destroys a portrait. Masonry columns instead, each tile at
+  its true aspect ratio: three from 560px, two from 360px, and one below that,
+  where two would be postage stamps.
 
 ## Banned
 
@@ -232,10 +240,15 @@ Adding a photograph re-packs everything below it for free.
 
 ## Motion
 
-All of it is in `public/css/motion.css`, and all of it is CSS. There is no
-script on this site, and the motion layer did not introduce one: page
+The motion layer is `public/css/motion.css`, and all of it is CSS. A transition
+that belongs to one component stays beside that component in `app.css`; what
+lives in `motion.css` is what is shared or global.
+
+No public page runs script, and the motion layer did not change that: page
 transitions, scroll reveals, the read-progress line, and the header settle are
-browser features, not a library.
+browser features, not a library. The one script in the project,
+`public/js/reorder.js`, enhances drag-to-reorder on the admin project list, and
+the buttons it enhances work without it.
 
 One hero motion moment per page: the first block of every page rises in on
 load, staggered by 60ms. Everything below it is tied to the reader's own
@@ -284,7 +297,7 @@ branch has to exist in JavaScript. See risk R4 in the proposal.
 
 | Risk | Mechanism | Test |
 |---|---|---|
-| R1 scope creep | `scripts/scope-guard.mjs` fails CI when prose outruns code | `npm run check:scope` |
+| R1 scope creep | `scripts/scope-guard.mjs` exits non-zero when prose outruns code | `npm run check:scope` |
 | R2 no evidence | `media.origin` CHECK plus a publish gate | `tests/schema.test.mjs` |
 | R3 facet drift | lookup table plus a NOCASE unique index | `tests/schema.test.mjs` |
 | R4 dim fails contrast | token swap plus computed ratio assertions | `tests/contrast.test.mjs` |

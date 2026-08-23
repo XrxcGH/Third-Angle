@@ -112,8 +112,10 @@ if (cmd === 'verify') {
     notes.push(`${projects} projects, ${facets} disciplines, ${indexed} indexed rows`);
   } catch (e) { problems.push(`content query failed: ${e.message}`); }
 
-  // 5. Recency. A restore that passes everything else and is three weeks stale
-  //    is a different failure, and one that otherwise reports success.
+  // 5. Recency. A restore that passes everything else and is months stale is a
+  //    different failure, and one that otherwise reports success. The floor is
+  //    --max-age-days, 45 by default: long enough that a quiet stretch with no
+  //    edits does not cry wolf, short enough to catch a replica that stopped.
   try {
     const newest = one('SELECT MAX(updated_at) FROM project');
     if (!newest) {

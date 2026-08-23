@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Litestream liveness. Installed as /usr/local/bin/third-angle-alive.
 #
-# Asserts the replica sync timestamp ADVANCED since the previous scrape, not
-# merely that the process is running. A wedged replicator answers on the port
-# while replicating nothing.
+# Asserts the replica WAL index has not gone BACKWARDS since the previous
+# scrape, and that the metrics endpoint still answers at all. It deliberately
+# does not require the index to advance: nothing is written on a quiet day.
 set -euo pipefail
 
 STATE=/var/lib/third-angle/litestream-last

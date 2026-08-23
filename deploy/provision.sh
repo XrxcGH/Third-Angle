@@ -39,7 +39,7 @@ echo "    $ARCH"
 log "Base packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq curl ca-certificates gnupg git ufw ripgrep ne >/dev/null
+apt-get install -y -qq curl ca-certificates gnupg git ufw ripgrep ne rclone >/dev/null
 
 log "Node ${NODE_MAJOR}"
 if ! command -v node >/dev/null || [ "$(node -p 'process.versions.node.split(".")[0]')" -lt "$NODE_MAJOR" ]; then
@@ -88,7 +88,7 @@ chmod 750 /etc/cloudflared
 log "Litestream"
 # Pin ABOVE 0.5.7: releases 0.5.6 and 0.5.7 fail replication completely and
 # SILENTLY, with no error output, which is the worst possible failure mode for
-# a backup tool. See DESIGN.md risk R5.
+# a backup tool. See RESTORE.md and deploy/litestream.yml.
 LITESTREAM_VERSION=0.5.16
 if ! command -v litestream >/dev/null || [ "$(litestream version 2>/dev/null | tr -d 'v')" != "$LITESTREAM_VERSION" ]; then
   curl -fsSL "https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-v${LITESTREAM_VERSION}-linux-arm64.deb" \
@@ -124,6 +124,24 @@ PORT=3000
 SITE_URL=https://example.com
 SESSION_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
 DATA_DIR=$DATA_DIR
+
+# Off-site replication. Litestream reads these; so does backup.sh, for the
+# nightly snapshot it copies up with rclone.
+#R2_BUCKET=
+#R2_ACCOUNT_ID=
+#R2_ACCESS_KEY_ID=
+#R2_SECRET_ACCESS_KEY=
+
+# Dead man's switches. Each script pings its URL on success and /fail on
+# failure, so a MISSING ping is what alerts. Without these a backup can fail
+# every night on a machine nobody is watching and nothing will say so, which is
+# worse than having no backup, because this one is trusted.
+#   BACKUP     third-angle-backup, nightly
+#   VERIFY     third-angle-verify, nightly, straight after the snapshot
+#   LITESTREAM third-angle-alive, every 15 minutes
+#BACKUP_HEALTHCHECK_URL=
+#VERIFY_HEALTHCHECK_URL=
+#LITESTREAM_HEALTHCHECK_URL=
 EOF
   echo "    Created $ENV_DIR/env. EDIT SITE_URL before going live."
 else
@@ -152,8 +170,11 @@ fi
 install -m 644 "$APP_DIR/deploy/litestream.yml" /etc/litestream.yml
 install -m 755 "$APP_DIR/deploy/backup.sh" /usr/local/bin/third-angle-backup
 install -m 755 "$APP_DIR/deploy/restore-verify.sh" /usr/local/bin/third-angle-verify
+install -m 755 "$APP_DIR/deploy/alive.sh" /usr/local/bin/third-angle-alive
 install -m 644 "$APP_DIR/deploy/third-angle-backup.service" /etc/systemd/system/
 install -m 644 "$APP_DIR/deploy/third-angle-backup.timer" /etc/systemd/system/
+install -m 644 "$APP_DIR/deploy/litestream-alive.service" /etc/systemd/system/
+install -m 644 "$APP_DIR/deploy/litestream-alive.timer" /etc/systemd/system/
 
 systemctl daemon-reload
 systemctl enable --now third-angle >/dev/null

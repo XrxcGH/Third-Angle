@@ -48,10 +48,16 @@ and any secret that was ever pushed has to be treated as burned and rotated.
   The cookie is `HttpOnly`, `SameSite=Lax`, `Secure` in production, and carries
   the `__Host-` prefix there. Changing the password destroys every other
   session.
-- **CSRF** on every mutating route without exception, as an HMAC of the session
-  id. The key is `SESSION_SECRET`, and **production refuses to boot without
-  one**: the development fallback is a fixed string in this public repository,
-  which would make every token forgeable.
+- **CSRF** on every mutating admin route, as an HMAC of the session id. The key
+  is `SESSION_SECRET`, and **production refuses to boot without one**: the
+  development fallback is a fixed string in this public repository, which would
+  make every token forgeable.
+
+  The sign in POST is the one exception, and it cannot be otherwise: a token is
+  bound to a session and sign in is the request that creates one. It is judged
+  by `Origin` and `Sec-Fetch-Site` instead, which a browser sets on every
+  cross-site POST and an attacking page cannot alter. See `sameOrigin` in
+  `src/middleware.js`.
 
 ## What a visitor can reach
 
@@ -104,6 +110,6 @@ password hash.
 
 ## Reporting something
 
-Open an issue with enough detail to reproduce it, or email the address on the
-contact page. This is a personal portfolio: there is no bounty and no SLA, but
-anything real gets fixed and credited.
+Open an issue with enough detail to reproduce it, or write to the address the
+site publishes at `/.well-known/security.txt`. This is a personal portfolio:
+there is no bounty and no SLA, but anything real gets fixed and credited.

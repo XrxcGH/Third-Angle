@@ -64,8 +64,9 @@ sudo bash /tmp/ta/deploy/provision.sh
 
 It is idempotent, so it is safe to run again after any step below. It installs
 Node 24, Caddy, cloudflared and Litestream, creates the `app` user, clones the
-source to `/srv/third-angle`, installs every unit file, and closes the
-firewall. It prints what is left to do by hand.
+source to `/srv/third-angle`, installs the `third-angle`, `cloudflared`,
+`third-angle-backup` and `litestream-alive` units, and closes the firewall. It
+prints what is left to do by hand.
 
 ### 2. Set SITE_URL
 
@@ -120,8 +121,9 @@ origin.
 **Cache rules.** Two of them, and the second one matters more than it looks.
 
 1. Cache `/static/*`, `/media/*` and `/og/*`, Edge TTL **"Use cache-control
-   header from origin"**. Those responses are content addressed and already say
-   `immutable, max-age=31536000`.
+   header from origin"**. The `/media/*` and `/og/*` responses are content addressed;
+   `/static/*` is not, so a stylesheet or font edit needs a cache purge. All
+   three already say `public, max-age=31536000, immutable` in production.
 2. Bypass cache for `/admin*`.
 
 Do **not** add a "Cache Everything" rule with an Edge TTL that ignores origin
@@ -192,6 +194,20 @@ sudo systemctl enable --now litestream
 sudo systemctl enable --now litestream-alive.timer
 ```
 
+Then set the three heartbeat URLs in `/etc/third-angle/env`, where the
+provisioning script left them commented out. Each script pings its URL on
+success and `/fail` on failure, so a **missing** ping is what alerts:
+
+| Variable | Script | Runs |
+|---|---|---|
+| `BACKUP_HEALTHCHECK_URL` | `third-angle-backup` | nightly |
+| `VERIFY_HEALTHCHECK_URL` | `third-angle-verify` | nightly, straight after the snapshot |
+| `LITESTREAM_HEALTHCHECK_URL` | `third-angle-alive` | every fifteen minutes |
+
+Without them a backup can fail every night on a machine nobody is watching and
+nothing will say so, which is worse than having no backup at all, because this
+one is trusted. Healthchecks.io's free tier covers all three.
+
 R2's free tier is 10 GB and this database is a rounding error against it. Any
 S3-compatible bucket works, including Oracle Object Storage — but keeping the
 backup at the same provider as the machine defeats the point of it, so use the
@@ -210,10 +226,12 @@ Record the measured time in [RESTORE.md](RESTORE.md).
 ## Afterwards
 
 **Watching it.** `journalctl -u third-angle -f`, `journalctl -u cloudflared -f`,
-and `/var/log/caddy/third-angle.log`. The tunnel answers on
-`127.0.0.1:2100/metrics`, and the liveness timer scrapes it: a dead tunnel stops
-answering and the missing answer is what alerts, where tailing a log would not
-catch the process simply being gone.
+and `/var/log/caddy/third-angle.log`. Litestream answers on
+`localhost:9090/metrics`, and `litestream-alive.timer` scrapes it every fifteen
+minutes: it asserts the replica index has not gone backwards and that the
+endpoint still answers, which catches the process simply being gone where
+tailing a log would not. The tunnel's own metrics endpoint,
+`127.0.0.1:2100/metrics`, is not scraped by anything yet.
 
 **Deploying a change.**
 

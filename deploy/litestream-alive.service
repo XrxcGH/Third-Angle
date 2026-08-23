@@ -5,7 +5,8 @@ After=network-online.target
 [Service]
 Type=oneshot
 EnvironmentFile=/etc/third-angle/env
-# Scrapes the metrics endpoint and asserts the replica sync timestamp has
-# advanced since the last scrape. This catches process death, which tailing
-# the log does not.
+# Scrapes the metrics endpoint and asserts the replica WAL index has not gone
+# backwards since the last scrape, and that the endpoint answers at all. It does
+# not require the index to advance, because nothing is written on a quiet day.
+# This catches process death, which tailing the log does not.
 ExecStart=/usr/local/bin/third-angle-alive

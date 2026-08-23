@@ -4,11 +4,12 @@ Eric J. Dean's engineering portfolio. Mechanical, electrical, controls,
 software, fabrication, documentation, business, and teaching, presented as one
 record per project rather than one page per discipline.
 
-Server rendered Node, Express, and EJS on `node:sqlite`. No build step, no native
-dependencies, no framework. Runs on a free Oracle Always Free ARM instance for
-the price of a domain name.
+Server rendered Node, Express, and EJS on `node:sqlite`. No build step and no
+framework, and one native dependency: `sharp`, which installs as a prebuilt
+binary. Runs on a free Oracle Always Free ARM instance for the price of a
+domain name.
 
-**Status: phases 02 to 08 done.** The public site, facet model, search, design
+**Status: phases 02 to 09 done.** The public site, facet model, search, design
 system, admin panel, media pipeline, document library, feeds, and deploy tooling
 are built and tested. The restore drill and the launch are not. See
 [Roadmap](#roadmap).
@@ -32,7 +33,7 @@ npm start          # http://localhost:3000
 ## Checks
 
 ```bash
-npm test              # 190 tests: routes, seo, icons, documents, contrast, layout, markup, account, pages, mailer, search, schema, security, auth, media, backup, regression
+npm test              # 239 tests: routes, seo, icons, documents, contrast, layout, markup, account, pages, mailer, search, schema, security, auth, media, backup, regression, contact, content, motion, edge, s3
 npm run check:scope   # fails when prose outruns code
 npm run check:costs   # fails when a quoted price goes stale
 ```
@@ -53,8 +54,8 @@ contact form need the server, so in the file they say so instead of failing
 quietly.
 
 
-Each of those exists because of a specific documented failure, not because a
-checklist said to add tests. `npm test` currently catches, among other things, a
+Each of those test suites exists because of a specific documented failure, not
+because a checklist said to add tests. `npm test` currently catches, among other things, a
 dim state that fails WCAG while looking fine, an FTS5 syntax error triggered by
 typing `C++` into search, an open redirect that a naive `startsWith('/')` check
 lets through, a `padding` shorthand that deletes the page gutter on a phone, and
@@ -71,7 +72,7 @@ src/
   repo.js              every query, as a named function
   markup.js            the two renderers. Nothing else turns stored text into HTML.
   labels.js            title case, and one label per stored enum
-  collage.js           what the photo wall needs. It does NOT compute a layout.
+  collage.js           packs the photo wall: one slot per photograph, in per cent.
   github.js            server side GitHub, cached, so no visitor talks to GitHub
   mailer.js            SMTP submission over node:tls, no dependency
   settings.js          the closed set of switches the admin can flip
@@ -157,10 +158,11 @@ filters to maintain, and the only decision on an upload is whether it is on the
 wall. `/admin/photos` is that one switch.
 
 **The photo collage packs itself.** Each tile carries its aspect ratio and
-flexbox does the rest, so every row fills the width exactly, adding a photograph
-re-packs everything below it, and there is nothing to rearrange by hand.
-Hovering one tile widens it and its neighbours give up the width, without the
-row changing height or the page reflowing. Below 700px it becomes two masonry
+src/collage.js cuts the wall in two, and each half in two again, until every
+photograph has a slot, so the wall packs with no dead space, adding a photograph
+re-packs it, and there is nothing to rearrange by hand.
+Hovering one tile scales it up over its neighbours and drains the saturation of
+the rest, without the wall changing height or the page reflowing. Below 700px it becomes two masonry
 columns instead of squeezing, because a single justified tile crops every
 photograph to the same band and that destroys a portrait.
 
@@ -185,8 +187,8 @@ and lists the sessions that can currently reach the admin. Changing the password
 requires the current one, even though the session is already authenticated, and
 ends every other session. `scripts/create-admin.js --temp` hands over a short
 password for exactly this page to replace; while that flag is set, every admin
-page carries a warning. It is a warning and not a lock, because the point of a
-hand-over password is that it works.
+page carries a warning. It is a lock, not just a warning: every admin address except the account page
+and sign out redirects there until the password is replaced.
 
 ## Roadmap
 

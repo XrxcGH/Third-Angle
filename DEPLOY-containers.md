@@ -62,9 +62,15 @@ Keep the access key id and the secret; the secret is shown once.
 
 ### 2. Set the secrets
 
-These are the container's environment. `SESSION_SECRET` and `SITE_URL` are both
-checked at boot and the app refuses to start without them in production, which
-is deliberate: see `assertEnvironment` in `src/db.js`.
+`SESSION_SECRET` and `SITE_URL` are both checked at boot and the app refuses to
+start without them in production, which is deliberate: see `assertEnvironment`
+in `src/db.js`.
+
+> **These are Worker secrets, and they do not reach the container on their
+> own.** `worker/index.js` currently sets `envVars = {}`. Populate `envVars` on
+> the `ThirdAngle` class from `env` — `SESSION_SECRET`, `SITE_URL`, the R2 keys
+> and `GITHUB_TOKEN` — before deploying, or the container boots without them and
+> `assertEnvironment` stops it.
 
 ```sh
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"   # SESSION_SECRET
@@ -95,7 +101,7 @@ npm ci
 npm run seed          # projects, disciplines, and the copy
 npm run seed:pages
 npm run seed:edu
-node scripts/create-admin.js you@example.com "Your Name"
+npm run admin -- you@example.com "Your Name" "a-handover-password" --temp
 
 npx wrangler r2 object put third-angle/third-angle/db/third-angle.db \
   --file data/third-angle.db --remote

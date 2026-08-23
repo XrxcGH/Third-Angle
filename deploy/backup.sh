@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Nightly logical snapshot. Risk R3 and R5.
+# Nightly logical snapshot.
 #
 # Litestream already replicates continuously, so why this as well: Litestream
 # faithfully replicates a mistake. A bad migration or an accidental DELETE

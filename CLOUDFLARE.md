@@ -102,14 +102,15 @@ it runs.
   `DatabaseSync` becomes the D1 binding, and every call becomes `await`, which
   ripples: `get`, `all`, and `run` are synchronous today and every caller
   assumes that. This is the single largest mechanical edit in the port.
-- **`src/repo.js`**, 790 lines and every query in the project, changes shape but
+- **`src/repo.js`**, 822 lines and most of the queries in the project, changes shape but
   not content: the SQL is the same, the functions become `async`. This is the
   part the project was designed for: nothing above `repo.js` knows what the
   database is.
 - **`db.transaction()`** becomes `D1.batch()`. This is a real change rather than
   a rename: the current helper wraps an arbitrary function body, and a batch is
-  a fixed list of statements decided in advance. The three places that use it
-  (project reorder, document ingest, media delete) each need rewriting so the
+  a fixed list of statements decided in advance. The six places that use it
+  (project reorder, project save, project delete, school delete, document ingest,
+  document delete) each need rewriting so the
   statements are known up front.
 - **`src/media.js`** and **`src/routes/media.js`** write and read R2 instead of
   the filesystem. `/media/:key` becomes an R2 `get`, or a public bucket domain,
@@ -169,7 +170,7 @@ rather than dropping.
   rather than difficult, and mechanical work at that volume is where quiet bugs
   come from: a missing `await` returns a promise that renders as `[object
   Promise]` or, worse, silently skips a write.
-- **Test suite.** 212 tests run against a real SQLite file in milliseconds.
+- **Test suite.** 239 tests run against a real SQLite file in milliseconds.
   Against D1 they need either `wrangler`'s local D1 (slower, and a different
   process) or a fake. That is a day's work on its own and it is not optional:
   those tests are what makes the rest of it safe to change.
@@ -200,7 +201,7 @@ the Oracle box you already planned for.
 - **What you lose:** search and the document library are dynamic, so they either
   stay on the origin or become a client-side index. Every publish needs a build
   and deploy step, which is exactly the thing the admin panel exists to avoid,
-  and which the README calls out as the reason a static site was ruled out.
+  and which is the reason a static site was ruled out.
 - **Honest note:** this reintroduces the problem the project was built to
   solve. I would not recommend it.
 
@@ -220,15 +221,26 @@ days of work rather than hours.
 
 ## What is already portable
 
-Worth knowing, whichever route you take. The following need no changes at all:
+Worth knowing, whichever route you take. These need no changes at all:
 
-- Every query is a named function in `src/repo.js`, so the driver is one file.
-- Nothing outside `public/css/tokens.css` defines a colour.
 - The renderers are pure functions in `src/markup.js`.
 - Password hashing, TOTP, and CSRF use `node:crypto`, which Workers supports.
 - The mailer talks to a relay on 587 or 465, both of which Workers permit; only
   the socket call itself changes.
-- There is no client-side JavaScript to port, because there is none.
+- The one piece of client-side JavaScript, `public/js/reorder.js`, is a
+  drag-to-reorder enhancement on the admin project list. It is served as a
+  static file, and the up and down buttons it enhances work without it.
+
+And two that are *nearly* portable, which is worth knowing before you plan
+around them:
+
+- **The SQL is mostly, not entirely, in `src/repo.js`.** Eight other modules
+  hold queries of their own — `src/routes/admin.js`, `src/auth.js`,
+  `src/documents.js`, `src/contact.js`, `src/media.js`, `src/content.js`,
+  `src/settings.js` and `src/github.js` — so swapping the driver is not the
+  one-file change the layering suggests.
+- **Nothing outside `public/css/tokens.css` defines a colour**, except the
+  Open Graph SVG in `src/seo.js`, which hardcodes five.
 
 Sources: [Node.js compatibility](https://developers.cloudflare.com/workers/runtime-apis/nodejs/),
 [node:sqlite in workerd](https://github.com/cloudflare/workerd/issues/6878),

@@ -25,9 +25,9 @@
 tunnel: TUNNEL_ID
 credentials-file: /etc/cloudflared/TUNNEL_ID.json
 
-# Loopback only, for the liveness check. A dead tunnel stops answering here,
-# and the missing answer is what alerts; tailing the log would not catch the
-# process simply being gone.
+# Loopback only. Nothing scrapes this yet: the only liveness timer in deploy/ is
+# litestream-alive.timer, which checks Litestream on 9090. A dead tunnel is
+# currently caught by the external uptime monitor, not from here.
 metrics: 127.0.0.1:2100
 
 # systemd owns the lifecycle. A binary that replaces itself underneath a
