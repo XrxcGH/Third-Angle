@@ -1,9 +1,54 @@
-# Caddy. Automatic TLS from Let's Encrypt, no configuration needed for certs.
+# Caddy, behind Cloudflare.
 #
 # Install to /etc/caddy/Caddyfile, then: sudo systemctl reload caddy
-# Replace example.com with the real domain before first run.
+# There is nothing in this file to edit. The domain is not named here on
+# purpose; see the note on www below.
+#
+#   visitor
+#      |  TLS terminated by Cloudflare, cached and filtered there
+#      v
+#   cloudflared            outbound tunnel, no inbound port on this machine
+#      |
+#      v
+#   Caddy 127.0.0.1:8080   this file
+#      |
+#      v
+#   Node  127.0.0.1:3000
+#
+# Caddy no longer terminates TLS or talks to Let's Encrypt. The public
+# certificate is Cloudflare's, and this side of the tunnel is a loopback socket
+# that never leaves the machine. What Caddy is still here for is the part
+# Cloudflare cannot do: holding the connection open across a systemd restart,
+# and serving a real page instead of a 502 when Node is genuinely down.
 
-example.com, www.example.com {
+{
+	# No ACME, and no certificate for a loopback address. Left on, Caddy tries
+	# to provision one for the site address below and fills the log with
+	# failures for a name that does not resolve.
+	auto_https off
+
+	# The local admin API is an unauthenticated write interface to the whole
+	# server config on 127.0.0.1:2019. Nothing here uses it.
+	admin off
+
+	servers {
+		# For Caddy's own access log. Node reads CF-Connecting-IP for itself,
+		# under its own rules, and does not take Caddy's word for it.
+		trusted_proxies static private_ranges
+		client_ip_headers CF-Connecting-IP X-Forwarded-For
+	}
+}
+
+# A catch-all on loopback, not a domain.
+#
+# cloudflared forwards the visitor's Host header unchanged, so a site block
+# named example.com would have to be edited for the real domain and would
+# 404 every request until someone noticed. Matching the port instead means this
+# file is the same on every machine, and the apex-versus-www decision lives at
+# Cloudflare as a Redirect Rule, where it costs nothing and never reaches here.
+:8080 {
+	bind 127.0.0.1
+
 	encode zstd gzip
 
 	# The retry is what makes a systemd restart invisible. Caddy holds the
@@ -28,7 +73,10 @@ example.com, www.example.com {
 	}
 
 	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Strict-Transport-Security is NOT set here. The app sends it in
+		# production, and Cloudflare can be told to send it too; three copies of
+		# one header is two too many, and the app's copy is the one that is
+		# tested. See src/middleware.js.
 		-Server
 	}
 
@@ -39,3 +87,25 @@ example.com, www.example.com {
 		}
 	}
 }
+
+# ---------------------------------------------------------------------------
+# If you ever run the origin on a public address instead of through the tunnel
+#
+# Replace the block above with this one. It expects a Cloudflare Origin CA
+# certificate (free, fifteen years, trusted only by Cloudflare) and refuses any
+# connection that does not present Cloudflare's own client certificate, which is
+# what stops somebody who finds the IP from bypassing the WAF entirely. The zone
+# must be on Full (strict) and Authenticated Origin Pulls must be on.
+#
+# example.com {
+# 	tls /etc/caddy/origin.pem /etc/caddy/origin.key {
+# 		client_auth {
+# 			mode require_and_verify
+# 			trust_pool file /etc/caddy/cloudflare-origin-pull-ca.pem
+# 		}
+# 	}
+# 	... the same encode / reverse_proxy / handle_errors / header / log ...
+# }
+#
+# The firewall then has to allow 443 from Cloudflare's published ranges only,
+# and those ranges change. The tunnel exists so that none of this is true.

@@ -18,9 +18,9 @@
     /*
      * The wall.
      *
-     * Outside .wrap on purpose, so it runs the full width of the window rather
-     * than stopping at the 1180px measure the reading pages use. Photographs
-     * are not prose and do not want a measure.
+     * Outside .wrap on purpose. It supplies its own gutter, matching .wrap's
+     * exactly, so the wall lines up with the text above it without inheriting
+     * anything else the reading pages do.
      *
      * Every slot is a percentage of the wall's own box, packed in src/collage.js
      * by cutting the rectangle in two over and over until each photograph has

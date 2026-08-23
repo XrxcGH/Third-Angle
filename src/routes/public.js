@@ -496,6 +496,15 @@ router.get('/documents/:slug', (req, res, next) => {
  */
 router.get('/log', (req, res) => res.redirect(301, '/now'));
 
+/*
+ * The four addresses people actually type when they want a feed. Only one of
+ * them was ever real, and the other three answered with the 404 page, which
+ * reads as "there is no feed" rather than as "it is spelled differently".
+ */
+for (const alias of ['/feed', '/rss', '/rss.xml', '/atom.xml']) {
+  router.get(alias, (req, res) => res.redirect(301, '/feed.xml'));
+}
+
 /* ------------------------------------------------------------------ theme */
 
 /*
@@ -693,6 +702,12 @@ router.get('/feed.xml', (req, res) => {
      an XML document is line oriented and this stays readable. */
   const lines = [
     '<?xml version="1.0" encoding="utf-8"?>',
+    /*
+     * So that clicking "Feed" lands on a page rather than on a wall of raw
+     * markup. Every feed reader ignores this instruction; browsers apply it.
+     * See public/feed.xsl.
+     */
+    '<?xml-stylesheet type="text/xsl" href="/static/feed.xsl"?>',
     '<feed xmlns="http://www.w3.org/2005/Atom">',
     '  <title>Eric J. Dean</title>',
     '  <subtitle>Mechanical, electrical, controls, and software.</subtitle>',
@@ -716,7 +731,23 @@ router.get('/feed.xml', (req, res) => {
   }
 
   lines.push('</feed>', '');
-  res.type('application/atom+xml; charset=utf-8').send(lines.join('\n'));
+  /*
+   * Two readers, two content types, one document.
+   *
+   * A feed reader wants application/atom+xml and uses it to decide the thing is
+   * a feed. A browser handed application/atom+xml renders the raw markup as
+   * plain text: it does not parse it as XML, so it never fetches the stylesheet
+   * above and the reader gets a wall of angle brackets. Chrome parses
+   * application/xml, applies the transform, and shows a page.
+   *
+   * So the type is chosen by who is asking. Anything that says it takes HTML is
+   * a browser; everything else gets the strict type it came for. Vary says so,
+   * for the caches that read it.
+   */
+  const wantsHtml = req.accepts(['application/atom+xml', 'html']) === 'html';
+  res.setHeader('Vary', 'Accept, Cookie');
+  res.type(wantsHtml ? 'application/xml; charset=utf-8' : 'application/atom+xml; charset=utf-8')
+    .send(lines.join('\n'));
 });
 
 router.get('/feed.json', (req, res) => {

@@ -173,9 +173,18 @@ code {
  * `padding: var(--s-7) 0` on a .wrap used to leave the 404 and 500 pages with
  * their text flush against the edge of a phone screen.
  */
+/*
+ * The page is the window.
+ *
+ * This used to cap at 1180px and centre, which put two grey margins down the
+ * sides of a wide monitor and made the header float in the middle of a screen
+ * it was supposed to span. The gutter stays — text hard against the glass is
+ * not "using the width", it is a bug — but nothing is centred and nothing is
+ * capped, so a 2560px window is 2560px of page.
+ */
 .wrap {
-  max-width: 1180px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding-inline: clamp(18px, 4vw, 48px);
   width: 100%;
 }
@@ -198,8 +207,8 @@ code {
  * window beside a full width rule reads as a rendering fault rather than as
  * typography. Asked for explicitly, and the right call for these pages.
  *
- * The width is not unbounded: .wrap still caps the column at 1180px, so the
- * longest line on a large monitor is the page, not the screen.
+ * Nothing caps it now: .wrap runs the window, so on a wide monitor the longest
+ * line is the window less its gutter. That is the width that was asked for.
  */
 .prose { max-width: none; }
 .measure { max-width: none; }
@@ -227,6 +236,22 @@ code {
  * and the content under it is 32px. This makes them the same.
  */
 :has(+ .section) { margin-block-end: 0; }
+
+/*
+ * And the same at the other end: a block that OPENS a section does not add its
+ * own margin either.
+ *
+ * .section already spends 32px of padding getting clear of its rule, and
+ * `.prose h2` adds 32px more of its own. On a page whose outer wrapper carries
+ * .prose — /attributions is the clearest case, four sections in a short page —
+ * every section boundary therefore came out at 96px rather than the 64px the
+ * rule above was written to produce, and the page read as mostly gap.
+ *
+ * The heading is not always the direct child, because a section may open with
+ * a .prose wrapper around its content, so both shapes are named.
+ */
+.section > :first-child,
+.section > .prose:first-child > :first-child { margin-top: 0; }
 
 /*
  * Kept as an explicit `none` rather than deleted. `.section.prose` used to cap
@@ -908,17 +933,15 @@ code {
 /*
  * The full width of the window, not the reading measure.
  *
- * Photographs are not prose. .wrap caps text at 1180px so a line stays
- * readable, which is exactly the wrong constraint for a wall of images: it
- * leaves two empty columns on a large monitor and makes every photograph
- * smaller than the screen can show.
+ * The wall sits outside .wrap and supplies its own gutter, using the same
+ * clamp .wrap uses so the two line up exactly. It has to be its own rule
+ * rather than nothing at all, because running the photographs to the glass
+ * made this the one block on the site that did not line up with the text above
+ * and below it.
  */
 .collage-full {
   /*
-   * The page gutter, not the tile gap. The wall is full width in the sense
-   * that it is not capped at the 1180px measure; it is not full bleed. Running
-   * it to the glass made it the one block on the site that did not line up
-   * with everything above and below it.
+   * The page gutter, not the tile gap. Full width, not full bleed.
    *
    * MARGIN, not padding, and that is not a preference.
    *
@@ -985,8 +1008,7 @@ code {
 @media (max-width: 359px) {
   .collage { column-count: 1; }
 }
-/* Three columns once there is room for them, which there is sooner now the
-   wall is not inside the 1180px measure. */
+/* Three columns once there is room for them. */
 @media (min-width: 560px) and (max-width: 700px) {
   .collage { column-count: 3; }
 }

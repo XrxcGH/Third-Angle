@@ -20,8 +20,10 @@
 
 <header class="admin-bar">
   <div class="wrap bar">
+    <%# No mark here. The projection symbol is the public site's, and shrunk to
+        26px beside the word it read as an unexplained pictogram rather than as
+        a logo. The word is the link, and the word is enough. %>
     <a class="brand" href="/admin">
-      <%- include('partials/mark', { size: 26 }) %>
       <span class="wordmark">ADMIN</span>
     </a>
     <% if (typeof session !== 'undefined' && session) { %>
