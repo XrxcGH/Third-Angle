@@ -380,9 +380,17 @@ other account.
 
 An unrehearsed backup is a belief, not a backup.
 
+Run it inside `tmux`, which provisioning installs. This step restores a whole
+database and times itself, and it is long enough that an SSH connection dropping
+partway would cost you the measurement:
+
 ```sh
+tmux new -s drill
 sudo third-angle-verify
 ```
+
+If the connection does drop, reconnect and `tmux attach -t drill` returns you to
+it still running.
 
 Record the measured time in [RESTORE.md](RESTORE.md).
 
