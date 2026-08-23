@@ -33,7 +33,7 @@ after(() => {
 
 const PUBLIC_PAGES = [
   '/', '/work', '/work?d=electrical', '/work?d=nonexistent-discipline',
-  '/disciplines', '/disciplines/controls', '/log', '/now', '/attributions',
+  '/disciplines', '/disciplines/controls', '/now', '/attributions',
   '/search', '/search?q=swerve', '/search?q=elctrical',
   '/feed.xml', '/feed.json', '/sitemap.xml', '/robots.txt',
   '/.well-known/security.txt', '/healthz',

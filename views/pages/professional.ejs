@@ -61,6 +61,18 @@
           </div>
         <% } %>
 
+        <%
+          /* The panel ends on a button row, the same as the LinkedIn panel
+             beside it. Without one this card was shorter than its neighbour and
+             the slack fell into a single gap above the language chips. */
+        %>
+        <div class="btn-row">
+          <a class="btn" href="<%= gh.profile.url %>" rel="me noopener"><%= c('professional.gh.cta') %></a>
+          <% if (gh.top.length) { %>
+            <a class="btn btn-quiet" href="#repositories"><%= c('professional.gh.cta2') %></a>
+          <% } %>
+        </div>
+
       <% } else { %>
         <h2 id="gh-heading" style="margin-bottom: var(--s-2);"><%= c('professional.gh.heading') %></h2>
         <p style="color: var(--text-muted); font-size:.95rem;">
@@ -79,9 +91,7 @@
     <%# ------------------------------------------------------------- LinkedIn %>
     <section class="panel" aria-labelledby="li-heading">
       <div class="profile-head">
-        <span class="profile-mark icon-host" style="color: var(--patina);">
-          <%- include('../partials/icon', { name: 'business', size: 30 }) %>
-        </span>
+        <span class="profile-mark"><%- include('../partials/li-mark', { size: 30 }) %></span>
         <span class="profile-title">
           <span class="profile-name" id="li-heading"><%= c('professional.li.name') %></span>
           <a class="mono profile-handle" href="<%= linkedin.url %>" rel="me noopener">
@@ -134,7 +144,7 @@
 
   <%# ---------------------------------------------------------- repositories %>
   <% if (gh.top.length) { %>
-    <section class="section">
+    <section class="section" id="repositories">
       <p class="eyebrow"><%= c('professional.repos.eyebrow') %></p>
       <h2><%= c('professional.repos.heading') %></h2>
       <p class="measure" style="color: var(--text-muted); font-size:.95rem;">

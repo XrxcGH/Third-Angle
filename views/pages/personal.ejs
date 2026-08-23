@@ -22,19 +22,23 @@
      * than stopping at the 1180px measure the reading pages use. Photographs
      * are not prose and do not want a measure.
      *
-     * Nothing here decides a position. Each tile carries only its aspect ratio
-     * as --ar, and flexbox packs the rows: every tile in a row lands on the same
-     * height, the row fills the width exactly, and adding a photograph re-packs
-     * everything after it. That is why there is no ordering step and nothing to
-     * redo after an upload. Order is newest capture first, from SQL.
+     * Every slot is a percentage of the wall's own box, packed in src/collage.js
+     * by cutting the rectangle in two over and over until each photograph has
+     * one. Percentages, not pixels, so the browser still decides the real size
+     * and the wall still fills whatever width the window turns out to have. The
+     * wall's own shape comes from how many photographs are on it. Order is
+     * newest capture first, from SQL, and the packing preserves it exactly.
+     *
+     * Below 700px this is thrown away for two masonry columns; see app.css.
      */
   %>
-  <div class="collage collage-full" style="--row-h-base: <%= rowHeight %>px;">
+  <div class="collage collage-full" style="--wall-ar: <%= wallAspect %>;">
     <% for (const t of tiles) { %>
-      <figure class="collage-item" style="--ar: <%= t.aspect %>;" tabindex="0">
+      <figure class="collage-item" tabindex="0"
+              style="--ar: <%= t.aspect %>; --l: <%= t.left %>%; --t: <%= t.top %>%; --w: <%= t.slotWidth %>%; --h: <%= t.slotHeight %>%;">
         <img src="/media/<%= t.storage_key %>"
              <% const wp = srcset(t, 'webp'); %>
-             <% if (wp) { %>srcset="<%= wp %>" sizes="(min-width: 1400px) 25vw, (min-width: 700px) 40vw, 50vw"<% } %>
+             <% if (wp) { %>srcset="<%= wp %>" sizes="(max-width: 700px) 34vw, <%= Math.max(4, Math.round(t.slotWidth)) %>vw"<% } %>
              alt="<%= t.alt %>"
              width="<%= t.width %>" height="<%= t.height %>"
              loading="lazy" decoding="async">

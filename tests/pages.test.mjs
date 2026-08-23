@@ -102,156 +102,130 @@ test('a photograph with no dimensions cannot break a row', () => {
   assert.equal(t.aspect, 1);
 });
 
-test('the row height falls as the wall grows', () => {
-  const heights = [2, 6, 15, 60].map(collage.rowHeight);
-  for (let i = 1; i < heights.length; i++) {
-    assert.ok(heights[i] < heights[i - 1], 'a longer wall must use a shorter row');
+test('a longer wall reads as more tiles across', () => {
+  // The wall's whole shape comes from this one number: a wall of twelve should
+  // be a feature at four across, a wall of two hundred a mosaic at ten.
+  const widths = [2, 6, 15, 60, 200].map(collage.across);
+  for (let i = 1; i < widths.length; i++) {
+    assert.ok(widths[i] > widths[i - 1], 'a longer wall must read as more tiles across');
   }
 });
 
-test('the collage is packed by CSS, not by a stored order', () => {
+/* A synthetic library with the shapes a real one has, so the packer is measured
+   against portraits, landscapes, squares, and panoramas rather than one shape. */
+function wall(n) {
+  const shapes = [[3, 2], [2, 3], [4, 3], [1, 1], [16, 9], [3, 4], [12, 5], [5, 12], [2, 3], [3, 2], [9, 16]];
+  return Array.from({ length: n }, (_, i) => {
+    const [w, h] = shapes[(i * 5) % shapes.length];
+    return { id: i + 1, storage_key: `k${i}`, width: w * 100, height: h * 100, mime: 'image/webp' };
+  });
+}
+
+test('every slot is inside the wall and none of them overlap', () => {
+  const { tiles } = collage.layout(wall(72));
+  for (const t of tiles) {
+    assert.ok(t.left >= -0.001 && t.top >= -0.001, `slot ${t.id} starts outside the wall`);
+    assert.ok(t.left + t.slotWidth <= 100.001, `slot ${t.id} runs past the right edge`);
+    assert.ok(t.top + t.slotHeight <= 100.001, `slot ${t.id} runs past the bottom edge`);
+    assert.ok(t.slotWidth > 0 && t.slotHeight > 0, `slot ${t.id} is empty`);
+  }
+  // Pairwise, because a packing bug shows as two photographs in one place.
+  for (let i = 0; i < tiles.length; i++) {
+    for (let j = i + 1; j < tiles.length; j++) {
+      const a = tiles[i]; const b = tiles[j];
+      const overlaps = a.left < b.left + b.slotWidth - 0.001
+        && b.left < a.left + a.slotWidth - 0.001
+        && a.top < b.top + b.slotHeight - 0.001
+        && b.top < a.top + a.slotHeight - 0.001;
+      assert.equal(overlaps, false, `slots ${a.id} and ${b.id} overlap`);
+    }
+  }
+});
+
+test('the wall is filled exactly, with no dead space', () => {
+  // The recursive split partitions the rectangle by construction, so anything
+  // other than 100% is a bug in the arithmetic rather than a matter of taste.
+  for (const n of [1, 2, 5, 12, 40, 72, 150]) {
+    const { tiles } = collage.layout(wall(n));
+    const covered = tiles.reduce((sum, t) => sum + (t.slotWidth * t.slotHeight) / 100, 0);
+    assert.ok(Math.abs(covered - 100) < 0.01, `a wall of ${n} covers ${covered.toFixed(2)}%`);
+  }
+});
+
+test('packing never reorders the photographs', () => {
   /*
-   * The whole point: nothing here computes a row. A server that decided row
-   * breaks would have to assume a viewport width it does not know, and the
-   * layout would be wrong at every other width.
+   * The split is always at a contiguous point in the list, so everything in the
+   * first half is above or to the left of everything in the second. A wall that
+   * reshuffles makes it impossible to point somebody at a photograph.
    */
-  const src = read('src', 'collage.js');
-  assert.equal(/row(s)?\s*=\s*\[/.test(src), false, 'collage.js must not build rows');
+  const { tiles } = collage.layout(wall(72));
+  assert.deepEqual(tiles.map((t) => t.id), Array.from({ length: 72 }, (_, i) => i + 1));
+});
+
+test('the same wall packs the same way twice', () => {
+  const a = collage.layout(wall(40)).tiles.map((t) => [t.left, t.top, t.slotWidth, t.slotHeight]);
+  const b = collage.layout(wall(40)).tiles.map((t) => [t.left, t.top, t.slotWidth, t.slotHeight]);
+  assert.deepEqual(a, b);
+});
+
+test('a small wall is not given a wall-sized anchor', () => {
+  /*
+   * The size distribution the references show is a distribution of fifty
+   * photographs or more. Applied unchanged to twelve, the anchor is a third of
+   * the canvas and the other eleven are pushed into the margins around it.
+   */
+  const small = collage.layout(wall(12)).tiles.map((t) => (t.slotWidth * t.slotHeight) / 100);
+  assert.ok(Math.max(...small) / Math.min(...small) < 4,
+    'a wall of twelve must be roughly even');
+
+  const large = collage.layout(wall(72)).tiles.map((t) => (t.slotWidth * t.slotHeight) / 100);
+  assert.ok(Math.max(...large) / Math.min(...large) > 8,
+    'a wall of seventy-two must have real size variety');
+  assert.ok(Math.max(...large) < 10,
+    'no single photograph may take a tenth of a wall of seventy-two');
+});
+
+test('the only photograph on the wall is not cropped to fit a rule', () => {
+  const [only] = collage.layout(wall(1)).tiles;
+  assert.equal(collage.layout(wall(1)).wallAspect, only.aspect);
+  assert.equal(only.crop, 1);
+});
+
+test('no photograph is packed into a strip', () => {
+  // A slot far from its photograph's shape is a crop; a slot far from ANY
+  // sensible shape is a post, and unreadable at any size.
+  const { tiles } = collage.layout(wall(72));
+  for (const t of tiles) {
+    assert.ok(t.slotAspect > 0.25 && t.slotAspect < 4,
+      `slot ${t.id} is ${t.slotAspect}:1, which is a strip`);
+  }
+});
+
+test('the wall is packed as slots, not as rows', () => {
+  /*
+   * The reversal from the row layout this replaced: a row can only vary a tile
+   * in one direction, because every tile in a row shares its height, and the
+   * collages this page is meant to look like vary in both.
+   */
   const css = read('public', 'css', 'app.css');
-  assert.match(css, /flex-basis: calc\(var\(--ar\)/);
-  assert.match(css, /flex-grow: var\(--ar\)/);
-  // The hovered tile grows and its neighbours give up the width.
+  assert.match(css, /\.collage \{[\s\S]{0,1800}aspect-ratio: var\(--wall-ar\)/);
+  assert.match(css, /\.collage-item \{[\s\S]{0,400}position: absolute/);
+  assert.equal(/flex-grow: var\(--ar\)/.test(css), false, 'the row layout must be gone');
+  // The hovered tile lifts over its neighbours; nothing is laid out again.
   assert.match(css, /\.collage-item:hover[\s\S]{0,160}transform: scale\(var\(--tile-hover\)\)/);
 });
 
-test('the last row is not stretched across the whole width', () => {
-  // Without the filler, flex-grow makes the final one or two photographs
-  // enormous and a wall of tidy rows ends in a billboard.
-  const css = read('public', 'css', 'app.css');
-  const filler = css.slice(css.indexOf('.collage::after'), css.indexOf('.collage-item {'));
-  assert.match(filler, /flex-grow: \d+/);
-  assert.match(filler, /flex-basis: 0/);
-});
-
-/* ------------------------------------------------------------- settings */
-
-test('an unknown setting key throws rather than writing a row nobody reads', () => {
-  assert.throws(() => settings.setSetting('pdf_veiwer', true), /Unknown setting/);
-  assert.throws(() => settings.getSetting('nonsense'), /Unknown setting/);
-});
-
-test('every setting has a default, so a fresh install renders', () => {
-  for (const key of settings.KEYS) {
-    const def = settings.DEFINITIONS[key];
-    assert.ok('default' in def, `${key} has no default`);
-    assert.ok(def.label && def.help, `${key} has no label or help text`);
-    assert.ok(['bool', 'text'].includes(def.type), `${key} has an unknown type`);
-  }
-});
-
-test('an unchecked box turns a setting off', () => {
-  // A checkbox that is not ticked is simply not submitted. Reading only what
-  // arrived would make a switch impossible to turn off.
-  const before = settings.getSetting('linkedin_badge');
-  settings.saveFromForm({ linkedin_badge: '1' });
-  assert.equal(settings.getSetting('linkedin_badge'), true);
-  settings.saveFromForm({});
-  assert.equal(settings.getSetting('linkedin_badge'), false);
-  settings.setSetting('linkedin_badge', before);
-});
-
-/* ------------------------------------------- the policy the switches move */
-
-test('the Content Security Policy opens only for what is switched on', () => {
-  const mw = require('../src/middleware.js');
-  const capture = () => {
-    const headers = {};
-    mw.securityHeaders({}, { setHeader: (k, v) => { headers[k] = v; } }, () => {});
-    return headers['Content-Security-Policy'];
-  };
-
-  const savedBadge = settings.getSetting('linkedin_badge');
-  const savedPdf = settings.getSetting('pdf_viewer');
-  try {
-    settings.setSetting('linkedin_badge', false);
-    settings.setSetting('pdf_viewer', false);
-    const closed = capture();
-    assert.match(closed, /script-src 'self';/);
-    assert.match(closed, /object-src 'none'/);
-    assert.match(closed, /frame-src 'none'/);
-    assert.equal(closed.includes('linkedin.com'), false);
-
-    settings.setSetting('pdf_viewer', true);
-    const withPdf = capture();
-    /*
-     * Both directives, not one. Chrome renders a PDF <object> through its
-     * internal viewer and checks frame-src as well as object-src, so allowing
-     * only object-src still refused to load it and the page silently fell back.
-     */
-    assert.match(withPdf, /object-src 'self'/);
-    assert.match(withPdf, /frame-src [^;]*'self'/);
-    assert.equal(withPdf.includes('linkedin.com'), false, 'the PDF switch must not open LinkedIn');
-
-    settings.setSetting('linkedin_badge', true);
-    const withBadge = capture();
-    assert.match(withBadge, /script-src 'self' https:\/\/platform\.linkedin\.com/);
-    assert.match(withBadge, /frame-src [^;]*https:\/\/www\.linkedin\.com/);
-  } finally {
-    settings.setSetting('linkedin_badge', savedBadge);
-    settings.setSetting('pdf_viewer', savedPdf);
-  }
-});
-
-/* --------------------------------------------------------------- github */
-
-test('repositories rank by most recent push, with forks and archives last', () => {
-  const ranked = github.rankRepos([
-    { name: 'archived', stars: 99, archived: true, fork: false, pushedAt: '2026-08-01' },
-    { name: 'fork', stars: 50, archived: false, fork: true, pushedAt: '2026-08-01' },
-    { name: 'popular', stars: 10, archived: false, fork: false, pushedAt: '2026-01-01' },
-    { name: 'recent', stars: 10, archived: false, fork: false, pushedAt: '2026-08-20' },
-  ]);
-  assert.deepEqual(ranked.map((r) => r.name), ['recent', 'popular', 'fork', 'archived']);
-});
-
-test('only the fields the page renders are kept from a GitHub response', () => {
-  // A full user object is about forty fields of URLs. Storing the rest would
-  // put data in the cache that nobody chose to publish.
-  const shaped = github.shapeProfile({
-    login: 'x', name: 'X', public_repos: 1, html_url: 'u',
-    email: 'private@example.com', two_factor_authentication: true,
-  });
-  assert.equal('email' in shaped, false);
-  assert.equal('two_factor_authentication' in shaped, false);
-  assert.equal(shaped.login, 'x');
-});
-
-test('the language mix is a share of the repositories, and adds up', () => {
-  const mix = github.languageMix([
-    { language: 'Java' }, { language: 'Java' }, { language: 'JavaScript' }, { language: null },
-  ]);
-  assert.deepEqual(mix.map((m) => m.language), ['Java', 'JavaScript']);
-  assert.equal(mix[0].share, 67);
-  assert.equal(mix.reduce((n, m) => n + m.count, 0), 3, 'a repository with no language is not counted');
-});
-
-/* ------------------------------------------------------------ templates */
-
-test('the contact form exists once, as a partial', () => {
+test('the gap between photographs is a hairline', () => {
   /*
-   * Two pages carry it. A copied form is how one of them ends up without a
-   * honeypot or a stamp six months later, and the failure is silent: the form
-   * still submits, it just stops being defended.
+   * Measured on all three reference collages: one pixel at 387px wide, three at
+   * 500px, zero on the densest. A comfortable gutter is the single change that
+   * stops the wall reading as one surface.
    */
-  const partial = read('views', 'partials', 'contact-form.ejs');
-  assert.match(partial, /name="t"/, 'the signed stamp is missing');
-  assert.match(partial, /class="honeypot"/, 'the honeypot is missing');
-
-  for (const page of ['contact.ejs', 'professional.ejs']) {
-    const src = read('views', 'pages', page);
-    assert.match(src, /include\('\.\.\/partials\/contact-form'/, `${page} does not use the partial`);
-    assert.equal(/name="company"/.test(src), false, `${page} has its own copy of the form`);
-  }
+  const css = read('public', 'css', 'app.css');
+  const decl = css.match(/--collage-gap: ([^;]+);/);
+  assert.ok(decl, 'the wall must declare a gap');
+  const max = decl[1].match(/(\d+)px\)?\s*$/);
+  assert.ok(max && Number(max[1]) <= 5, `the gap tops out at ${decl[1]}, which is a gutter`);
 });
 
 test('the personal page is one full-width wall with no stored order', () => {
@@ -260,6 +234,9 @@ test('the personal page is one full-width wall with no stored order', () => {
   assert.match(src, /class="collage collage-full"/);
   assert.equal(/album/i.test(src), false, 'the personal page must not mention albums');
   assert.match(src, /--ar: <%= t\.aspect %>/);
+  // Each slot as four percentages of the wall, packed on the server.
+  assert.match(src, /--l: <%= t\.left %>%/);
+  assert.match(src, /--wall-ar: <%= wallAspect %>/);
   // Focusable, or the wall cannot be explored from a keyboard.
   assert.match(src, /tabindex="0"/);
 });

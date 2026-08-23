@@ -289,7 +289,6 @@ router.get('/personal', (req, res) => {
     title: content.value('personal.meta.title'),
     description: content.value('personal.meta.description'),
     ...collage.layout(photos),
-    rowHeight: collage.rowHeight(photos.length),
     jsonLd: seo.jsonLd(res.locals.siteUrl, {
       trail: [{ name: 'Home', url: '/' }, { name: 'Personal', url: '/personal' }],
     }),
@@ -463,14 +462,15 @@ router.get('/documents/:slug', (req, res, next) => {
 
 /* -------------------------------------------------------------------- log */
 
-router.get('/log', (req, res) => {
-  res.render('pages/log', {
-    ...chrome(),
-    title: content.value('log.meta.title'),
-    description: content.value('log.meta.description'),
-    notes: repo.listNotes(50),
-  });
-});
+/*
+ * The build log is part of /now.
+ *
+ * They were the same page: a standing description of what is being worked on,
+ * and the dated entries behind it. 301 rather than a second render, because the
+ * URL has been published in the feeds and a permanent redirect is what tells a
+ * reader and a crawler that it moved rather than that it exists twice.
+ */
+router.get('/log', (req, res) => res.redirect(301, '/now'));
 
 /* ------------------------------------------------------------------ theme */
 
@@ -595,7 +595,7 @@ router.get('/now', (req, res) => {
     title: content.value('now.meta.title'),
     description: content.value('now.meta.description'),
     now: repo.getNow(),
-    notes: repo.listNotes(5),
+    notes: repo.listNotes(50),
   });
 });
 
@@ -607,7 +607,7 @@ router.get('/now', (req, res) => {
 function feedItems() {
   const notes = repo.listNotes(30).map((n) => ({
     id: `note-${n.id}`,
-    url: `/log#${n.slug}`,
+    url: `/now#${n.slug}`,
     title: n.title || `Log entry, ${n.created_at.slice(0, 10)}`,
     html: n.body_html,
     updated: n.created_at,
@@ -713,7 +713,6 @@ router.get('/sitemap.xml', (req, res) => {
     { loc: '/', pri: '1.0' },
     { loc: '/work', pri: '0.9' },
     { loc: '/disciplines', pri: '0.7' },
-    { loc: '/log', pri: '0.5' },
     { loc: '/education', pri: '0.8' },
     { loc: '/professional', pri: '0.8' },
     { loc: '/contact', pri: '0.7' },

@@ -45,8 +45,7 @@ const PAGES = [
   { slug: 'documents', label: 'Documents', route: '/documents' },
   { slug: 'contact', label: 'Contact', route: '/contact' },
   { slug: 'search', label: 'Search', route: '/search' },
-  { slug: 'log', label: 'Build Log', route: '/log' },
-  { slug: 'now', label: 'Now', route: '/now' },
+  { slug: 'now', label: 'Now and the Build Log', route: '/now' },
   { slug: 'attributions', label: 'Attributions', route: '/attributions' },
   { slug: 'errors', label: 'Error Pages', route: '/404', note: 'What a visitor sees when a URL is wrong or something breaks.' },
 ];
@@ -116,7 +115,7 @@ const SLOTS = [
   ['site.nav.professional', 'site', 'line', 'Professional'],
   ['site.nav.personal', 'site', 'line', 'Personal'],
   ['site.nav.documents', 'site', 'line', 'Documents'],
-  ['site.nav.log', 'site', 'line', 'Log'],
+  ['site.nav.log', 'site', 'line', 'Now', 'The nav link to /now, which carries the build log under it.'],
   ['site.nav.search', 'site', 'line', 'Search'],
   ['site.theme.label', 'site', 'line', 'Colour theme', 'Read out by a screen reader, not shown.'],
   ['site.theme.system', 'site', 'line', 'Auto'],
@@ -297,6 +296,8 @@ const SLOTS = [
   ['professional.gh.metric.followers', 'professional', 'line', 'Followers'],
   ['professional.gh.metric.since', 'professional', 'line', 'Since'],
   ['professional.gh.languages', 'professional', 'line', 'Languages by Repository'],
+  ['professional.gh.cta', 'professional', 'line', 'Open GitHub'],
+  ['professional.gh.cta2', 'professional', 'line', 'See the Repositories'],
   ['professional.repos.all', 'professional', 'line', 'repositories on GitHub', 'Follows the repository count.'],
   ['professional.li.school.k', 'professional', 'line', 'School'],
   ['professional.li.university.k', 'professional', 'line', 'University'],
@@ -378,17 +379,15 @@ const SLOTS = [
   ['search.recent.eyebrow', 'search', 'line', 'Most Recent Work'],
 
   /* ---- build log ---- */
-  ['log.eyebrow', 'log', 'line', 'Build Log'],
-  ['log.heading', 'log', 'line', 'What Is Happening Now'],
-  ['log.empty', 'log', 'line', 'No entries yet.'],
-  ['log.edited', 'log', 'line', 'Edited', 'Shown on an entry that was corrected after it was posted.'],
+  ['log.eyebrow', 'now', 'line', 'Build Log'],
+  ['log.heading', 'now', 'line', 'Recent Entries', 'The heading over the dated entries, under the standing description above them.'],
+  ['log.empty', 'now', 'line', 'No entries yet.'],
+  ['log.edited', 'now', 'line', 'Edited', 'Shown on an entry that was corrected after it was posted.'],
 
   /* ---- now ---- */
   ['now.eyebrow', 'now', 'line', 'Now'],
   ['now.heading', 'now', 'line', 'What I Am Working On'],
   ['now.empty', 'now', 'line', 'Nothing recorded here yet.'],
-  ['now.recent.heading', 'now', 'line', 'Recently'],
-  ['now.recent.link', 'now', 'line', 'Full Build Log'],
 
   /* ---- attributions ---- */
   ['attributions.eyebrow', 'attributions', 'line', 'Colophon'],
@@ -432,8 +431,6 @@ const SLOTS = [
   ['contact.meta.description', 'contact', 'text', 'Get in touch with Eric J. Dean.'],
   ['search.meta.title', 'search', 'line', 'Search'],
   ['search.meta.description', 'search', 'text', 'Search projects, documents, and disciplines.'],
-  ['log.meta.title', 'log', 'line', 'Build Log'],
-  ['log.meta.description', 'log', 'text', 'Short dated entries from work in progress.'],
   ['now.meta.title', 'now', 'line', 'Now'],
   ['now.meta.description', 'now', 'text', 'What Eric Dean is working on at the moment.'],
   ['attributions.meta.title', 'attributions', 'line', 'Attributions'],

@@ -11,19 +11,50 @@
     <p style="color: var(--text-muted);"><%= c('now.empty') %></p>
   <% } %>
 
-  <% if (notes.length) { %>
-    <section class="section">
-      <h2 style="font-size:1.2rem;"><%= c('now.recent.heading') %></h2>
-      <div class="stack" style="margin-top: var(--s-3);">
+  <%
+    /*
+     * The build log, on the same page.
+     *
+     * These were two pages and they were the same page: a paragraph about what
+     * is being worked on now, and a list of dated entries about what was worked
+     * on recently. Split across two links in the nav, the shorter of them read
+     * as a stub. Together they read as one running account, newest first, with
+     * the standing description at the top of it.
+     *
+     * .section supplies the dividing rule between the two, the same one every
+     * other page uses between its blocks.
+     */
+  %>
+  <section class="section">
+    <p class="eyebrow"><%= c('log.eyebrow') %></p>
+    <h2><%= c('log.heading') %></h2>
+
+    <% if (!notes.length) { %>
+      <p style="color: var(--text-muted); margin-top: var(--s-4);"><%= c('log.empty') %></p>
+    <% } else { %>
+      <div class="stack-lg" style="margin-top: var(--s-5);">
         <% for (const n of notes) { %>
-          <div style="border-bottom:1px solid var(--hairline); padding-bottom: var(--s-3);">
-            <p class="eyebrow" style="margin-bottom:4px;"><time datetime="<%= n.created_at %>"><%= fmtDate(n.created_at) %></time></p>
-            <% if (n.title) { %><strong><%= n.title %></strong><% } %>
-            <div><%- n.body_html %></div>
-          </div>
+          <article id="<%= n.slug %>" style="border-bottom: 1px solid var(--hairline); padding-bottom: var(--s-4);">
+            <p class="eyebrow"><time datetime="<%= n.created_at %>"><%= fmtDate(n.created_at) %></time><% if (n.project_title) { %> &middot; <%= n.project_title %><% } %></p>
+            <% if (n.title) { %><h3 style="font-size:1.2rem;"><%= n.title %></h3><% } %>
+            <div class="prose"><%- n.body_html %></div>
+            <%
+              /* Five minutes, not one day. A typo fixed straight after posting is
+                 not a correction anybody needs told about; an entry changed later
+                 is. Comparing dates alone hid every same-day edit. */
+              const edited = n.updated_at
+                && (new Date(n.updated_at) - new Date(n.created_at)) > 5 * 60 * 1000;
+            %>
+            <% if (edited) { %>
+              <%# An entry that was corrected says so. A log that quietly rewrites
+                  itself is not a log. %>
+              <p class="eyebrow" style="margin-top: var(--s-2);">
+                <%= c('log.edited') %> <time datetime="<%= n.updated_at %>"><%= fmtDate(n.updated_at) %></time>
+              </p>
+            <% } %>
+          </article>
         <% } %>
       </div>
-      <p style="margin-top: var(--s-4);"><a href="/log"><%= c('now.recent.link') %></a></p>
-    </section>
-  <% } %>
+    <% } %>
+  </section>
 </section>

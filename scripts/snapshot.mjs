@@ -30,7 +30,7 @@ const text = async (p) => (await fetch(BASE + p)).text();
 /* ---- which pages ---- */
 const home = await text('/');
 const links = new Set(['/', '/work', '/disciplines', '/education', '/professional',
-  '/personal', '/documents', '/contact', '/search', '/log', '/now', '/resume', '/attributions']);
+  '/personal', '/documents', '/contact', '/search', '/now', '/resume', '/attributions']);
 for (const html of [home, await text('/work'), await text('/disciplines'), await text('/documents')]) {
   for (const m of html.matchAll(/href="(\/(?:work|disciplines|documents)\/[a-z0-9-]+)"/g)) links.add(m[1]);
   /* The discipline filters are pages too: they have their own URL, their own
