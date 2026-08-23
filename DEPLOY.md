@@ -248,9 +248,21 @@ so a restart is invisible from outside.
 **Cost.** Nothing here has a bill attached. The one number to re-read is in
 `costs.yml`, which `npm run check:costs` fails on when it goes stale.
 
-## The other route
+## Why the origin is a machine
 
-[DEPLOY-containers.md](DEPLOY-containers.md) is the Cloudflare Containers
-version of this, which needs the $5/month Workers Paid plan. Its files —
-`Dockerfile`, `worker/index.js`, `wrangler.jsonc`, `src/backup.js` — are still
-in the tree and still work. Nothing in this document uses them.
+Worth writing down, because "put it on Workers and stop paying for a server" is
+a reasonable thing to suggest and the answer is not obvious.
+
+Workers are V8 isolates, not machines. This application opens a SQLite file
+with `node:sqlite`, writes uploads to a directory and reads them back, and
+re-encodes every image with `sharp`, which is a native binary. None of those
+three has an equivalent in an isolate: the database becomes D1 and every query
+becomes `await`, the uploads become R2, and the re-encode has to move to a paid
+image service or into the browser.
+
+That re-encode is not a convenience. It is what proves an uploaded file is
+actually an image rather than a payload wearing an image's extension, and it is
+what strips the GPS coordinates a phone writes into a photograph.
+
+The machine costs nothing and does all of it today. Cloudflare is in front,
+where it is very good and also free.

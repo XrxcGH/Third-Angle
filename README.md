@@ -33,7 +33,7 @@ npm start          # http://localhost:3000
 ## Checks
 
 ```bash
-npm test              # 239 tests across 22 suites
+npm test              # 223 tests across 20 suites
 npm run check:scope   # fails when prose outruns code
 npm run check:costs   # fails when a quoted price goes stale
 ```

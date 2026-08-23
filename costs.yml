@@ -36,9 +36,8 @@ items:
     note: >
       The front half of the stack: proxied DNS, a universal certificate, edge
       caching, the free managed WAF ruleset, one rate-limiting rule, and the
-      tunnel that removes every inbound port from the origin. Workers Paid at
-      5/month is NOT used; see CLOUDFLARE.md. Cloudflare Tunnel is free and
-      unmetered on this plan.
+      tunnel that removes every inbound port from the origin. Cloudflare Tunnel
+      is free and unmetered on this plan.
 
   - name: Domain
     vendor: Cloudflare Registrar
