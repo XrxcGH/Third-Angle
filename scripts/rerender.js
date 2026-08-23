@@ -30,18 +30,31 @@ db.assertEnvironment();
 
 const WRITE = process.argv.includes('--write');
 
-/* table, primary key, and every markdown/HTML column pair on it. */
+/*
+ * table, primary key, the markdown/HTML column pairs, and THE RENDERER.
+ *
+ * The renderer is per table and it is not a detail. Project bodies, notes, and
+ * the now block are escaped and paragraphed, never parsed as markup — see the
+ * comment on renderInline in src/routes/admin.js — while a page is rich text.
+ * Re-rendering all four with the same function would quietly convert a project
+ * body into a format the editor does not write and cannot round trip: a line
+ * beginning with a hyphen would become a list, and a backtick would become a
+ * code span, neither of which the admin would produce from the same source.
+ *
+ * Each entry names the same function the write path uses. If a write path
+ * changes renderer, this list has to change with it.
+ */
 const CACHES = [
-  ['project', 'id', [['summary_md', 'summary_html'], ['body_md', 'body_html']]],
-  ['note', 'id', [['body_md', 'body_html']]],
-  ['page', 'slug', [['body_md', 'body_html']]],
-  ['now_page', 'id', [['body_md', 'body_html']]],
+  ['project', 'id', [['summary_md', 'summary_html'], ['body_md', 'body_html']], markup.paragraphs],
+  ['note', 'id', [['body_md', 'body_html']], markup.paragraphs],
+  ['now_page', 'id', [['body_md', 'body_html']], markup.paragraphs],
+  ['page', 'slug', [['body_md', 'body_html']], markup.richText],
 ];
 
 let checked = 0;
 let stale = 0;
 
-for (const [table, pk, pairs] of CACHES) {
+for (const [table, pk, pairs, render] of CACHES) {
   const cols = pairs.flat().join(', ');
   const rows = db.all(`SELECT ${pk} AS pk, ${cols} FROM ${table}`);
   for (const row of rows) {
@@ -53,7 +66,7 @@ for (const [table, pk, pairs] of CACHES) {
        * output for '': a column that was never filled in must stay empty
        * rather than acquiring an empty paragraph.
        */
-      const want = source.trim() ? markup.richText(source) : '';
+      const want = source.trim() ? render(source) : '';
       if ((row[html] || '') === want) continue;
       stale += 1;
       console.log(`${table}.${html} #${row.pk}`);

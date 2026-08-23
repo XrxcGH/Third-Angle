@@ -311,6 +311,89 @@ const PROJECTS = [
     links: [['Repository', 'https://github.com/XrxcGH/Internship-Applier', 'repo']],
   },
   {
+    slug: 'id-tech-watch',
+    title: 'iD Tech Watch',
+    subtitle: 'A classroom management system for camp labs: see every screen, close what should not be open, and hand the room back at the end of the week.',
+    tier: 'build',
+    status: 'shipped',
+    context: 'iD Tech',
+    role: 'Author',
+    featured: 0,
+    started_on: '2026-06',
+    ended_on: '2026-08',
+    summary_md:
+      'Instructors can see the open windows on every laptop in the room, close unauthorised applications, block games and '
+      + 'gaming sites for a session, pause screens, rename machines to the current week\'s students, and schedule the day. '
+      + 'Administrators run a whole organisation from one panel, arranged by location, building, class, and computer.',
+    body_md: [
+      'Written for the room rather than for the fleet. A camp lab turns over every week: new students, new names on the '
+      + 'machines, a different class in the same seats. The rename and the schedule exist because that turnover is the '
+      + 'actual job, and doing it by hand on twenty laptops is most of a morning.',
+      'Rebuilt in Node after contributing changes to a peer\'s earlier Flask version. Taking somebody else\'s working tool '
+      + 'and starting again is worth justifying: the Flask version was per-machine and the need was per-room, which is a '
+      + 'different program rather than a bigger one.',
+      'The source is public to read and the copyright is retained: there is no licence granted here, and nothing in it is '
+      + 'offered for reuse. It is published because being able to see how a thing works is the point of pointing at it.',
+    ].join('\n\n'),
+    metrics: [
+      ['Ages taught', '10 to 17', ''],
+      /* Three named courses, which the record states. A week count would be an
+         inference from the employment dates and is not written down anywhere. */
+      ['Courses run', '3', ''],
+    ],
+    facets: [
+      ['software', 'primary', 'A Node and WebSockets application: a live view of every client in a room, an administration panel over locations, buildings, classes, and machines, and scheduled actions.'],
+      ['teaching', 'significant', 'Built to run a classroom of ten to seventeen year olds, where the tool has to disappear behind the lesson rather than become one.'],
+    ],
+    links: [['Repository', 'https://github.com/XrxcGH/iD-Tech-Watch', 'repo']],
+  },
+  {
+    slug: 'groundwork-robotics-platform',
+    title: 'Groundwork Robotics Platform',
+    subtitle: 'The public site, staff CMS, and training system for a robotics education nonprofit, in development.',
+    tier: 'case-study',
+    status: 'in-progress',
+    context: 'Groundwork Robotics',
+    role: 'Founder and Author',
+    featured: 0,
+    started_on: '2026-08',
+    summary_md:
+      'Express, EJS, and Node\'s built-in SQLite, with no build step and no native dependency to compile. Forty two public '
+      + 'pages and thirty eight staff pages over thirteen route modules, a training system with a hundred and twenty eight '
+      + 'decks, and a set of checks that fail the build on a broken link, an empty section, or a placeholder that reached a '
+      + 'visitor.',
+    body_md: [
+      'Groundwork Robotics is a California nonprofit, seeking 501(c)(3) status, that trains and supports the students, '
+      + 'mentors, coaches, and volunteers behind competitive robotics. This is the software it runs on, and it is not '
+      + 'finished: it is in development and has not shipped.',
+      'The part worth pointing at is the checks, and there are five that run before any new copy is committed. One crawls '
+      + 'the running site for links that do not resolve, fragments included, sections that render blank, and seeded '
+      + 'placeholder text that reached a visitor. One holds every count a document states about the repository against the '
+      + 'repository, which catches the figure that was correct when it was written and is not now. One compares the '
+      + 'training tree against the decks in both directions: files no deck produces, and files a deck produces that are '
+      + 'absent.',
+      'A document scanner reads .docx directly, because a .docx is a zip holding one XML file and searching a Drive for a '
+      + 'policy name therefore returns nothing whatever the answer. Three duplicate policies were written on that false '
+      + 'negative before the check existed. It reads each title from inside the file rather than from its name, so a copy '
+      + 'under a different name in a different folder is still caught.',
+      'The training system is the largest piece: watch validation, grading, completion, and certificates, with the rules in '
+      + 'one module and unit tests over them rather than spread through the routes.',
+    ].join('\n\n'),
+    metrics: [
+      ['Public pages', '42', ''],
+      ['Staff pages', '38', ''],
+      ['Training decks', '128', ''],
+      ['Test suites', '16', ''],
+    ],
+    facets: [
+      ['software', 'primary', 'Express and EJS on Node\'s built-in SQLite: thirteen route modules, a training system with grading and certificates, a newsletter, and a document library, with no build step and no native dependencies.'],
+      ['documentation', 'significant', 'A governance and training document set generated by a toolchain, with a checker that reads each .docx from inside the zip so a duplicate policy under another file name is still found.'],
+      ['business', 'significant', 'The platform for a nonprofit seeking 501(c)(3) status: the public face, the staff tools, and the training records it has to keep.'],
+      ['teaching', 'supporting', 'A hundred and twenty eight training decks with watch validation and completion rules, built so a volunteer can be trained without a person in the room.'],
+    ],
+    links: [],
+  },
+  {
     slug: 'pumpkinlib',
     title: 'PumpkinLib',
     subtitle: 'A 22,778 line design specification for an FRC vendor library. No implementation, deliberately and visibly.',
@@ -351,9 +434,20 @@ const PROJECTS = [
 const pKeys = generateNKeysBetween(null, null, PROJECTS.length);
 
 const seedProjects = db.transaction(() => {
+  /*
+   * Every seeded project is removed BEFORE any of them is inserted.
+   *
+   * Deleting each one immediately before its own insert looks equivalent and is
+   * not: sort_key is unique, and pKeys is a fresh set generated for the current
+   * length of PROJECTS. Adding a project changes every key in that set, so the
+   * first insert collides with a key still held by a project further down the
+   * array that has not been deleted yet. The seed worked for as long as the
+   * count never changed, and failed with UNIQUE constraint failed the first
+   * time one was added.
+   */
+  for (const p of PROJECTS) db.run('DELETE FROM project WHERE slug = ?', p.slug);
+
   PROJECTS.forEach((p, i) => {
-    const existing = db.get('SELECT id FROM project WHERE slug = ?', p.slug);
-    if (existing) { db.run('DELETE FROM project WHERE id = ?', existing.id); }
 
     const res = db.run(
       `INSERT INTO project
