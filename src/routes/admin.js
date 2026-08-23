@@ -148,17 +148,26 @@ router.post('/login', form, loadSession, (req, res) => {
   }
 
   auth.recordAttempt(email, ip, true);
-  auth.clearAttempts(email, ip);
   auth.recordLogin(user.id);
   auth.purgeExpiredSessions();
+  auth.pruneAttempts();
 
   const session = auth.createSession(user.id, { userAgent: req.get('user-agent'), ip });
+  /*
+   * A sign in is an audited event, and on a site with one operator it is the
+   * most important one there is: every content change was already recorded and
+   * the thing that would actually tell somebody they had been broken into was
+   * not. A session row is genuinely inserted here, so it is an insert.
+   */
+  repo.logChange(user.email, 'session', user.id, 'insert',
+    { event: 'signed in', ip, agent: String(req.get('user-agent') || '').slice(0, 120) });
   res.setHeader('Set-Cookie',
     `${COOKIE}=${session.id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${14 * 86400}${PROD ? '; Secure' : ''}`);
   res.redirect(303, nextUrl);
 });
 
 router.post('/logout', form, loadSession, requireCsrf, (req, res) => {
+  repo.logChange(req.session.email, 'session', req.session.user_id, 'delete', { event: 'signed out' });
   auth.destroySession(req.session.id);
   res.setHeader('Set-Cookie', `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${PROD ? '; Secure' : ''}`);
   res.redirect(303, '/');
@@ -216,6 +225,10 @@ function accountView(req, extra = {}) {
        or a query string: a TOTP secret in a URL ends up in the browser
        history and in any proxy log between here and the screen. */
     enrol: null,
+    /* Successes and failures together: a refused attempt from an address the
+       operator does not recognise is the thing this page exists to show. */
+    attempts: auth.signInActivity(20),
+    failedCount: auth.signInActivity(100).filter((a) => !a.ok).length,
     ...extra,
   });
 }

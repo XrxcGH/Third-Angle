@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const a = require('../src/auth.js');
@@ -67,4 +68,76 @@ test('CSRF tokens are bound to the session and reject tampering', () => {
   assert.doesNotThrow(() => a.checkCsrf('session-abc', 'short'));
   assert.equal(a.checkCsrf('session-abc', 'short'), false);
   assert.equal(a.checkCsrf('session-abc', null), false);
+});
+
+/* ------------------------------------------------- sign in, recorded */
+
+test('a successful sign in resets the lockout without erasing the failures', () => {
+  /*
+   * The lockout used to clear itself by DELETING the failed rows, which meant
+   * the record of an attack was destroyed by the owner's next sign in:
+   * somebody could spend a week guessing, lock the account repeatedly, and
+   * leave nothing behind the moment the real operator logged in. The counter
+   * now reads from the last success instead, so both properties hold at once.
+   */
+  const email = `lockout-${Date.now()}@example.test`;
+  const ip = '203.0.113.77';
+  const db = require('../src/db.js');
+  const count = () => db.get(
+    'SELECT COUNT(*) AS n FROM login_attempt WHERE ip = ? AND email IS ?', ip, email).n;
+
+  try {
+    for (let i = 0; i < 10; i++) a.recordAttempt(email, ip, false);
+    assert.equal(a.isRateLimited(email, ip).limited, true, 'ten failures must lock');
+    assert.equal(count(), 10);
+
+    a.recordAttempt(email, ip, true);
+    assert.equal(a.isRateLimited(email, ip).limited, false,
+      'a success must clear the lockout');
+    assert.equal(count(), 11, 'and must not delete the history it cleared');
+
+    // Failures after the success count again, from zero.
+    for (let i = 0; i < 9; i++) a.recordAttempt(email, ip, false);
+    assert.equal(a.isRateLimited(email, ip).limited, false, 'nine is under the limit');
+    a.recordAttempt(email, ip, false);
+    assert.equal(a.isRateLimited(email, ip).limited, true, 'the tenth since the success locks');
+  } finally {
+    db.run('DELETE FROM login_attempt WHERE ip = ?', ip);
+  }
+});
+
+test('sign in activity is readable, newest first, successes and failures alike', () => {
+  const ip = '198.51.100.200';
+  const db = require('../src/db.js');
+  try {
+    a.recordAttempt('a@example.test', ip, false);
+    a.recordAttempt('b@example.test', ip, true);
+    const rows = a.signInActivity(5).filter((r) => r.ip === ip);
+    assert.equal(rows.length, 2);
+    assert.equal(rows[0].email, 'b@example.test', 'newest first');
+    assert.equal(rows[0].ok, 1);
+    assert.equal(rows[1].ok, 0);
+    // The reader is bounded, so a caller cannot ask for the whole table.
+    assert.ok(a.signInActivity(10_000).length <= 100);
+  } finally {
+    db.run('DELETE FROM login_attempt WHERE ip = ?', ip);
+  }
+});
+
+test('signing in and out are written to the audit log', () => {
+  /*
+   * Every content change was already audited and the one event that would tell
+   * somebody they had been broken into was not recorded anywhere a person
+   * could read.
+   */
+  const src = readFileSync(new URL('../src/routes/admin.js', import.meta.url), 'utf8');
+  const login = src.slice(src.indexOf("router.post('/login'"), src.indexOf("router.post('/logout'"));
+  assert.match(login, /logChange\([^)]*'session'[^)]*'insert'/,
+    'a sign in must be audited');
+  const logout = src.slice(src.indexOf("router.post('/logout'"), src.indexOf("router.post('/logout'") + 400);
+  assert.match(logout, /logChange\([^)]*'session'[^)]*'delete'/,
+    'a sign out must be audited');
+  // And before the session is destroyed, or the identity is already gone.
+  assert.ok(logout.indexOf('logChange') < logout.indexOf('destroySession'),
+    'the audit line must run while the session still has an identity');
 });

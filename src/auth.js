@@ -193,10 +193,33 @@ function recordAttempt(email, ip, ok) {
 function isRateLimited(email, ip) {
   const since = (mins) => new Date(Date.now() - mins * 60_000).toISOString();
 
+  /*
+   * Failures count only if they happened AFTER the last successful sign in from
+   * the same address, which is what "a fumbled password is not sticky" needs.
+   *
+   * That used to be done by deleting the failed rows on every success, and it
+   * meant the record of an attack was destroyed by the owner's next sign in:
+   * somebody could spend a week guessing, be locked out repeatedly, and leave
+   * nothing behind the moment the real operator logged in. The table is the only
+   * evidence there is that anyone tried, so it is now read from rather than
+   * emptied.
+   */
+  /*
+   * By id, not by timestamp. nowIso() is second resolution, so a failure
+   * written in the same second as the success it followed compares as "not
+   * after" it and would be dropped from the count. The id is a monotonic
+   * sequence and is exactly the ordering this needs.
+   */
+  const lastOk = get(
+    'SELECT id FROM login_attempt WHERE ok = 1 AND ip = ? AND email IS ? ORDER BY id DESC LIMIT 1',
+    ip, email || null
+  );
+  const floor = lastOk ? lastOk.id : 0;
+
   const pair = get(
     `SELECT COUNT(*) AS n FROM login_attempt
-      WHERE ok = 0 AND ip = ? AND email IS ? AND at > ?`,
-    ip, email || null, since(PER_PAIR_WINDOW_MIN)
+      WHERE ok = 0 AND ip = ? AND email IS ? AND at > ? AND id > ?`,
+    ip, email || null, since(PER_PAIR_WINDOW_MIN), floor
   );
   if (pair && pair.n >= PER_PAIR_LIMIT) return { limited: true, scope: 'account', retryMinutes: PER_PAIR_WINDOW_MIN };
 
@@ -209,9 +232,34 @@ function isRateLimited(email, ip) {
   return { limited: false };
 }
 
-/** A successful login clears the account tier so a fumbled password is not sticky. */
-function clearAttempts(email, ip) {
-  run('DELETE FROM login_attempt WHERE ok = 0 AND ip = ? AND email IS ?', ip, email || null);
+/*
+ * Retention, not amnesty.
+ *
+ * A successful sign in no longer erases the failures before it — isRateLimited
+ * counts from the last success instead. What this does is stop the table
+ * growing forever: ninety days is long enough to notice a slow attempt and see
+ * the shape of it, and short enough that the file does not carry a year of
+ * scanner noise.
+ */
+const ATTEMPT_RETENTION_DAYS = 90;
+
+function pruneAttempts() {
+  const cutoff = new Date(Date.now() - ATTEMPT_RETENTION_DAYS * 86_400_000).toISOString();
+  run('DELETE FROM login_attempt WHERE at < ?', cutoff);
+}
+
+/**
+ * Recent sign in activity, successes and failures together, newest first.
+ *
+ * Surfaced on the account page. A lockout table nobody can read tells the
+ * operator nothing: the point of recording an attempt is that an unfamiliar one
+ * is visible.
+ */
+function signInActivity(limit = 20) {
+  return all(
+    'SELECT at, email, ip, ok FROM login_attempt ORDER BY id DESC LIMIT ?',
+    Math.max(1, Math.min(100, Number(limit) || 20))
+  );
 }
 
 /* -------------------------------------------------------------------- CSRF
@@ -336,9 +384,10 @@ function destroyOtherSessions(userId, keepSessionId) {
 
 module.exports = {
   hashPassword, verifyPassword,
+  pruneAttempts, signInActivity,
   generateTotpSecret, verifyTotp, verifyTotpOnce, totpCounterFor, totpAt, totpUri, base32Encode, base32Decode,
   createSession, getSession, destroySession, purgeExpiredSessions,
-  recordAttempt, isRateLimited, clearAttempts,
+  recordAttempt, isRateLimited,
   csrfToken, checkCsrf,
   findUserByEmail, countUsers, createUser, setTotpSecret, recordLogin,
   getUser, updateProfile, setPassword, listSessions, destroyOtherSessions,
