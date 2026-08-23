@@ -244,8 +244,27 @@ server: it hands a message to something that already accepts mail for you.
 
 **Brevo**, free plan. Create an account, verify `ericjdean.com` as a sender, and
 add the DKIM and SPF records it gives you to this zone — Cloudflare is already
-answering for it, so that is three records and a few minutes. Then, in
-`/etc/third-angle/env`:
+answering for it, so that is three records and a few minutes.
+
+> **One SPF record. Not two.**
+>
+> Email Routing wants `v=spf1 include:_spf.mx.cloudflare.net ~all` and Brevo
+> wants `v=spf1 include:spf.brevo.com ~all`, and a domain is allowed exactly one
+> SPF TXT record. Publish both and the result is not "two policies", it is a
+> permanent error: every receiver that checks SPF treats the domain as
+> misconfigured and the mail is more likely to be junked than if there were no
+> SPF at all.
+>
+> Merge them into a single record at the apex:
+>
+> ```
+> v=spf1 include:spf.brevo.com include:_spf.mx.cloudflare.net ~all
+> ```
+>
+> Whichever service you set up second will tell you to add its own. Edit the
+> existing record instead.
+
+Then, in `/etc/third-angle/env`:
 
 ```sh
 SMTP_HOST=smtp-relay.brevo.com
