@@ -33,10 +33,17 @@ npm start          # http://localhost:3000
 ## Checks
 
 ```bash
-npm test              # 239 tests: routes, seo, icons, documents, contrast, layout, markup, account, pages, mailer, search, schema, security, auth, media, backup, regression, contact, content, motion, edge, s3
+npm test              # 239 tests across 22 suites
 npm run check:scope   # fails when prose outruns code
 npm run check:costs   # fails when a quoted price goes stale
 ```
+
+Run the seeds above first. A good many of these tests assert against real
+content — that search finds a project, that a feed has entries, that a page
+carries JSON-LD — so on an empty database they fail for want of rows rather
+than for want of code. They also run against `data/`, not a scratch copy, so
+`npm test` leaves rows behind: re-seed with `npm run seed -- --reset` if a
+later seed complains about a unique constraint.
 
 ### Looking at it without a server
 
