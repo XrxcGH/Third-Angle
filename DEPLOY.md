@@ -217,6 +217,34 @@ addresses need to exist: whatever the contact page publishes, and
 `/.well-known/security.txt` that names it, and an address published for
 reporting vulnerabilities that bounces is worse than not publishing one.
 
+That is mail coming **in**. Mail going out is a separate thing and needs a
+relay, because `src/mailer.js` is an SMTP submission client rather than a mail
+server: it hands a message to something that already accepts mail for you.
+
+**Brevo**, free plan. Create an account, verify `ericjdean.com` as a sender, and
+add the DKIM and SPF records it gives you to this zone — Cloudflare is already
+answering for it, so that is three records and a few minutes. Then, in
+`/etc/third-angle/env`:
+
+```sh
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_USER=       # the LOGIN from Brevo's SMTP & API page, not your Brevo email
+SMTP_PASS=       # an SMTP KEY from that page, not your Brevo password
+SMTP_FROM=contact@ericjdean.com
+```
+
+`SMTP_USER` catches everybody: Brevo's login is a generated address of the form
+`9xxxxxx@smtp-brevo.com`, and the address you sign in with does not authenticate.
+`SMTP_FROM` has to be a sender Brevo has verified or every send is rejected.
+
+Then `systemctl restart third-angle`, and in the admin under Settings turn
+**Forward contact messages by email** on and set **Forward messages to**.
+
+Nothing here is load-bearing for the site. Every message is stored in the admin
+inbox first and forwarded second, so a relay that is missing or broken costs a
+notification and never a message, and each row has its own retry.
+
 ### 6. Create the admin account
 
 ```sh

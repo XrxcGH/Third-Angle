@@ -101,20 +101,31 @@ items:
     note: Requires the zone to use Cloudflare nameservers, which the registrar choice already satisfies.
 
   - name: Email, outbound
-    vendor: Zoho
-    product: Mail Forever Free
+    vendor: Brevo
+    product: Free plan, SMTP relay
     amount_usd: 0
     period: year
-    source_url: https://www.zoho.com/mail/zohomail-pricing.html
-    verified_on: 2026-08-21
+    source_url: https://www.brevo.com/pricing/
+    verified_on: 2026-08-23
     volatile: true
-    evidence: "IMAP/POP/Active Sync not included"
+    evidence: "Free"
     note: >
-      No desktop client and no SMTP relay, from day one rather than as a later
-      upgrade. Also offered only in select data centres, so confirm at signup
-      before publishing the address. Do NOT architect around Gmail Send-as: Google
-      removes third-party Send as in January 2027. Pre-approved escape hatch is
-      Purelymail at about 10/year or Migadu Micro at 19/year.
+      An SMTP relay rather than a mailbox, which is the only thing the site
+      needs: src/mailer.js is a submission client, not a mail server. It speaks
+      STARTTLS on 587 and AUTH PLAIN or LOGIN, which is what Brevo offers.
+
+      NOT read from the vendor: the daily send allowance on the free plan was
+      not verifiable at the time of writing and is believed to be about 300 a
+      day, which a contact form does not approach. Confirm it, and confirm that
+      the free plan appends nothing to TRANSACTIONAL mail, before relying on it.
+
+      Chosen over Zoho Mail Forever Free, which ships with no SMTP relay at all,
+      and over Gmail, which cannot send as this domain and whose third-party
+      Send as Google removes in January 2027. Brevo authenticates ericjdean.com
+      with DKIM and SPF records added at Cloudflare, so mail comes from the
+      domain rather than from a personal account. Pre-approved escape hatch if
+      the free plan changes: Purelymail at about 10/year or Migadu Micro at
+      19/year.
 
   - name: Analytics
     vendor: Cloudflare
