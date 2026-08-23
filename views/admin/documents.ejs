@@ -75,7 +75,7 @@
           <td>
             <%# The resume and the CV are pinned to the top of the public page by
                 role, not by a filename convention or by upload order. %>
-            <form method="post" action="/admin/documents/<%= d.id %>/role" style="display:flex; gap:4px;">
+            <form method="post" action="/admin/documents/<%= d.id %>/role" style="display:flex; gap:4px; justify-content:center;">
               <input type="hidden" name="_csrf" value="<%= csrf %>">
               <label class="visually-hidden" for="role-<%= d.id %>">Role</label>
               <select id="role-<%= d.id %>" name="doc_role">

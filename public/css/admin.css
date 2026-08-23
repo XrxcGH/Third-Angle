@@ -91,7 +91,16 @@
   color: var(--text-body);
   font-family: var(--f-body);
 }
-.admin-table td form { min-width: 0; }
+/*
+ * A form in a cell is a flex container, not a block.
+ *
+ * As a block it gets a line box, and the baseline descender space under an
+ * inline-flex .btn made every form-wrapped button 26.13px tall against 23.13px
+ * for the plain anchors beside it. align-items: center on .actions then centred
+ * the taller boxes and left their buttons sitting 1.5px lower than Edit and
+ * Delete in every row of every table.
+ */
+.admin-table td form { min-width: 0; display: flex; }
 
 /*
  * A table of eight columns cannot reflow into 320px, and squeezing it produces
@@ -122,6 +131,10 @@
 
 /* Drag handle only appears where a pointer exists. The move buttons are the
    accessible baseline and are always present. */
-.drag-handle { cursor: grab; color: var(--text-muted); font-family: var(--f-mono); }
+/* nowrap, because the grip is two characters and the column is 44px. Without
+   it overflow-wrap breaks "::" BETWEEN the colons, the cell becomes the tallest
+   in the row, and the handle reads as two stray dots parked at the top and
+   bottom of a row 6px taller than it needs to be. */
+.drag-handle { cursor: grab; color: var(--text-muted); font-family: var(--f-mono); white-space: nowrap; }
 tr.dragging { opacity: .5; }
 tr.drop-target td { box-shadow: inset 0 2px 0 var(--accent); }

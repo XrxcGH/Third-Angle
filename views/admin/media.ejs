@@ -88,9 +88,9 @@
 <h2 style="font-size:1.15rem; margin-top: var(--s-6);"><%= items.length %> file<%= items.length === 1 ? '' : 's' %></h2>
 
 <div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="padding:0; margin-top: var(--s-3);">
-  <table class="admin-table">
+  <table class="admin-table" style="min-width:52rem;">
     <thead>
-      <tr><th style="width:96px;">Preview</th><th class="wide">Alt and Caption</th><th>Wall</th><th>Kind</th><th>Origin</th><th>Size</th><th style="text-align:right;">Actions</th></tr>
+      <tr><th style="width:96px;">Preview</th><th class="wide">Alt and Caption</th><th style="width:8rem;">Wall</th><th style="width:7rem;">Kind</th><th style="width:7rem;">Origin</th><th style="width:6rem;">Size</th><th style="text-align:right; width:14rem;">Actions</th></tr>
     </thead>
     <tbody>
       <% if (!items.length) { %>
@@ -100,10 +100,15 @@
         <tr>
           <td>
             <% if (m.mime.startsWith('image/')) { %>
+              <%# A fixed box, cropped, the same as the photo wall screen. The
+                  height used to come from the stored aspect ratio, so one
+                  portrait photograph made its row twice as tall as its
+                  neighbours and left the other six cells floating. The real
+                  pixel dimensions are still in the Size column. %>
               <img src="/media/<%= m.storage_key %>" alt="<%= m.alt %>"
-                   width="80" height="<%= m.width && m.height ? Math.round(80 * m.height / m.width) : 60 %>"
-                   loading="lazy" decoding="async"
-                   style="border-radius: var(--r-control); border:1px solid var(--hairline); display:block;">
+                   width="80" height="60" loading="lazy" decoding="async"
+                   style="width:80px; height:60px; object-fit:cover; display:block;
+                          border-radius: var(--r-control); border:1px solid var(--hairline);">
             <% } else { %>
               <span class="mono" style="font-size:.6rem; color: var(--text-muted);"><%= m.mime %></span>
             <% } %>
@@ -118,7 +123,7 @@
                 wall, so the only state is on or off. %>
             <% if (m.mime.startsWith('image/')) { %>
               <form method="post" action="/admin/media/<%= m.id %>/wall"
-                    style="display:flex; gap:6px; align-items:center;">
+                    style="display:flex; gap:6px; align-items:center; justify-content:center;">
                 <input type="hidden" name="_csrf" value="<%= csrf %>">
                 <input type="hidden" name="on" value="<%= m.album_slug ? '0' : '1' %>">
                 <button class="btn btn-quiet btn-sm" type="submit">
