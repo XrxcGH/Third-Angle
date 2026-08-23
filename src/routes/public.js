@@ -49,22 +49,29 @@ router.get('/work', (req, res) => {
   const projects = repo.listProjects();
 
   /*
-   * Note that non-matching projects are NOT removed. They are marked and then
-   * de-emphasised in CSS, so the page does not reflow, the breadth claim stays
-   * visible, and the filter is linkable and indexable because it lives in the
-   * query string rather than in client state.
+   * Non-matching projects are NOT removed. They are marked, moved below the
+   * matches, and de-emphasised in CSS, so the breadth claim stays visible and
+   * the filter is linkable and indexable because it lives in the query string
+   * rather than in client state.
+   *
+   * Matches first, though. Marking alone left the work somebody asked for
+   * scattered down a page of work they did not, which is a filter that makes
+   * the reader do the filtering.
    */
   const decorated = projects.map((p) => ({
     ...p,
     match: !active || p.facetSlugs.includes(active),
   }));
+  const ordered = active
+    ? [...decorated.filter((p) => p.match), ...decorated.filter((p) => !p.match)]
+    : decorated;
   const matchCount = decorated.filter((p) => p.match).length;
 
   res.render('pages/work', {
     ...chrome(),
     title: content.value('work.meta.title'),
     description: content.value('work.meta.description'),
-    projects: decorated,
+    projects: ordered,
     active,
     matchCount,
     jsonLd: seo.jsonLd(res.locals.siteUrl, { trail: [{ name: 'Home', url: '/' }, { name: 'Work', url: '/work' }] }),

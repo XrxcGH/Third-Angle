@@ -379,6 +379,7 @@ const SLOTS = [
   ['log.eyebrow', 'log', 'line', 'Build Log'],
   ['log.heading', 'log', 'line', 'What Is Happening Now'],
   ['log.empty', 'log', 'line', 'No entries yet.'],
+  ['log.edited', 'log', 'line', 'Edited', 'Shown on an entry that was corrected after it was posted.'],
 
   /* ---- now ---- */
   ['now.eyebrow', 'now', 'line', 'Now'],

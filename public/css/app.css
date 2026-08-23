@@ -270,12 +270,29 @@ code {
   flex-wrap: wrap;
 }
 .brand {
-  display: inline-flex; align-items: center; gap: var(--s-3);
+  display: inline-flex; align-items: stretch; gap: var(--s-3);
   text-decoration: none; color: var(--text-strong);
   margin-right: auto;
   min-width: 0;
+  transition: color var(--t-hover) var(--ease);
 }
 .brand svg { display: block; flex: none; }
+/*
+ * The two lines fill the mark's height exactly: the wordmark's cap height at
+ * the top of the mark, the strapline's baseline at the bottom. Centring them
+ * instead left both lines floating inside a taller box, which is the version
+ * of this that looks like nobody checked.
+ */
+.brand > span {
+  display: flex; flex-direction: column; justify-content: space-between;
+  min-width: 0;
+}
+/*
+ * One object, one colour. The strapline carried --text-muted, so hovering the
+ * logo turned three of its four parts orange and left the fourth grey.
+ */
+.brand:hover, .brand:focus-visible { color: var(--accent); }
+.brand:hover .sub, .brand:focus-visible .sub { color: inherit; }
 .brand .wordmark {
   font-family: var(--f-display);
   font-weight: var(--w-strong);
@@ -290,8 +307,8 @@ code {
   letter-spacing: .18em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin-top: 3px;
   display: block;
+  transition: color var(--t-hover) var(--ease);
 }
 
 .nav { display: flex; gap: var(--s-3) var(--s-4); align-items: center; flex-wrap: wrap; min-width: 0; }

@@ -174,7 +174,7 @@ function nextKeyFor(table, where = '1=1', ...params) {
 
 function listNotes(limit = 20) {
   return all(
-    `SELECT n.id, n.slug, n.title, n.body_html, n.created_at,
+    `SELECT n.id, n.slug, n.title, n.body_html, n.created_at, n.updated_at,
             p.slug AS project_slug, p.title AS project_title
        FROM note n
        LEFT JOIN project p ON p.id = n.project_id

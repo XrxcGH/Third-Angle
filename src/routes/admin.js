@@ -1077,25 +1077,61 @@ router.post('/pages/:slug', form, requireCsrf, (req, res, next) => {
 /* ------------------------------------------------------------------ notes */
 
 router.get('/notes', (req, res) => {
+  const editing = req.query.edit
+    ? get('SELECT * FROM note WHERE id = ?', Number(req.query.edit))
+    : null;
   res.render('admin/notes', view('notes', {
     title: 'Build log',
-    notes: all('SELECT id, slug, title, body_md, created_at FROM note ORDER BY created_at DESC LIMIT 100'),
+    notes: all(
+      `SELECT id, slug, title, body_md, published, created_at, updated_at
+         FROM note ORDER BY created_at DESC LIMIT 100`
+    ),
+    editing,
     projects: repo.listProjects({ includeUnpublished: true }),
   }));
 });
 
+/*
+ * One route for both. An entry that can be written and never corrected is an
+ * entry nobody writes in the first place, because a typo is permanent.
+ *
+ * The slug is derived once, on insert, and never again: it is the entry's
+ * address, and rewriting it because a title was corrected breaks every link
+ * anybody has to it.
+ */
 router.post('/notes/save', form, requireCsrf, (req, res) => {
   const body = markup.normaliseNewlines(req.body.body_md).trim();
   if (!body) return res.redirect(303, '/admin/notes');
   const now = nowIso();
-  const slug = `${now.slice(0, 10)}-${slugify(req.body.title || body.slice(0, 40)) || 'note'}`;
-  run(
-    `INSERT INTO note (slug, title, body_md, body_html, project_id, published, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
-    slug, String(req.body.title || '').trim() || null, body, renderInline(body),
-    req.body.project_id ? Number(req.body.project_id) : null, now, now
-  );
-  repo.logChange(req.session.email, 'note', 0, 'insert', { slug });
+  const id = Number(req.body.id) || 0;
+  const title = String(req.body.title || '').trim() || null;
+  const projectId = req.body.project_id ? Number(req.body.project_id) : null;
+  const published = req.body.published ? 1 : 0;
+
+  if (id) {
+    run(
+      `UPDATE note SET title = ?, body_md = ?, body_html = ?, project_id = ?,
+              published = ?, updated_at = ?
+        WHERE id = ?`,
+      title, body, renderInline(body), projectId, published, now, id
+    );
+    repo.logChange(req.session.email, 'note', id, 'update', { title });
+  } else {
+    const slug = `${now.slice(0, 10)}-${slugify(req.body.title || body.slice(0, 40)) || 'note'}`;
+    run(
+      `INSERT INTO note (slug, title, body_md, body_html, project_id, published, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      slug, title, body, renderInline(body), projectId, published, now, now
+    );
+    repo.logChange(req.session.email, 'note', 0, 'insert', { slug });
+  }
+  res.redirect(303, '/admin/notes');
+});
+
+router.post('/notes/:id/delete', form, requireCsrf, (req, res) => {
+  const id = Number(req.params.id);
+  run('DELETE FROM note WHERE id = ?', id);
+  repo.logChange(req.session.email, 'note', id, 'delete', null);
   res.redirect(303, '/admin/notes');
 });
 

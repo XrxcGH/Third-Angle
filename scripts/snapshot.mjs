@@ -33,6 +33,10 @@ const links = new Set(['/', '/work', '/disciplines', '/education', '/professiona
   '/personal', '/documents', '/contact', '/search', '/log', '/now', '/resume', '/attributions']);
 for (const html of [home, await text('/work'), await text('/disciplines'), await text('/documents')]) {
   for (const m of html.matchAll(/href="(\/(?:work|disciplines|documents)\/[a-z0-9-]+)"/g)) links.add(m[1]);
+  /* The discipline filters are pages too: they have their own URL, their own
+     order and their own emphasis, and a snapshot that dropped them would make
+     every filter chip look broken. */
+  for (const m of html.matchAll(/href="(\/work\?d=[a-z0-9-]+)"/g)) links.add(m[1]);
 }
 const ROUTES = [...links];
 
@@ -90,6 +94,7 @@ for (const m of bundle.matchAll(/srcset="([^"]+)"/g)) {
     if (u.startsWith('/')) srcs.add(u);
   }
 }
+const captured = new Set(ROUTES);
 const uris = new Map();
 for (const s of srcs) {
   if (/\.(css|js)$/.test(s)) continue;
@@ -109,10 +114,17 @@ const inline = (html) => {
     });
     return rebuilt.every(Boolean) ? `srcset="${rebuilt.join(', ')}"` : '';
   });
-  // internal links become routes; everything else is left alone
-  out = out.replace(/href="(\/[^"#]*)"/g, (whole, href) => {
-    if (/^\/(media|static|og|avatar)\//.test(href)) return whole;
-    return `href="#${href}"`;
+  /*
+   * An internal link becomes a route only if the snapshot actually holds that
+   * page. Anything else — the admin, the feeds, the sitemap — is marked, and
+   * the click handler says what it is. Rewriting them all meant every link the
+   * snapshot could not answer silently went to the home page, which reads as a
+   * broken site rather than as a missing page.
+   */
+  out = out.replace(/href="(\/[^"]*)"/g, (whole, href) => {
+    if (/^\/(media|static|og)\//.test(href)) return whole;
+    if (captured.has(href)) return `href="#${href}"`;
+    return `href="#" data-offline="${href.replace(/"/g, '&quot;')}"`;
   });
   return out;
 };
@@ -226,6 +238,16 @@ ${inline(footer)}
   document.addEventListener('submit', function (e) {
     e.preventDefault();
     say('This snapshot has no server, so search and the contact form are switched off here.');
+  });
+
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest && e.target.closest('a[data-offline]');
+    if (!link) return;
+    e.preventDefault();
+    var target = link.getAttribute('data-offline');
+    say(target.indexOf('/admin') === 0
+      ? 'The admin needs the running server. It is not in this snapshot.'
+      : target + ' needs the running server.');
   });
 })();
 </script>
