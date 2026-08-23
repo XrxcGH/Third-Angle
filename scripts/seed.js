@@ -430,7 +430,9 @@ console.log(`projects: ${PROJECTS.length}`);
  */
 const NOW_MD =
   'Interning at the Western Region Robotics Forum, founding Groundwork Robotics, '
-  + 'and mentoring three FIRST teams. At UCLA this term: MAE M20, MATH 32B, and MSE 104.';
+  + 'and mentoring three FIRST teams. At UCLA this term: MECH&AE 101 Statics and '
+  + 'Strength of Materials, Physics 1B, the Physics 4AL mechanics laboratory, and '
+  + 'Stats 10.';
 
 db.run(
   `INSERT INTO now_page (id, body_md, body_html, updated_at) VALUES (1, ?, ?, ?)

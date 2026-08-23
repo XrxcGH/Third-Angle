@@ -269,6 +269,7 @@ const SLOTS = [
   ['education.done', 'education', 'line', 'done', 'As in "9 done, 3 in progress".'],
   ['education.inprogress', 'education', 'line', 'in progress'],
   ['education.coursework', 'education', 'line', 'Coursework'],
+  ['education.units.noun', 'education', 'line', 'units', 'Follows the unit count on a class row.'],
   ['education.sort.label', 'education', 'line', 'Sort By'],
   ['education.sort.name', 'education', 'line', 'Name'],
   ['education.sort.term', 'education', 'line', 'Term, Newest First'],

@@ -572,9 +572,29 @@ const SEASON_ORDER = { winter: 1, spring: 2, summer: 3, fall: 4, autumn: 4 };
 
 function termSortValue(term) {
   const t = String(term || '').trim();
-  const m = /^([A-Za-z]+)\s*(\d{4})$/.exec(t);
-  if (!m) return { year: 0, season: 0, label: t };
-  return { year: Number(m[2]), season: SEASON_ORDER[m[1].toLowerCase()] || 0, label: t };
+
+  const quarter = /^([A-Za-z]+)\s*(\d{4})$/.exec(t);
+  if (quarter) {
+    return {
+      year: Number(quarter[2]),
+      season: SEASON_ORDER[quarter[1].toLowerCase()] || 0,
+      label: t,
+    };
+  }
+
+  /*
+   * An academic year: "2024-25", "2024\u201325", or a bare "2024".
+   *
+   * A school that runs on years rather than quarters writes its terms this way,
+   * and without this every one of them scored year 0, tied with each other, and
+   * fell through to the alphabetical comparison — so "sort by term, newest
+   * first" quietly returned an alphabetical list. The starting year is the key;
+   * a two digit ending year is not a year at all.
+   */
+  const academic = /^(\d{4})(?:\s*[\u2012-\u2015-]\s*\d{2,4})?$/.exec(t);
+  if (academic) return { year: Number(academic[1]), season: 0, label: t };
+
+  return { year: 0, season: 0, label: t };
 }
 
 /**

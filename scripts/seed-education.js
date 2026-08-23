@@ -8,19 +8,21 @@
  *   node scripts/seed-education.js --replace   rebuild the class and activity
  *                                              lists from this file
  *
- * Every line below comes from the CV, the resume, and the LinkedIn profile
- * record, which were uploaded and read directly. Where they differ, the CV
- * wins: it is the longest and the most recent, and the other two are summaries
- * of it. Course codes and catalogue titles are the CV's own.
+ * The class lists come from the two official records: the UCLA degree audit
+ * prepared 11 August 2026, and the Archbishop Riordan transcript printed 23
+ * July 2025. Those replace what was here before, which was assembled from the
+ * CV, the resume, and the LinkedIn profile record and had the current term
+ * wrong: it named MECH&AE M20 and MATH 32B as in progress when both were taken
+ * in Spring 2026, listed MSE 104, which appears nowhere in the audit and was
+ * never enrolled, and marked the four classes actually enrolled for Fall 2026
+ * as already completed.
  *
- * Two things are still incomplete rather than invented:
- *
- *   - Terms for completed classes. None of the three sources gives a term per
- *     class, so those rows have none and the page shows a term only where one
- *     exists.
- *   - MSE 104. It is named as a current class in the /now block and appears in
- *     none of the three documents, so it keeps its flag until somebody
- *     confirms the catalogue title.
+ * What is deliberately NOT carried across from those documents: grades, grade
+ * point averages per class, unit counts per requirement, the student number,
+ * the date of birth, and the home address. A transcript is a private record
+ * that happens to contain a class list; only the class list belongs on a public
+ * page. The one grade point average on this page is the high school one, which
+ * was already published on the CV.
  *
  * --replace exists because a corrected title is not a new class. Without it a
  * reseed adds "Statics and Strength of Materials" beside the older
@@ -65,59 +67,82 @@ const SCHOOLS = [
 ];
 
 /*
- * status is the load bearing field. The three in progress are the ones the
- * /now block names as this term's classes; everything else the resume lists as
- * coursework is completed.
+ * status is the load bearing field: in-progress is what the page puts first and
+ * what the /now block quotes. It comes from the audit's own IP marker, so it is
+ * the registrar's view of the current term rather than a hand-maintained list
+ * that goes stale the moment a quarter ends.
+ *
+ * Terms are the audit's, mapped from its FA25/WI26/SP26/FA26 codes. The high
+ * school transcript groups by academic year rather than by term, so those are
+ * years.
  */
 const COURSES = [
-  // ---- UCLA, this term -----------------------------------------------------
-  { school: 'ucla', code: 'MECH&AE M20', title: 'Introduction to Computer Programming with MATLAB', term: 'Fall 2026', status: 'in-progress' },
-  { school: 'ucla', code: 'MATH 32B', title: 'Calculus of Several Variables', term: 'Fall 2026', status: 'in-progress' },
-  {
-    school: 'ucla',
-    code: 'MSE 104',
-    title: 'Materials Science and Engineering 104',
-    term: 'Fall 2026',
-    status: 'in-progress',
-    note: 'Named in the /now block and in none of the three documents. Catalogue title to be confirmed at /admin/education.',
-  },
+  // ---- UCLA, Fall 2026, enrolled -------------------------------------------
+  { school: 'ucla', code: 'MECH&AE 101', title: 'Statics and Strength of Materials', term: 'Fall 2026', units: 4, status: 'in-progress' },
+  { school: 'ucla', code: 'PHYSICS 1B', title: 'Oscillations, Waves, Electric and Magnetic Fields', term: 'Fall 2026', units: 5, status: 'in-progress' },
+  { school: 'ucla', code: 'PHYSICS 4AL', title: 'Physics Laboratory: Mechanics', term: 'Fall 2026', units: 2, status: 'in-progress' },
+  { school: 'ucla', code: 'STATS 10', title: 'Introduction to Statistical Reasoning', term: 'Fall 2026', units: 5, status: 'in-progress' },
 
-  // ---- UCLA, completed -----------------------------------------------------
-  { school: 'ucla', code: 'CHEM 20A', title: 'Chemical Structure', status: 'completed' },
-  { school: 'ucla', code: 'CHEM 20B', title: 'Chemical Energetics and Change', status: 'completed' },
-  { school: 'ucla', code: 'EPS SCI 17', title: 'Dinosaurs and Their Relatives', status: 'completed' },
-  { school: 'ucla', code: 'GEOG 4', title: 'Regional Development and World Economy', status: 'completed' },
-  { school: 'ucla', code: 'MATH 31A', title: 'Differential and Integral Calculus', status: 'completed' },
-  { school: 'ucla', code: 'MATH 31B', title: 'Integration and Infinite Series', status: 'completed' },
-  { school: 'ucla', code: 'MATH 32A', title: 'Calculus of Several Variables', status: 'completed' },
-  { school: 'ucla', code: 'MECH&AE 101', title: 'Statics and Strength of Materials', status: 'completed' },
-  { school: 'ucla', code: 'PHYSICS 1A', title: 'Mechanics', status: 'completed' },
-  { school: 'ucla', code: 'PHYSICS 1B', title: 'Oscillations, Waves, Electric and Magnetic Fields', status: 'completed' },
-  { school: 'ucla', code: 'PHYSICS 4AL', title: 'Physics Laboratory: Mechanics', status: 'completed' },
-  { school: 'ucla', code: 'STATS 10', title: 'Introduction to Statistical Reasoning', status: 'completed' },
+  // ---- UCLA, Spring 2026 ---------------------------------------------------
+  { school: 'ucla', code: 'MATH 32B', title: 'Calculus of Several Variables', term: 'Spring 2026', units: 4, status: 'completed' },
+  { school: 'ucla', code: 'MECH&AE M20', title: 'Introduction to Computer Programming with MATLAB', term: 'Spring 2026', units: 4, status: 'completed' },
+  { school: 'ucla', code: 'PHYSICS 1A', title: 'Mechanics', term: 'Spring 2026', units: 5, status: 'completed' },
 
-  // ---- high school, Advanced Placement -------------------------------------
-  // Eleven AP and honours subjects, which the CV notes is the maximum the
-  // school allows a student to take.
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP Calculus AB', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP Calculus BC', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP Physics C: Mechanics', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP Computer Science Principles', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP Statistics', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP Biology', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP English Language and Composition', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP United States History', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP World History: Modern', status: 'completed' },
+  // ---- UCLA, Winter 2026 ---------------------------------------------------
+  { school: 'ucla', code: 'CHEM 20B', title: 'Chemical Energetics and Change', term: 'Winter 2026', units: 4, status: 'completed' },
+  { school: 'ucla', code: 'GEOG 4', title: 'Regional Development and World Economy', term: 'Winter 2026', units: 5, status: 'completed' },
+  { school: 'ucla', code: 'MATH 31B', title: 'Integration and Infinite Series', term: 'Winter 2026', units: 4, status: 'completed' },
+  { school: 'ucla', code: 'MATH 32A', title: 'Calculus of Several Variables', term: 'Winter 2026', units: 4, status: 'completed' },
 
-  // ---- high school, honours ------------------------------------------------
-  { school: 'archbishop-riordan', code: 'Honours', title: 'World Literature Honors', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'Honours', title: 'Introduction to Composition and Literature Honors', status: 'completed' },
+  // ---- UCLA, Fall 2025, the first term -------------------------------------
+  { school: 'ucla', code: 'CHEM 20A', title: 'Chemical Structure', term: 'Fall 2025', units: 4, status: 'completed' },
+  { school: 'ucla', code: 'EPS SCI 17', title: 'Dinosaurs and Their Relatives', term: 'Fall 2025', units: 5, status: 'completed' },
+  { school: 'ucla', code: 'MATH 31A', title: 'Differential and Integral Calculus', term: 'Fall 2025', units: 4, status: 'completed' },
+  { school: 'ucla', code: 'MECH&AE 1', title: 'Undergraduate Seminar', term: 'Fall 2025', units: 1, status: 'completed' },
 
-  // ---- high school, the four year Engineering Program ----------------------
-  { school: 'archbishop-riordan', code: 'Engineering', title: 'Engineering Essentials', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'Engineering', title: 'Introduction to Engineering Design', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'Engineering', title: 'Civil Engineering and Architecture', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'Engineering', title: 'Engineering Capstone', status: 'completed' },
+  /*
+   * ---- high school ---------------------------------------------------------
+   *
+   * The transcript carries thirty-four entries across four years. What is here
+   * is the academic record an engineering portfolio is read for: the eleven
+   * Advanced Placement and honours subjects, the four year Engineering Program,
+   * the mathematics and science sequence under them, and the four years of a
+   * language. The religion sequence the school requires of everyone, and the
+   * arts and homeroom entries, are on the transcript and not here — this is a
+   * portfolio, not a copy of the registrar's file.
+   */
+
+  // ---- 2024-25, senior year ------------------------------------------------
+  { school: 'archbishop-riordan', code: 'AP', title: 'AP Calculus BC', term: '2024\u201325', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'AP', title: 'AP Computer Science Principles', term: '2024\u201325', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'AP', title: 'AP Physics C: Mechanics', term: '2024\u201325', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'AP', title: 'AP Statistics', term: '2024\u201325', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Engineering', title: 'Engineering Capstone', term: '2024\u201325', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Language', title: 'American Sign Language IV', term: '2024\u201325', status: 'completed' },
+
+  // ---- 2023-24, junior year ------------------------------------------------
+  { school: 'archbishop-riordan', code: 'AP', title: 'AP Biology', term: '2023\u201324', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'AP', title: 'AP Calculus AB', term: '2023\u201324', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'AP', title: 'AP English Language and Composition', term: '2023\u201324', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'AP', title: 'AP United States History', term: '2023\u201324', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Engineering', title: 'Civil Engineering and Architecture', term: '2023\u201324', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Language', title: 'American Sign Language III', term: '2023\u201324', status: 'completed' },
+
+  // ---- 2022-23, sophomore year ---------------------------------------------
+  { school: 'archbishop-riordan', code: 'AP', title: 'AP World History: Modern', term: '2022\u201323', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Honours', title: 'World Literature Honors', term: '2022\u201323', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Engineering', title: 'Introduction to Engineering Design', term: '2022\u201323', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Computing', title: 'Computer Programming with Python', term: '2022\u201323', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Mathematics', title: 'Math Analysis', term: '2022\u201323', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Science', title: 'Chemistry', term: '2022\u201323', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Language', title: 'American Sign Language II', term: '2022\u201323', status: 'completed' },
+
+  // ---- 2021-22, freshman year ----------------------------------------------
+  { school: 'archbishop-riordan', code: 'Honours', title: 'Introduction to Composition and Literature Honors', term: '2021\u201322', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Engineering', title: 'Engineering Essentials', term: '2021\u201322', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Mathematics', title: 'Algebra II and Trigonometry', term: '2021\u201322', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Science', title: 'Biology', term: '2021\u201322', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Language', title: 'American Sign Language I', term: '2021\u201322', status: 'completed' },
 ];
 
 const ACTIVITIES = [

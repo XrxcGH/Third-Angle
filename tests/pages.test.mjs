@@ -23,6 +23,7 @@ const labels = require('../src/labels.js');
 const collage = require('../src/collage.js');
 const settings = require('../src/settings.js');
 const github = require('../src/github.js');
+const repo = require('../src/repo.js');
 
 /* ------------------------------------------------------- capitalisation */
 
@@ -226,6 +227,26 @@ test('the gap between photographs is a hairline', () => {
   assert.ok(decl, 'the wall must declare a gap');
   const max = decl[1].match(/(\d+)px\)?\s*$/);
   assert.ok(max && Number(max[1]) <= 5, `the gap tops out at ${decl[1]}, which is a gutter`);
+});
+
+test('a class list sorted by term is actually in term order', () => {
+  /*
+   * A school that runs on academic years writes its terms as "2024-25", not as
+   * "Fall 2024". Those matched nothing, scored year zero, tied with each other,
+   * and fell through to the alphabetical tie-break — so "sort by term, newest
+   * first" silently returned an alphabetical list on the whole high school
+   * record.
+   */
+  const term = (t) => repo.termSortValue(t);
+  assert.equal(term('Fall 2026').year, 2026);
+  assert.equal(term('2024\u201325').year, 2024);
+  assert.equal(term('2024-25').year, 2024);
+  assert.equal(term('2024').year, 2024);
+  assert.equal(term('sometime').year, 0);
+  // Newest first, and an academic year is comparable with a quarter.
+  const years = ['2021\u201322', '2024\u201325', '2022\u201323'].map(term);
+  years.sort((a, b) => b.year - a.year);
+  assert.deepEqual(years.map((y) => y.label), ['2024\u201325', '2022\u201323', '2021\u201322']);
 });
 
 test('the personal page is one full-width wall with no stored order', () => {

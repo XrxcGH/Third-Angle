@@ -355,6 +355,22 @@ function layout(photos) {
        * as 1.5x taller than it is, and the packer was tuned against it.
        */
       item.t.slotAspect = round(rect.w / rect.h);
+      /*
+       * Which way the tile grows when it is hovered.
+       *
+       * A tile scaled from its centre grows outward on every side, and a tile
+       * against the edge of the wall then grows past it: measured, a hovered
+       * edge tile pushed the document 40px sideways at 2560px, which the root
+       * propagates to the viewport as a horizontal scrollbar on a page that has
+       * no horizontal content. Moving the origin to the edge it sits on makes it
+       * grow inward instead. Nothing is clipped, nothing overflows, and the
+       * wall's outer boundary stays exactly where it was.
+       */
+      const EDGE = 0.05;
+      item.t.originX = item.t.left <= EDGE ? '0%'
+        : (item.t.left + item.t.slotWidth >= 100 - EDGE ? '100%' : '50%');
+      item.t.originY = item.t.top <= EDGE ? '0%'
+        : (item.t.top + item.t.slotHeight >= 100 - EDGE ? '100%' : '50%');
       /* Measured against the photograph's TRUE shape, not the clamped one:
          the clamp is a layout decision and the crop it causes is real. */
       item.t.crop = round(Math.max(item.t.slotAspect / item.t.trueAspect,

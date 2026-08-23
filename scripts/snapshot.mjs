@@ -196,11 +196,29 @@ ${inline(footer)}
       }
     });
     window.scrollTo(0, 0);
+    rendered = true;
   }
 
+  var rendered = false;
+
   function go() {
-    var route = location.hash.replace(/^#/, '') || '/';
-    if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var hash = location.hash.replace(/^#/, '');
+    /*
+     * A hash that is not a path is an in-page anchor, not a route.
+     *
+     * Routes are written as #/work, #/documents and so on, so a bare
+     * #repositories fell through byRoute, hit the fallback, and silently
+     * replaced the page with the home page. Same page, scroll to the element.
+     */
+    if (hash && hash.charAt(0) !== '/') {
+      if (!rendered) render('/');
+      var target = document.getElementById(hash);
+      if (target) target.scrollIntoView({ block: 'start' });
+      return;
+    }
+    var route = hash || '/';
+    if (rendered && document.startViewTransition
+        && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.startViewTransition(function () { render(route); });
     } else {
       render(route);

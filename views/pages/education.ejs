@@ -110,13 +110,17 @@
                     <span class="course-title"><%= c.title %></span>
                     <% if (c.note) { %><span class="course-note"><%= c.note %></span><% } %>
                   </span>
-                  <span style="display:flex; gap: var(--s-2); align-items:center; white-space:nowrap;">
+                  <%
+                    /* Units and term in one run, separated, because "5.0 Fall
+                       2026" set in the same mono face at the same size reads as
+                       a single string and the number looks like part of the
+                       date. The unit noun is what tells them apart. */
+                  %>
+                  <span class="course-meta mono">
                     <% if (c.units) { %>
-                      <span class="mono tnum" style="font-size:.66rem; color: var(--text-muted);"><%= c.units %></span>
+                      <span class="tnum"><%= c.units %></span> <%= locals.c('education.units.noun') %><% if (c.term) { %> &middot;<% } %>
                     <% } %>
-                    <% if (c.term) { %>
-                      <span class="mono" style="font-size:.66rem; color: var(--text-muted);"><%= c.term %></span>
-                    <% } %>
+                    <% if (c.term) { %><%= c.term %><% } %>
                   </span>
                 </div>
               <% } %>

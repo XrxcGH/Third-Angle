@@ -124,6 +124,7 @@ code {
   margin: 0 0 var(--s-2);
 }
 
+
 /* Anything with digits that line up in a column. */
 .tnum, td.num, .metric-value {
   font-variant-numeric: tabular-nums lining-nums;
@@ -433,24 +434,27 @@ code {
 
 /* ---------------------------------------------------------- facet chips */
 
-.chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
 /*
- * The row is nine chips: All plus eight disciplines. At 10px of inline padding
- * and a 7px inner gap it needed 1124px and the column is 1084, so it wrapped a
- * single chip onto a second line at every desktop width, which reads as an
- * accident rather than as a layout. Tightened until it fits, and not further:
- * the target is still 44px tall for a finger.
+ * The row is eight chips and it has to fit on one line.
+ *
+ * A single chip wrapping onto a second line reads as an accident rather than as
+ * a layout, and the row keeps landing just over: at 7px of inline padding, a
+ * 0.1em letter-spacing and an 8px gap it measured 1113px in a 1084px column.
+ * Tightened by 66px in three places rather than 29px in one, so there is real
+ * headroom rather than a fit that the next label breaks. The target is still
+ * 44px tall for a finger, which is what the vertical padding is for.
  */
 .chip {
-  display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center; gap: 4px;
   border: 1px solid var(--hairline);
   border-radius: var(--r-control);
-  padding: 5px 7px;
+  padding: 5px 6px;
   background: var(--surface);
   font-family: var(--f-mono);
   font-size: .62rem;
   font-stretch: 80%;
-  letter-spacing: .1em;
+  letter-spacing: .07em;
   text-transform: uppercase;
   color: var(--text-strong);
   text-decoration: none;
@@ -754,6 +758,12 @@ code {
    * 3px gap is a second line beside the first.
    */
   border: 0;
+  /*
+   * A tile against the edge of the wall grows inward, not outward. The server
+   * writes --ox and --oy for the four edges and the four corners; everything
+   * else is centred. See the note in src/collage.js.
+   */
+  transform-origin: var(--ox, 50%) var(--oy, 50%);
   /* Properties enumerated, never `all`, and declared on the base selector so
      the return trip animates too. See DESIGN.md, Motion. */
   transition: transform var(--t-group) var(--ease);
@@ -837,12 +847,19 @@ code {
    * that it is not capped at the 1180px measure; it is not full bleed. Running
    * it to the glass made it the one block on the site that did not line up
    * with everything above and below it.
+   *
+   * MARGIN, not padding, and that is not a preference.
+   *
+   * An absolutely positioned child resolves its offsets and its percentage
+   * width against its ancestor's PADDING box, not its content box. With the
+   * gutter as padding, `left: 0%` landed on the outer edge of the gutter and
+   * `width: 100%` spanned it: the tiles ignored the padding entirely and the
+   * wall ran to the glass. A margin takes the width off the element itself, so
+   * the padding box is the wall and the gutter is real again.
    */
-  padding-inline: clamp(18px, 4vw, 48px);
+  margin-inline: clamp(18px, 4vw, 48px);
+  padding-inline: 0;
   padding-block: 0;
-  /* The wall's box, not its slots: the aspect ratio must apply to the area
-     inside the gutter, which is what the percentages were packed against. */
-  box-sizing: content-box;
 }
 
 @media (max-width: 700px) {
@@ -1067,6 +1084,13 @@ code {
 }
 .course-code { font-family: var(--f-mono); font-size: .72rem; font-stretch: 82%;
   letter-spacing: .04em; color: var(--text-muted); font-variant-numeric: tabular-nums lining-nums; }
+/* The right hand column of a class row: units, then the term. */
+.course-meta {
+  display: flex; gap: 5px; align-items: baseline; white-space: nowrap;
+  font-size: .66rem;
+  color: var(--text-muted);
+}
+
 .course-title { color: var(--text-strong); }
 .course-note { display: block; font-size: .85rem; color: var(--text-muted); margin-top: 2px; }
 
@@ -1385,6 +1409,19 @@ code {
 .res-row .res-v { color: var(--text-muted); }
 
 .prose h3 { font-size: 1.0625rem; margin-top: var(--s-4); }
+
+/*
+ * An eyebrow is a label for the heading under it, so the pair is always 8px
+ * apart and the eyebrow owns that gap.
+ *
+ * After the .prose heading rules, and not next to .eyebrow, because that is the
+ * rule it has to beat: inside prose a heading carries its own top margin to
+ * separate it from the paragraph above, adjacent margins collapse to the larger
+ * of the two, and the same specificity earlier in the file loses. An eyebrow
+ * above an h2 in prose was pushed to 32px while the identical pair outside
+ * prose sat at 8px, so the two read as different components.
+ */
+.eyebrow + h1, .eyebrow + h2, .eyebrow + h3, .eyebrow + h4 { margin-top: 0; }
 
 /* The honeypot. Moved off screen rather than display:none, which some bots
    now specifically check for before deciding whether to fill a field. */

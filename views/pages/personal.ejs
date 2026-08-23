@@ -35,7 +35,7 @@
   <div class="collage collage-full" style="--wall-ar: <%= wallAspect %>;">
     <% for (const t of tiles) { %>
       <figure class="collage-item" tabindex="0"
-              style="--ar: <%= t.aspect %>; --l: <%= t.left %>%; --t: <%= t.top %>%; --w: <%= t.slotWidth %>%; --h: <%= t.slotHeight %>%;">
+              style="--ar: <%= t.aspect %>; --l: <%= t.left %>%; --t: <%= t.top %>%; --w: <%= t.slotWidth %>%; --h: <%= t.slotHeight %>%; --ox: <%= t.originX %>; --oy: <%= t.originY %>;">
         <img src="/media/<%= t.storage_key %>"
              <% const wp = srcset(t, 'webp'); %>
              <% if (wp) { %>srcset="<%= wp %>" sizes="(max-width: 700px) 34vw, <%= Math.max(4, Math.round(t.slotWidth)) %>vw"<% } %>
