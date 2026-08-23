@@ -9,12 +9,19 @@ are there because of it.
 
 ## What you need
 
-- **ericjdean.com**, registered at Squarespace Domains, with its nameservers
-  pointed at Cloudflare. See step 0.
+- **ericjdean.com**, registered at Squarespace Domains. Its nameservers move to
+  Cloudflare in step 0.
 - A Cloudflare account, free plan.
-- An Oracle Cloud account, and one **VM.Standard.A1.Flex** instance, arm64,
-  Ubuntu 24.04. The Always Free shape is 2 OCPU and 12 GB as of June 2026.
-- SSH to that machine.
+- An Oracle Cloud account. The machine itself is step 1.
+- An SSH keypair. If you do not have one:
+
+  ```sh
+  ssh-keygen -t ed25519 -C "ericjdean.com deploy"
+  ```
+
+  Take the default path, set a passphrase. The **public** half — the file ending
+  `.pub` — is what Oracle asks for. The other file never leaves your machine and
+  never goes in the repository.
 
 ## The shape of it
 
@@ -79,7 +86,34 @@ Squarespace will keep trying to sell you a site on this domain. Ignore it: it
 serves nothing here, and the parking page disappears the moment the nameservers
 change.
 
-### 1. Provision the machine
+### 1. Create the machine
+
+Oracle's console, not a command. What matters:
+
+| Field | Value | Why |
+|---|---|---|
+| Region | your **home region** | Always Free resources exist only there. It cannot be changed later. |
+| Shape | **VM.Standard.A1.Flex**, Ampere, arm64 | The free one. The x86 micro shapes are too small for the image pipeline. |
+| OCPU / memory | **2 / 12 GB** | The whole Always Free A1 allowance as of June 2026. Taking less does not bank it. |
+| Image | **Canonical Ubuntu 24.04**, aarch64 build | Node 24 needs a current distribution; the arm64 build must match the shape. |
+| Boot volume | 50 GB default is fine | Always Free includes 200 GB of block storage in total. |
+| Public IPv4 | **assign one** | The tunnel dials out over it. Nothing dials in. |
+| SSH key | paste your public key | Oracle has no password login; without a key you cannot get in at all. |
+
+**Expect "Out of host capacity."** A1 is the most contended shape Oracle sells
+and a free-tier account sits at the back of the queue for it. This is the step
+that stops people, and it is not a mistake you have made. In order of effort:
+try each availability domain in your region; try again at a different hour;
+then upgrade the account to Pay As You Go, which keeps every Always Free
+resource free but moves you out of the free-tier capacity pool. The upgrade is
+what usually works, and it is reversible.
+
+Do not open ports 80 or 443 in the security list. The tunnel makes an outbound
+connection, so the only inbound port this machine ever needs is 22, and every
+port left open is a way around the WAF. `deploy/provision.sh` closes the host
+firewall to match.
+
+### 2. Provision the machine
 
 ```sh
 ssh ubuntu@<the instance>
@@ -94,7 +128,7 @@ source to `/srv/third-angle`, installs the `third-angle`, `cloudflared`,
 `third-angle-backup` and `litestream-alive` units, and closes the firewall. It
 prints what is left to do by hand.
 
-### 2. Set SITE_URL
+### 3. Set SITE_URL
 
 ```sh
 sudo nano /etc/third-angle/env      # SITE_URL=https://ericjdean.com
@@ -108,7 +142,7 @@ visible in a browser, so getting it wrong looks perfect and publishes a sitemap
 full of the wrong domain to every crawler that asks. The boot check refuses
 `example.com`, `localhost` and anything that is not `https://`.
 
-### 3. Open the tunnel
+### 4. Open the tunnel
 
 On any machine signed in to the Cloudflare account:
 
@@ -133,7 +167,7 @@ sudo systemctl status cloudflared
 `cloudflared tunnel route dns` creates the DNS records for you, already
 proxied. The site should answer on the domain at this point.
 
-### 4. Set the zone up
+### 5. Set the zone up
 
 Everything here is on the free plan. **SSL/TLS → Overview → Full (strict)**,
 and **Edge Certificates → Always Use HTTPS on**, **Minimum TLS 1.2**.
@@ -183,7 +217,7 @@ addresses need to exist: whatever the contact page publishes, and
 `/.well-known/security.txt` that names it, and an address published for
 reporting vulnerabilities that bounces is worse than not publishing one.
 
-### 5. Create the admin account
+### 6. Create the admin account
 
 ```sh
 cd /srv/third-angle
@@ -206,7 +240,7 @@ been transmitted somewhere is exempt from the twelve character floor a chosen
 password has to clear, and it is not allowed to quietly become the permanent
 one.
 
-### 6. Turn on replication
+### 7. Turn on replication
 
 The machine has a real disk, so the database survives a reboot on its own. Replication is for the other failure: Oracle
 changing the free tier again, or closing the account. That has happened once
@@ -238,7 +272,7 @@ S3-compatible bucket works, including Oracle Object Storage — but keeping the
 backup at the same provider as the machine defeats the point of it, so use the
 other account.
 
-### 7. Run the restore drill
+### 8. Run the restore drill
 
 An unrehearsed backup is a belief, not a backup.
 
