@@ -126,6 +126,22 @@ const inline = (html) => {
     if (captured.has(href)) return `href="#${href}"`;
     return `href="#" data-offline="${href.replace(/"/g, '&quot;')}"`;
   });
+
+  /*
+   * The inline PDF reader cannot work here, so it is replaced rather than left
+   * to fail open.
+   *
+   * <object data="/documents/x/view"> needs a server to answer for the bytes.
+   * In a single file with no server behind it the object still lays out at its
+   * full height and renders nothing, so the page shows a 900px empty panel
+   * where the document should be — which reads as a broken document rather
+   * than as a document this file cannot carry. Its own fallback children are
+   * exactly the right content: a line saying so, and the two buttons.
+   */
+  out = out.replace(
+    /<object class="pdf-frame"[\s\S]*?>([\s\S]*?)<\/object>/g,
+    (whole, fallback) => `<div class="pdf-frame pdf-frame-static">${fallback}</div>`
+  );
   return out;
 };
 

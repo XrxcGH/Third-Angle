@@ -1143,6 +1143,19 @@ code {
     background: var(--sunken);
   }
 }
+/*
+ * The snapshot's stand-in for the reader.
+ *
+ * A single file with no server behind it cannot answer for the document's
+ * bytes, so scripts/snapshot.mjs swaps the <object> for its own fallback
+ * children. Same frame, but only as tall as the message inside it: a fixed
+ * 900px box holding one line and two buttons is the empty panel this exists to
+ * avoid.
+ */
+@media (min-width: 900px) {
+  .pdf-frame-static { height: auto; min-height: 0; }
+}
+
 .pdf-fallback { padding: var(--s-5); text-align: center; color: var(--text-muted); }
 .pdf-note { color: var(--text-muted); font-size: .85rem; }
 @media (min-width: 900px) { .pdf-note { display: none; } }
