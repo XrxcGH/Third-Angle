@@ -33,7 +33,7 @@
 <div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="padding:0; margin-top: var(--s-4);">
   <table class="admin-table">
     <thead>
-      <tr><th style="width:7rem;">When</th><th>From</th><th>Message</th><th>Mail</th><th style="text-align:right;">Actions</th></tr>
+      <tr><th style="width:7rem;">When</th><th class="wide">From</th><th class="wide">Message</th><th>Mail</th><th style="text-align:right;">Actions</th></tr>
     </thead>
     <tbody>
       <% if (!messages.length) { %>
@@ -44,12 +44,12 @@
           <td class="mono" style="font-size:.7rem; white-space:nowrap;">
             <%= m.created_at.slice(0,10) %><br><%= m.created_at.slice(11,16) %>
           </td>
-          <td>
+          <td class="wide">
             <strong><%= m.name %></strong>
             <div><a href="mailto:<%= m.email %>" style="font-size:.82rem;"><%= m.email %></a></div>
             <% if (!m.read) { %><span class="badge" style="border-color: var(--accent); color: var(--accent-ink);">new</span><% } %>
           </td>
-          <td>
+          <td class="wide">
             <% if (m.subject) { %><strong style="display:block;"><%= m.subject %></strong><% } %>
             <span style="font-size:.9rem; white-space:pre-wrap;"><%= m.body %></span>
           </td>

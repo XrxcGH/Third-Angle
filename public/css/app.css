@@ -64,7 +64,23 @@ h4 { font-size: 1.0625rem; line-height: 1.35; letter-spacing: -.004em; }
 .display-1 {
   font-family: var(--f-display);
   font-weight: var(--w-strong);
-  font-size: clamp(2.625rem, 1.2rem + 6.2vw, 5rem);
+  /*
+   * The cap has to clear the window, not the old measure.
+   *
+   * At 5rem the headline stopped growing at about a 1000px window, so on a
+   * 2560px screen its longest line filled 63% of the page and simply stopped,
+   * with the title block sitting under the empty right end of it. 7rem keeps
+   * the line between 90% and 98% of the page across every width from 1100 to
+   * 2560, which is what "the title is the width of the page" means.
+   */
+  font-size: clamp(2.625rem, 1.2rem + 6.2vw, 7rem);
+  /*
+   * pretty, not balance. Balance evens the lines out, which is right for a
+   * heading sitting in a column and wrong for one that is supposed to reach
+   * both edges: it held the first line back to match the second and cost about
+   * ten points of fill at every width.
+   */
+  text-wrap: pretty;
   line-height: .94;
   letter-spacing: -.036em;
   color: var(--text-strong);
@@ -745,6 +761,13 @@ code {
 .badge[data-status="specification"] { border-color: var(--copper); color: var(--copper); }
 .badge[data-status="shipped"], .badge[data-status="competed"] { border-color: var(--patina); color: var(--patina); }
 .badge[data-status="in-progress"] { border-color: var(--accent); color: var(--accent-ink); }
+/*
+ * Whether a row is on the public site is a state like any other on that row, so
+ * it is a chip like any other. It was the one plain lowercase word in a table
+ * of chips, which made the most consequential column the easiest to skim past.
+ */
+.badge[data-live="yes"] { border-color: var(--patina); color: var(--patina); }
+.badge[data-live="draft"] { border-color: var(--rule); color: var(--text-muted); }
 
 .rail { border-left: 2px solid var(--accent); padding-left: var(--s-4); }
 

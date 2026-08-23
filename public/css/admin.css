@@ -47,6 +47,23 @@
  */
 .admin-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: .9rem; }
 .admin-table td, .admin-table th { overflow-wrap: break-word; }
+
+/*
+ * A header and its values sit on the same axis.
+ *
+ * Every column was left aligned, which was fine when the page stopped at
+ * 1180px. Full width, a table spreads its columns to the window, and a
+ * three-character value like a unit count or a term left aligned in a 240px
+ * column drifts to the far left of a header it is supposed to belong to. The
+ * header and the value stop reading as one column.
+ *
+ * So: the identifying column keeps its left edge, the actions keep their right
+ * edge, and everything between is centred, header and cell together. A column
+ * of prose opts back out with .wide, because centring a wrapped sentence is
+ * worse than the problem this fixes.
+ */
+.admin-table th:not(.wide):not(:first-child):not(:last-child),
+.admin-table td:not(.wide):not(:first-child):not(:last-child) { text-align: center; }
 .admin-table th {
   text-align: left; font-family: var(--f-mono); font-size: .58rem; font-stretch: 80%;
   letter-spacing: .13em; text-transform: uppercase; color: var(--text-muted);
@@ -87,7 +104,11 @@
 
 .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr)); gap: 1px;
   background: var(--hairline); border: 1px solid var(--hairline); border-radius: var(--r-card); overflow: hidden; }
-.stat { background: var(--surface); padding: var(--s-3) var(--s-4); }
+/* Centred, for the same reason .metric is on the public side: a stat is a
+   number and its name read as one object, and a row of them left aligned in
+   cells of different widths reads as a table that lost its columns. Full width
+   makes twelve of them wide enough for that to be obvious. */
+.stat { background: var(--surface); padding: var(--s-3) var(--s-4); text-align: center; }
 .stat b { display: block; font-family: var(--f-display); font-size: 1.5rem; color: var(--text-strong);
   font-variant-numeric: tabular-nums; line-height: 1.1; }
 .stat span { font-family: var(--f-mono); font-size: .55rem; letter-spacing: .12em;

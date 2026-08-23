@@ -19,13 +19,14 @@
     "reset-db": "node scripts/seed.js --reset",
     "fonts": "node scripts/fetch-fonts.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "test": "node --test \"tests/*.test.mjs\"",
+    "test": "DATA_DIR=.test-data node --disable-warning=ExperimentalWarning --test \"tests/*.test.mjs\"",
     "check:scope": "node scripts/scope-guard.mjs",
     "check:contrast": "node --test tests/contrast.test.mjs",
     "check:costs": "node scripts/check-costs.mjs",
     "check:links": "node scripts/check-links.mjs",
     "check:secrets": "node scripts/check-secrets.mjs",
-    "check:doc-facts": "node scripts/check-doc-facts.mjs"
+    "check:doc-facts": "node scripts/check-doc-facts.mjs",
+    "pretest": "node scripts/test-db.mjs"
   },
   "dependencies": {
     "ejs": "^3.1.10",

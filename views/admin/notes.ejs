@@ -49,7 +49,7 @@
 <div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="padding:0; margin-top: var(--s-5);">
   <table class="admin-table">
     <thead>
-      <tr><th style="width:7rem;">Date</th><th>Entry</th><th style="width:7rem;">State</th><th style="text-align:right; width:11rem;">Actions</th></tr>
+      <tr><th style="width:7rem;">Date</th><th class="wide">Entry</th><th style="width:7rem;">State</th><th style="text-align:right; width:11rem;">Actions</th></tr>
     </thead>
     <tbody>
       <% if (!notes.length) { %>
@@ -58,7 +58,7 @@
       <% for (const n of notes) { %>
         <tr>
           <td class="mono" style="font-size:.72rem; white-space:nowrap;"><%= n.created_at.slice(0, 10) %></td>
-          <td>
+          <td class="wide">
             <% if (n.title) { %><strong><%= n.title %></strong><br><% } %>
             <span style="font-size:.88rem; color: var(--text-muted);"><%= n.body_md.slice(0, 180) %></span>
             <% if (n.updated_at && n.updated_at.slice(0, 16) !== n.created_at.slice(0, 16)) { %>

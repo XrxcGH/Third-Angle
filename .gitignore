@@ -13,3 +13,4 @@ data/resume/
 # The proxied GitHub avatar, re-fetched weekly.
 data/cache/
 data/preview.html
+.test-data/

@@ -97,7 +97,7 @@
            style="margin-top: var(--s-2);">
         <table class="admin-table">
           <thead>
-            <tr><th>Code</th><th>Title</th><th>Term</th><th>Units</th><th>Status</th><th style="text-align:right;">Actions</th></tr>
+            <tr><th>Code</th><th class="wide">Title</th><th>Term</th><th>Units</th><th>Status</th><th style="text-align:right;">Actions</th></tr>
           </thead>
           <tbody>
             <% if (!s.courses.length) { %>
@@ -106,7 +106,7 @@
             <% for (const c of s.courses) { %>
               <tr>
                 <td class="mono" style="font-size:.72rem;"><%= c.code || '' %></td>
-                <td>
+                <td class="wide">
                   <%= c.title %>
                   <% if (c.note) { %><div style="font-size:.78rem; color: var(--text-muted);"><%= c.note %></div><% } %>
                 </td>

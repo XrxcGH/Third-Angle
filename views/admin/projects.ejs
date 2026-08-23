@@ -10,19 +10,19 @@
 <div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="padding:0;">
   <table class="admin-table" id="project-table" data-csrf="<%= csrf %>">
     <thead>
-      <tr><th style="width:2rem;"></th><th>Title</th><th>Tier</th><th>Status</th><th>Live</th><th style="text-align:right;">Actions</th></tr>
+      <tr><th style="width:2rem;"></th><th class="wide">Title</th><th>Tier</th><th>Status</th><th>Live</th><th style="text-align:right;">Actions</th></tr>
     </thead>
     <tbody>
       <% for (const p of projects) { %>
         <tr draggable="true" data-id="<%= p.id %>">
           <td class="drag-handle" aria-hidden="true">::</td>
-          <td>
+          <td class="wide">
             <strong><%= p.title %></strong>
             <div class="mono" style="font-size:.66rem; color: var(--text-muted);">/work/<%= p.slug %></div>
           </td>
           <td><span class="badge"><%= label('tier', p.tier) %></span></td>
           <td><span class="badge" data-status="<%= p.status %>"><%= label('status', p.status) %></span></td>
-          <td class="mono" style="font-size:.7rem;"><%= p.published ? 'yes' : 'draft' %></td>
+          <td><span class="badge" data-live="<%= p.published ? 'yes' : 'draft' %>"><%= p.published ? 'Live' : 'Draft' %></span></td>
           <td>
             <div class="actions">
               <form method="post" action="/admin/projects/<%= p.id %>/move">

@@ -90,7 +90,7 @@
 <div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="padding:0; margin-top: var(--s-3);">
   <table class="admin-table">
     <thead>
-      <tr><th style="width:96px;">Preview</th><th>Alt and Caption</th><th>Wall</th><th>Kind</th><th>Origin</th><th>Size</th><th style="text-align:right;">Actions</th></tr>
+      <tr><th style="width:96px;">Preview</th><th class="wide">Alt and Caption</th><th>Wall</th><th>Kind</th><th>Origin</th><th>Size</th><th style="text-align:right;">Actions</th></tr>
     </thead>
     <tbody>
       <% if (!items.length) { %>
@@ -108,7 +108,7 @@
               <span class="mono" style="font-size:.6rem; color: var(--text-muted);"><%= m.mime %></span>
             <% } %>
           </td>
-          <td>
+          <td class="wide">
             <div style="font-size:.9rem;"><%= m.alt %></div>
             <% if (m.caption) { %><div style="font-size:.82rem; color: var(--text-muted);"><%= m.caption %></div><% } %>
           </td>
