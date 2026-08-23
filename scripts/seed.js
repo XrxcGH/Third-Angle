@@ -103,7 +103,12 @@ const PROJECTS = [
       ['controls', 'significant', 'A 26 tag AprilTag 36h11 field layout with mounting geometry and simulation guidance for both PhotonVision and Limelight backends.'],
       ['fabrication', 'supporting', 'Every field element specified so it can be cut from plywood by a team with a circular saw, not only by a machine shop.'],
     ],
-    links: [['Field renderings', 'https://github.com/XrxcGH', 'cad']],
+    /* No link. There was one labelled "Field renderings" pointing at the bare
+       GitHub profile, which is a placeholder that shipped: a reader clicking it
+       lands on a profile page with no renderings on it. Better absent than
+       promising something it does not deliver. Add the real one from
+       /admin/projects when the CAD is published. */
+    links: [],
   },
   {
     slug: 'frc-robot-template',
@@ -303,7 +308,7 @@ const PROJECTS = [
     facets: [
       ['software', 'primary', 'A TypeScript monorepo on React, Fastify, SQLite with Drizzle, Playwright, and Zod, built across eight milestones each with its own tests.'],
     ],
-    links: [['Repository', 'https://github.com/XrxcGH/internship-applier', 'repo']],
+    links: [['Repository', 'https://github.com/XrxcGH/Internship-Applier', 'repo']],
   },
   {
     slug: 'pumpkinlib',

@@ -61,6 +61,32 @@ function assertEnvironment() {
     }
   }
 
+  /*
+   * SITE_URL, for the same reason and with a sharper failure mode.
+   *
+   * Every absolute URL on the site derives from it: the canonical link, og:url,
+   * og:image, every <loc> in the sitemap, the Sitemap line in robots.txt, both
+   * feeds, and the Contact line in security.txt. None of those appear in the
+   * browser, so a deployment that shipped the provisioning template's
+   * `https://example.com` unedited would look perfect and publish a sitemap
+   * full of somebody else's domain to every crawler that asked. By the time it
+   * is noticed the wrong URLs are indexed.
+   *
+   * The localhost fallback is fine in development and is exactly what must not
+   * survive into production either.
+   */
+  if (process.env.NODE_ENV === 'production') {
+    const site = String(process.env.SITE_URL || '');
+    let url = null;
+    try { url = new URL(site); } catch { /* reported below */ }
+    if (!url || url.protocol !== 'https:') {
+      throw new Error(`SITE_URL must be set to the site's own https:// origin in production, found ${site || '(unset)'}.`);
+    }
+    if (/^(example\.(com|org|net)|localhost|127\.0\.0\.1)$/i.test(url.hostname)) {
+      throw new Error(`SITE_URL is still the placeholder ${url.hostname}. Set it to the real domain before deploying.`);
+    }
+  }
+
   const [major] = process.versions.node.split('.').map(Number);
   if (major < 24) {
     throw new Error(

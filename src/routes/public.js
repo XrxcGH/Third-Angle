@@ -515,18 +515,28 @@ router.get('/og/:key.png', async (req, res, next) => {
   const sharp = require('sharp');
   const { DATA_DIR } = require('../db');
 
-  const key = String(req.params.key || '').replace(/[^a-f0-9]/g, '');
-  if (key.length !== 16) return next();
+  /*
+   * Two shapes of key: a 16 character content hash, and the literal "default".
+   *
+   * The default is what every page without a card of its own puts in its
+   * og:image, so it has to resolve. It did not: the sanitiser strips anything
+   * outside [a-f0-9], which turns "default" into "deaf", and the length check
+   * then sent it to the 404. Five pages — contact, now, disciplines, search,
+   * and attributions — published a share card that no crawler could fetch.
+   */
+  const raw = String(req.params.key || '');
+  const key = raw === 'default' ? 'default' : raw.replace(/[^a-f0-9]/g, '');
+  if (key !== 'default' && key.length !== 16) return next();
 
   const dir = path.join(DATA_DIR, 'og');
   const file = path.join(dir, key + '.png');
 
   if (!fs.existsSync(file)) {
-    const spec = ogSpecs.get(key);
+    const spec = key === 'default' ? DEFAULT_OG : ogSpecs.get(key);
     // An unknown key means the page that would have registered it has not been
     // rendered in this process. Fall back rather than 404, because a crawler
     // may hit the image before it ever hits the page.
-    const svg = seo.ogSvg(spec || { title: 'Eric J. Dean', subtitle: 'Mechanical, electrical, controls, and software.' });
+    const svg = seo.ogSvg(spec || DEFAULT_OG);
     fs.mkdirSync(dir, { recursive: true });
     const png = await sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer();
     fs.writeFileSync(file, png);
@@ -542,6 +552,15 @@ router.get('/og/:key.png', async (req, res, next) => {
  * regeneration from the default, never a broken image.
  */
 const ogSpecs = new Map();
+
+/* The card for a page that registers none of its own, and the fallback for a
+   key this process has not seen. One definition, used by both. */
+const DEFAULT_OG = {
+  title: 'Eric J. Dean',
+  subtitle: 'Mechanical, electrical, controls, and software.',
+  eyebrow: 'Third Angle',
+};
+
 function registerOg(spec) {
   const key = seo.ogKey(spec);
   if (!ogSpecs.has(key)) {
@@ -671,7 +690,12 @@ router.get('/feed.json', (req, res) => {
     feed_url: site + '/feed.json',
     authors: [{ name: 'Eric J. Dean', url: 'https://github.com/XrxcGH' }],
     items: feedItems().map((i) => ({
-      id: site + '/' + i.id,
+      /*
+       * A tag URI, not site + '/note-4'. An id is allowed to be opaque, and a
+       * URL-shaped one that 404s invites a reader to dereference it and get
+       * nothing. The url field beside it is the real address.
+       */
+      id: `tag:${new URL(site).host},2026:${i.id}`,
       url: site + i.url,
       title: i.title,
       content_html: i.html,
@@ -717,6 +741,10 @@ router.get('/sitemap.xml', (req, res) => {
     { loc: '/professional', pri: '0.8' },
     { loc: '/contact', pri: '0.7' },
     { loc: '/documents', pri: '0.7' },
+    /* The page that changes most often was the one crawlers were not told
+       about: /now carries the build log and feeds both feeds. */
+    { loc: '/now', pri: '0.6' },
+    { loc: '/attributions', pri: '0.3' },
   ];
   /*
    * /personal is listed only when it has something on it. A sitemap entry for

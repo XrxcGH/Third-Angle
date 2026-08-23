@@ -105,7 +105,7 @@ const SLOTS = [
   ['site.og.image', 'site', 'image', '', 'Fallback social card. Leave empty to keep the generated one.'],
   ['site.footer.line', 'site', 'line', 'Eric J. Dean · Half Moon Bay, CA', 'Left side of the footer.'],
   ['site.github.url', 'site', 'line', 'https://github.com/XrxcGH', 'Linked from the footer and the professional page.'],
-  ['site.linkedin.url', 'site', 'line', 'https://linkedin.com/in/edean07', 'Linked from the footer.'],
+  ['site.linkedin.url', 'site', 'line', 'https://www.linkedin.com/in/edean07', 'Linked from the footer.'],
 
   /* ---- home ---- */
   /* ---- navigation and the theme control, on every page ---- */
@@ -156,7 +156,7 @@ const SLOTS = [
   ['attributions.fonts.notice', 'attributions', 'line', 'SIL OFL 1.1 notice'],
   ['attributions.software.heading', 'attributions', 'line', 'Software'],
   ['attributions.software.body', 'attributions', 'rich',
-    'Node, Express, and EJS, on SQLite through Node\'s built-in `node:sqlite`. Ordering uses `fractional-indexing` (CC0). Uploads are parsed by `multer` and re-encoded by `sharp`. Search is SQLite FTS5. There is no framework, no build step, and no analytics that sets a cookie.\n\nThe source is public at [github.com/XrxcGH/third-angle](https://github.com/XrxcGH/third-angle).'],
+    'Node, Express, and EJS, on SQLite through Node\'s built-in `node:sqlite`. Ordering uses `fractional-indexing` (CC0). Uploads are parsed by `multer` and re-encoded by `sharp`. Search is SQLite FTS5. There is no framework, no build step, and no analytics that sets a cookie.\n\nThe source is public at [github.com/XrxcGH/Third-Angle](https://github.com/XrxcGH/Third-Angle).'],
   ['attributions.privacy.heading', 'attributions', 'line', 'Privacy'],
   ['attributions.privacy.body', 'attributions', 'rich',
     'This site sets exactly one cookie, and only if you press the theme control: a preference recording whether you chose light, dark, or your system setting. It holds no identifier and nothing personal, and it exists so the correct theme is in the first response rather than flashing the wrong one at you.\n\nSigning into the admin area sets a session cookie. That is for me, not for you.\n\nThere is no advertising, no third party script, no tracking pixel, and no fingerprinting. Nothing on these pages loads from another domain, which is also why the fonts are self hosted. Server logs record ordinary request data and are not used to build a profile of anyone.'],

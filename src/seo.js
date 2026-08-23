@@ -44,7 +44,7 @@ function personNode(siteUrl) {
     ],
     sameAs: [
       'https://github.com/XrxcGH',
-      'https://linkedin.com/in/edean07',
+      'https://www.linkedin.com/in/edean07',
     ],
   };
 }

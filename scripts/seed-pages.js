@@ -27,7 +27,7 @@ const PAGES = [
     title: 'Eric J. Dean',
     subtitle: 'Mechanical engineering at UCLA. Mechanical design and CAD, electrical assembly and controls, and programming.',
     body_md: [
-      'Half Moon Bay, CA :: [github.com/XrxcGH](https://github.com/XrxcGH) · [linkedin.com/in/edean07](https://linkedin.com/in/edean07)',
+      'Half Moon Bay, CA :: [github.com/XrxcGH](https://github.com/XrxcGH) · [linkedin.com/in/edean07](https://www.linkedin.com/in/edean07)',
       '',
       '## Education',
       '',
