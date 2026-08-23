@@ -264,7 +264,7 @@ const SLOTS = [
   ['education.tb.credential', 'education', 'line', 'Credential'],
   ['education.tb.location', 'education', 'line', 'Location'],
   ['education.tb.dates', 'education', 'line', 'Dates'],
-  ['education.tb.honours', 'education', 'line', 'Honours'],
+  ['education.tb.honours', 'education', 'line', 'GPA', 'The label on the grade point average row of a school block.'],
   ['education.tb.classes', 'education', 'line', 'Classes'],
   ['education.done', 'education', 'line', 'done', 'As in "9 done, 3 in progress".'],
   ['education.inprogress', 'education', 'line', 'in progress'],

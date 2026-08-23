@@ -662,6 +662,10 @@ code {
 .metric {
   background: var(--surface);
   padding: var(--s-3) var(--s-4);
+  /* Centred. A metric is a number and its name, read as one object, and a row
+     of them left aligned in cells of different widths reads as a table that
+     lost its columns. */
+  text-align: center;
   /* One line per interior edge: each cell draws its top and left and pulls
      itself under the container's border, which overflow: hidden then clips. */
   border-top: 1px solid var(--hairline);
@@ -693,7 +697,16 @@ code {
 .card-meta .badge { font-size: inherit; letter-spacing: inherit; }
 
 .badge {
-  display: inline-block;
+  /*
+   * inline-flex, not inline-block, so the text centres.
+   *
+   * The badge sits in a flex row beside .chip, which stretches every item to
+   * the tallest. A block badge then flows its text at its own line height
+   * inside a taller box, so the words hug the top: measured, 3.7px above the
+   * centre the chips' text sits on, which reads as one item out of line.
+   */
+  display: inline-flex;
+  align-items: center;
   font-family: var(--f-mono);
   font-size: .56rem;
   font-stretch: 80%;

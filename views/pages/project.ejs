@@ -111,18 +111,28 @@
   <% if (depth >= 6 && has(project.links)) { %>
     <section class="section">
       <p class="eyebrow"><%= c('project.links.eyebrow') %></p>
-      <ul class="stack" style="list-style:none; padding:0; margin-top: var(--s-3);">
+      <%
+        /*
+         * One row of links, with no kind column beside them.
+         *
+         * Every row used to carry its kind in a 5.5rem mono label to the left
+         * of the link, which on most projects read "REPOSITORY  Repository":
+         * the same word twice, once as a heading for a column one item long.
+         * The kind is still on the record and still sorts the list; it is the
+         * label that was redundant.
+         */
+      %>
+      <ul class="btn-row" style="list-style:none; padding:0; margin-top: var(--s-3);">
         <% for (const l of project.links) { %>
-          <li style="display:flex; gap: var(--s-3); align-items:baseline;">
-            <span class="mono" style="font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color: var(--text-muted); min-width:5.5rem;"><%= label('linkKind', l.kind) %></span>
-            <a href="<%= l.url %>" rel="noopener"><%= l.label %></a>
+          <li>
+            <a class="btn btn-quiet" href="<%= l.url %>" rel="noopener"><%= l.label %></a>
           </li>
         <% } %>
       </ul>
     </section>
   <% } %>
 
-  <nav style="margin-top: var(--s-7); display:flex; gap: var(--s-4); flex-wrap:wrap;">
+  <nav style="margin-top: var(--s-5); display:flex; gap: var(--s-4); flex-wrap:wrap;">
     <a href="/work"><%= c('project.back') %></a>
     <% if (project.facets[0]) { %>
       <%

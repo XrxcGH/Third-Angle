@@ -59,7 +59,7 @@ const SCHOOLS = [
     location: 'San Francisco, CA',
     started_on: '2021-08',
     ended_on: '2025-05',
-    honours: 'Magna Cum Laude · 4.321 weighted, 3.968 unweighted',
+    honours: '4.321 weighted, 3.968 unweighted',
     blurb:
       'Eleven Advanced Placement and honours subjects, the maximum the school '
       + 'allows, alongside the four year Engineering Program and its capstone. '
@@ -118,44 +118,43 @@ const COURSES = [
    */
 
   // ---- 2024-25, senior year ------------------------------------------------
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP Calculus BC', term: '2024\u201325', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP Computer Science Principles', term: '2024\u201325', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP Physics C: Mechanics', term: '2024\u201325', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP Statistics', term: '2024\u201325', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Mathematics', title: 'AP Calculus BC', term: '2024\u201325', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Computer Science', title: 'AP Computer Science Principles', term: '2024\u201325', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Science', title: 'AP Physics C: Mechanics', term: '2024\u201325', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Mathematics', title: 'AP Statistics', term: '2024\u201325', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Engineering', title: 'Engineering Capstone', term: '2024\u201325', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Language', title: 'American Sign Language IV', term: '2024\u201325', status: 'completed' },
   { school: 'archbishop-riordan', code: 'English', title: 'California Dreaming', term: '2024\u201325', status: 'completed',
     note: 'A UC a-g approved English course.' },
-  { school: 'archbishop-riordan', code: 'Religious Studies', title: 'World Religions of the East and West', term: '2024\u201325', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'Advisory', title: 'R-Time', term: '2024\u201325', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Religion', title: 'World Religions of the East and West', term: '2024\u201325', status: 'completed' },
 
   // ---- 2023-24, junior year ------------------------------------------------
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP Biology', term: '2023\u201324', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP Calculus AB', term: '2023\u201324', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP English Language and Composition', term: '2023\u201324', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP United States History', term: '2023\u201324', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Science', title: 'AP Biology', term: '2023\u201324', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Mathematics', title: 'AP Calculus AB', term: '2023\u201324', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'English', title: 'AP English Language and Composition', term: '2023\u201324', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'History', title: 'AP United States History', term: '2023\u201324', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Engineering', title: 'Civil Engineering and Architecture', term: '2023\u201324', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Language', title: 'American Sign Language III', term: '2023\u201324', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'Religious Studies', title: 'Life Issues: Ethics and Social Ethics', term: '2023\u201324', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Religion', title: 'Life Issues: Ethics and Social Ethics', term: '2023\u201324', status: 'completed' },
 
   // ---- 2022-23, sophomore year ---------------------------------------------
-  { school: 'archbishop-riordan', code: 'AP', title: 'AP World History: Modern', term: '2022\u201323', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'Honours', title: 'World Literature Honors', term: '2022\u201323', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'History', title: 'AP World History: Modern', term: '2022\u201323', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'English', title: 'World Literature Honors', term: '2022\u201323', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Engineering', title: 'Introduction to Engineering Design', term: '2022\u201323', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'Computing', title: 'Computer Programming with Python', term: '2022\u201323', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Computer Science', title: 'Computer Programming with Python', term: '2022\u201323', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Mathematics', title: 'Math Analysis', term: '2022\u201323', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Science', title: 'Chemistry', term: '2022\u201323', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Language', title: 'American Sign Language II', term: '2022\u201323', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'Religious Studies', title: 'Scripture and Church 2K', term: '2022\u201323', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Religion', title: 'Scripture and Church 2K', term: '2022\u201323', status: 'completed' },
 
   // ---- 2021-22, freshman year ----------------------------------------------
-  { school: 'archbishop-riordan', code: 'Honours', title: 'Introduction to Composition and Literature Honors', term: '2021\u201322', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'English', title: 'Introduction to Composition and Literature Honors', term: '2021\u201322', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Engineering', title: 'Engineering Essentials', term: '2021\u201322', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Mathematics', title: 'Algebra II and Trigonometry', term: '2021\u201322', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Science', title: 'Biology', term: '2021\u201322', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Language', title: 'American Sign Language I', term: '2021\u201322', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'Social Studies', title: 'Global Ethnic Studies', term: '2021\u201322', status: 'completed' },
-  { school: 'archbishop-riordan', code: 'Religious Studies', title: 'Marianist Education and Sacraments, and Hebrew Scripture', term: '2021\u201322', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'History', title: 'Global Ethnic Studies', term: '2021\u201322', status: 'completed' },
+  { school: 'archbishop-riordan', code: 'Religion', title: 'Marianist Education and Sacraments, and Hebrew Scripture', term: '2021\u201322', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Arts', title: 'Dance I', term: '2021\u201322', status: 'completed' },
   { school: 'archbishop-riordan', code: 'Seminar', title: 'Lyceum: An Examination of Truth', term: '2021\u201322', status: 'completed' },
 ];

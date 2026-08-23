@@ -150,8 +150,19 @@
                   <span class="eyebrow" style="margin:0; display:block;"><%= a.role %></span>
                 <% } %>
               </div>
+              <%
+                /*
+                 * The name, the role, and the dates. Not the description.
+                 *
+                 * A line of prose per activity turns this into a second resume
+                 * written worse than the first one, and the resume and the CV
+                 * are both on the site, one click away, saying it properly.
+                 * What this page is for is the shape of four years: what, in
+                 * what capacity, and when. The detail is still on the record and
+                 * still editable; it is simply not what this page shows.
+                 */
+              %>
               <p style="margin:0;">
-                <%= a.detail || '' %>
                 <% if (a.started_on || a.ended_on) { %>
                   <span class="mono" style="font-size:.66rem; color: var(--text-muted); white-space:nowrap;">
                     <%= a.started_on || '' %><% if (a.ended_on) { %> to <%= a.ended_on %><% } %>
@@ -232,7 +243,7 @@
     </section>
   <% } %>
 
-  <nav class="btn-row" style="margin-top: var(--s-7);">
+  <nav class="btn-row" style="margin-top: var(--s-5);">
     <a class="btn btn-quiet" href="/documents"><%= c('education.cta.resume') %></a>
     <a class="btn btn-quiet" href="/work"><%= c('education.cta.work') %></a>
   </nav>
