@@ -182,8 +182,7 @@ one.
 
 ### 6. Turn on replication
 
-The machine has a real disk, so unlike the container route the database
-survives a reboot on its own. Replication is for the other failure: Oracle
+The machine has a real disk, so the database survives a reboot on its own. Replication is for the other failure: Oracle
 changing the free tier again, or closing the account. That has happened once
 already — see the note in `costs.yml`.
 
@@ -231,19 +230,55 @@ and `/var/log/caddy/third-angle.log`. Litestream answers on
 minutes: it asserts the replica index has not gone backwards and that the
 endpoint still answers, which catches the process simply being gone where
 tailing a log would not. The tunnel's own metrics endpoint,
-`127.0.0.1:2100/metrics`, is not scraped by anything yet.
+`127.0.0.1:2100/metrics`, is not scraped by anything.
 
 **Deploying a change.**
 
 ```sh
 cd /srv/third-angle
+sudo -u app third-angle-backup            # always first
 sudo -u app git pull --ff-only
 sudo -u app npm ci --omit=dev
 sudo systemctl restart third-angle
+npm run smoke -- https://your-domain.example
 ```
 
 Caddy holds connections for up to five seconds while the new process comes up,
 so a restart is invisible from outside.
+
+The last line is the one that matters. `npm run smoke` goes over the wire
+against the deployed site and checks that every public page answers, that every
+admin address still redirects a signed-out visitor to the sign in screen, and
+that the security and cache headers are on the response. It catches what the
+test suite cannot see, because the suite runs in process against a database it
+controls: a proxy that did not reload, a tunnel pointing at the wrong port, an
+origin serving a stale build, a cache rule that strips a header. It exits
+non-zero, so it can be the last line of a deploy and mean something.
+
+Schema changes apply themselves on start. New tables are created when missing
+and new columns are added by the migration helper in `src/db.js`. Nothing is
+ever dropped or rewritten automatically, which is what makes the rollback below
+safe: returning the code does not destroy data written by the newer version.
+
+**Rolling back.** If the smoke check fails and the cause is not obvious in a
+minute, go back first and diagnose afterwards.
+
+```sh
+cd /srv/third-angle
+sudo -u app git log --oneline -5          # find the commit that was working
+sudo -u app git checkout <that commit>
+sudo -u app npm ci --omit=dev
+sudo systemctl restart third-angle
+npm run smoke -- https://your-domain.example
+```
+
+That returns the code and nothing else. If the deploy also corrupted data,
+restoring is a separate operation and [RESTORE.md](RESTORE.md) is the runbook
+for it: the database is not rolled back by checking out an older commit, and
+you would not want it to be, because the two failures are rarely the same
+failure.
+
+To come back to the branch afterwards, `sudo -u app git checkout main`.
 
 **Cost.** Nothing here has a bill attached. The one number to re-read is in
 `costs.yml`, which `npm run check:costs` fails on when it goes stale.

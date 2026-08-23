@@ -1,8 +1,8 @@
 # Single source of truth for every price in this project. Risk R9.
 #
-# Prices age, and a number quoted in prose ages invisibly. Every figure the
-# proposal or the site shows renders from this file, so a number cannot exist
-# in two places and disagree.
+# Prices age, and a number quoted in prose ages invisibly. Every price in this
+# project lives here and nowhere else, so a number cannot exist in two places
+# and disagree.
 #
 # `evidence` must be the exact string as it appears on the vendor page.
 # `volatile: true` shortens the staleness window from 180 days to 90.
@@ -151,11 +151,10 @@ items:
     volatile: false
     evidence: "2,000 minutes per month"
     note: >
-      The repository is public. Nothing runs in Actions yet: there is no .github
-      directory in the tree. Backup verification never depended on it either way —
-      it runs on the box from deploy/third-angle-backup.timer, which is why the
-      60-day auto-disable rule for scheduled workflows on public repositories
-      does not reach it.
+      The repository is public. Nothing runs in Actions: there is no .github
+      directory in the tree. Backup verification runs on the box from
+      deploy/third-angle-backup.timer, so the 60-day auto-disable rule for
+      scheduled workflows on public repositories does not reach it.
 
 fallback_host:
   name: Hetzner CAX11

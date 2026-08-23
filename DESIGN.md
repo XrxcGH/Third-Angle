@@ -81,9 +81,9 @@ Technical typography, non negotiable:
 `public/css/app.css` is the component layer. Everything a **public** page can
 use lives there; `public/css/admin.css` holds only what is genuinely
 admin-specific, because the public layout never loads it. Forms, buttons, panels
-and flashes belong to app.css: when they lived in the admin sheet the contact
-form rendered as bare user-agent widgets, and it looked exactly like a
-stylesheet had failed to load.
+and flashes belong to app.css: in the admin sheet they leave the contact form
+rendering as bare user-agent widgets, which looks exactly like a stylesheet
+failing to load.
 
 Four things that will silently break a page rather than error:
 
@@ -121,15 +121,15 @@ Both escape first and add markup back afterwards, and both normalise line
 endings before doing anything else. That last part is not cosmetic: the HTML
 form specification requires a browser to submit textarea content with CRLF,
 so a splitter written `/\n{2,}/` never fires on posted text, every body saved
-from the admin collapsed into one paragraph of line breaks, and the collapsed
-text is what got stored back.
+from the admin collapses into one paragraph of line breaks, and the collapsed
+text is what gets stored back.
 
 Never store HTML in a `*_md` column. The renderer escapes what it is given, so
 the first save from the admin publishes the tags as visible text.
 
 Never `require()` a file from `scripts/` inside a route. Requiring a script runs
-it: the page editor used to reach its renderer that way and re-ran the
-environment assertion, the migration, and the seeding loop on every save.
+it: a route that reaches its renderer that way re-runs the environment
+assertion, the migration, and the seeding loop on every save.
 
 ## Capitalisation
 
@@ -149,7 +149,7 @@ One rule, stated in `src/labels.js` and applied by `titleCase()` there:
 Every stored enum has exactly one label, in `LABELS` in the same file. A
 template must never print `status`, `tier`, `kind`, `weight`, `origin` or
 `visibility` directly, or with its own `.replace()`: that is how `case-study`
-came to appear as three different strings on three screens. A test enforces it.
+ends up as three different strings on three screens. A test enforces it.
 
 ## Editable content
 
@@ -244,11 +244,10 @@ The motion layer is `public/css/motion.css`, and all of it is CSS. A transition
 that belongs to one component stays beside that component in `app.css`; what
 lives in `motion.css` is what is shared or global.
 
-No public page runs script, and the motion layer did not change that: page
-transitions, scroll reveals, the read-progress line, and the header settle are
-browser features, not a library. The one script in the project,
-`public/js/reorder.js`, enhances drag-to-reorder on the admin project list, and
-the buttons it enhances work without it.
+No public page runs script: page transitions, scroll reveals, the read-progress
+line, and the header settle are browser features, not a library. The one script
+in the project, `public/js/reorder.js`, enhances drag-to-reorder on the admin
+project list, and the buttons it enhances work without it.
 
 One hero motion moment per page: the first block of every page rises in on
 load, staggered by 60ms. Everything below it is tied to the reader's own
@@ -291,7 +290,7 @@ photographs half empty.
 
 A CSS `prefers-reduced-motion` block **cannot** stop a Lottie or Rive animation,
 because those render into a canvas from a JavaScript loop CSS cannot reach. That
-branch has to exist in JavaScript. See risk R4 in the proposal.
+branch has to exist in JavaScript.
 
 ## Risks this codebase closes in code
 

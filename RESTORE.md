@@ -8,7 +8,6 @@ post, no email, and no customer notification. There is no contract, no SLA, and 
 support channel. So the plan is not to trust the host, it is to be able to leave
 it in under an hour.
 
-**Measured recovery time: _record it here after your first drill._**
 An unrehearsed backup is a belief, not a backup.
 
 ---
@@ -27,7 +26,7 @@ Two providers, because two copies with one vendor is one copy.
 
 ---
 
-## Drill: run this quarterly, and once before launch
+## Drill: run this quarterly
 
 Takes about five minutes and needs no outage.
 
@@ -150,8 +149,6 @@ Then in a browser: sign in to `/admin`, load one project page, run one search,
 and confirm an image renders. The keyword monitor in UptimeRobot asserts a real
 project title appears, which proves SQLite and FTS5 are alive rather than merely
 that Node answered.
-
-**Record the elapsed time at the top of this file.**
 
 ---
 
