@@ -374,6 +374,8 @@ const SLOTS = [
   ['search.placeholder', 'search', 'line', 'Swerve, CAN Bus, Governance, MegaTag2'],
   ['search.button', 'search', 'line', 'Search'],
   ['search.empty', 'search', 'text', 'Nothing matched. Try a discipline name, a part, or a tool.'],
+  ['search.browse.eyebrow', 'search', 'line', 'Or Start From a Discipline'],
+  ['search.recent.eyebrow', 'search', 'line', 'Most Recent Work'],
 
   /* ---- build log ---- */
   ['log.eyebrow', 'log', 'line', 'Build Log'],

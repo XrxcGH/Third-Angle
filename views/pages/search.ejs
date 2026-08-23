@@ -10,6 +10,34 @@
     <button class="btn" type="submit"><%= c('search.button') %></button>
   </form>
 
+  <% if (!q) { %>
+    <%
+      /* An empty search page used to be a field on an otherwise blank screen.
+         These are the two things somebody arriving here is most likely to be
+         looking for, and both are one click rather than a guess at a term. */
+    %>
+    <section class="section">
+      <p class="eyebrow"><%= c('search.browse.eyebrow') %></p>
+      <div class="chips">
+        <% for (const d of disciplines) { %>
+          <a class="chip icon-host" href="/disciplines/<%= d.slug %>">
+            <span style="color: var(--<%= d.color_token %>); display:flex;"><%- include('../partials/icon', { name: d.slug, size: 14 }) %></span>
+            <%= d.label %>
+          </a>
+        <% } %>
+      </div>
+    </section>
+
+    <% if (recent && recent.length) { %>
+      <section class="section">
+        <p class="eyebrow"><%= c('search.recent.eyebrow') %></p>
+        <div class="grid" style="margin-top: var(--s-3);">
+          <% for (const p of recent) { %><%- include('../partials/card', { p }) %><% } %>
+        </div>
+      </section>
+    <% } %>
+  <% } %>
+
   <% if (q) { %>
     <p class="eyebrow" role="status" style="margin-top: var(--s-4);">
       <%= results.length %> <%= c('search.results.for') %><%= results.length === 1 ? '' : 's' %> <%= c('search.results.forword') %> &ldquo;<%= q %>&rdquo;<%

@@ -139,7 +139,9 @@ router.get('/search', (req, res) => {
     ...chrome(),
     title: q ? `${content.value('search.meta.title')}: ${q}` : content.value('search.meta.title'),
     description: content.value('search.meta.description'),
-    q, results, fallback,
+    q,
+    /* Something to do on an empty search page. */
+    recent: q ? [] : repo.listProjects().slice(0, 3), results, fallback,
   });
 });
 
