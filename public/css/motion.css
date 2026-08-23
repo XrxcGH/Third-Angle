@@ -147,8 +147,23 @@ html { scroll-padding-top: calc(var(--header-h) + var(--s-3)); }
  * The progress line: how far through the page the reader is, on the one element
  * that is always visible. It is the read position, not a loading bar, and it is
  * driven by the scroll itself rather than by a timer, so it cannot lie.
+ *
+ * Both are scoped to the widths where the header is actually sticky.
+ *
+ * Below 700px app.css makes .site-header `position: static`, because a 155px
+ * header pinned to the top of a 390px phone spends a fifth of the window on
+ * navigation. A static element is not a containing block, so the absolutely
+ * positioned progress line stopped resolving against the header and resolved
+ * against the initial containing block instead: measured at 390px, a 2px accent
+ * bar painted 800px down the document, in the middle of the page content,
+ * attached to nothing, scrolling away with the page. The settle is the same
+ * mistake more quietly — a shadow that says "this is a layer over the page" on
+ * a header that has scrolled off the top of it.
+ *
+ * Neither effect is information the reader loses: the scrollbar says the same
+ * thing, which is why the line is decorative in the first place.
  */
-@media (prefers-reduced-motion: no-preference) {
+@media (prefers-reduced-motion: no-preference) and (min-width: 701px) {
   @supports (animation-timeline: scroll()) {
     .site-header {
       animation: header-settle linear both;

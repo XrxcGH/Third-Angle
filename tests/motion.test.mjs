@@ -136,3 +136,31 @@ test('smooth scrolling is a preference, not a default', () => {
   // And an anchored jump still has to clear the sticky header.
   assert.match(CODE, /scroll-padding-top:\s*calc\(var\(--header-h\)/);
 });
+
+test('the header decorations only run where the header is actually sticky', () => {
+  /*
+   * app.css makes .site-header `position: static` below 700px, because a 155px
+   * header pinned to the top of a 390px phone spends a fifth of the window on
+   * navigation. A static element is not a containing block, so the absolutely
+   * positioned read-progress line stopped resolving against the header and
+   * resolved against the initial containing block instead: measured at 390px, a
+   * 2px accent bar painted 800px down the document, attached to nothing.
+   *
+   * The two numbers have to agree, and they are written in two files, so this
+   * asserts the pair rather than either one.
+   */
+  const app = strip(read('public', 'css', 'app.css'));
+  const staticAt = /@media\s*\(max-width:\s*700px\)\s*\{[^]*?\.site-header\s*\{[^}]*position:\s*static/.test(app);
+  assert.ok(staticAt, 'app.css is expected to make the header static at 700px and below');
+
+  /* The scroll-driven block must be scoped to the width above that. */
+  const scoped = /@media\s*\(prefers-reduced-motion:\s*no-preference\)\s*and\s*\(min-width:\s*701px\)/;
+  assert.match(CODE, scoped,
+    'the header settle and the progress line must not run where the header is static');
+
+  const guarded = blocks(CODE, new RegExp(scoped.source, 'g')).join('\n');
+  assert.match(guarded, /\.site-header::after/,
+    'the progress line belongs inside the width-scoped block');
+  assert.match(guarded, /animation:\s*header-settle/,
+    'and so does the settle: a shadow saying "layer over the page" is a lie on a header that scrolled away');
+});

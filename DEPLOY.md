@@ -134,10 +134,12 @@ that can turn that into a real leak.
 
 **Three toggles that must stay off**, because each injects JavaScript into the
 page: **Rocket Loader**, **Email Address Obfuscation**, and **Bot Fight Mode**.
-The site ships no client-side JavaScript at all — that is a design property, it
-is what lets the CSP say `script-src 'self'` with nothing else in it, and it is
-stated on /attributions. Turning any of these on makes that untrue. Use a WAF
-rule instead of Bot Fight Mode if bots become a problem.
+No public page ships executable JavaScript — the only `<script>` on any of them
+is an `application/ld+json` block, which is data. That is a design property, and
+it is what lets the CSP say `script-src 'self'` with nothing else in it. Each of
+these three toggles injects a script into the page and would break the policy
+before it broke anything visible. Use a WAF rule instead of Bot Fight Mode if
+bots become a problem.
 
 **One rate limiting rule**, which is all the free plan gives, so spend it on the
 sign in form: `http.request.uri.path eq "/admin/login"` and
@@ -146,6 +148,12 @@ Managed Challenge. The app rate limits this too; this stops the traffic a step
 earlier and off the origin entirely.
 
 **The free managed ruleset**, under Security → WAF → Managed rules. On.
+
+**Email Routing**, under the Email tab, forwarding to an inbox you read. Two
+addresses need to exist: whatever the contact page publishes, and
+`security@your-domain.example` — the site serves an RFC 9116
+`/.well-known/security.txt` that names it, and an address published for
+reporting vulnerabilities that bounces is worse than not publishing one.
 
 ### 5. Create the admin account
 
