@@ -118,3 +118,73 @@ test('a search excerpt is escaped before its highlight is put back', () => {
   assert.match(repo, /escapeHtml\(String\(excerpt/);
   assert.equal(/snippet\([^)]*'<mark>'/.test(repo), false, 'snippet must not emit tags directly');
 });
+
+/* ------------------------------------------------------- login CSRF ------ */
+
+const { sameOrigin } = require('../src/middleware.js');
+
+/* A request and a response, reduced to the four things the guard touches. */
+function exchange(method, headers = {}) {
+  const lower = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]));
+  const res = { code: 200, body: '', type() { return res; },
+    status(c) { res.code = c; return res; }, send(b) { res.body = b; return res; } };
+  const req = { method, get: (k) => lower[k.toLowerCase()] };
+  let passed = false;
+  sameOrigin(req, res, () => { passed = true; });
+  return { passed, code: res.code };
+}
+
+test('the sign in form cannot carry a CSRF token, and does not pretend to', () => {
+  /*
+   * This is the premise the guard below exists for, asserted rather than
+   * assumed: a token is bound to a session, sign in is the request that creates
+   * one, so POST /admin/login is necessarily outside the check every other form
+   * goes through. If someone later adds a token here, this test should fail and
+   * the guard should be reconsidered rather than quietly kept.
+   */
+  const src = read('src', 'routes', 'admin.js');
+  const route = src.slice(src.indexOf("router.post('/login'"), src.indexOf("router.post('/logout'"));
+  assert.doesNotMatch(route.split('\n')[0], /requireCsrf/,
+    'sign in has no session yet, so it cannot check a session-bound token');
+  assert.match(read('views', 'admin', 'login.ejs'), /^(?!.*_csrf).*$/s,
+    'and the form does not carry one either');
+});
+
+test('a POST announcing it came from another site is refused', () => {
+  /*
+   * Login CSRF: a page anywhere can submit the sign in form with the ATTACKER's
+   * credentials, and the operator carries on working in an account that is not
+   * theirs. Everything they type afterwards belongs to whoever owns those
+   * credentials.
+   */
+  assert.equal(exchange('POST', { Origin: 'https://evil.example', Host: 'third-angle.com' }).code, 403);
+  assert.equal(exchange('POST', { 'Sec-Fetch-Site': 'cross-site' }).code, 403);
+  assert.equal(exchange('POST', { Origin: 'not a url', Host: 'third-angle.com' }).code, 403);
+  /* A subdomain is a different host, and www is the one that actually shows up. */
+  assert.equal(exchange('POST', { Origin: 'https://www.third-angle.com', Host: 'third-angle.com' }).code, 403);
+});
+
+test('an ordinary same-origin submission still goes through', () => {
+  assert.ok(exchange('POST', {
+    Origin: 'https://third-angle.com', Host: 'third-angle.com', 'Sec-Fetch-Site': 'same-origin',
+  }).passed);
+  /* A typed address or a bookmark. */
+  assert.ok(exchange('POST', { 'Sec-Fetch-Site': 'none' }).passed);
+});
+
+test('a client that sends neither header is not blocked', () => {
+  /*
+   * curl, this test suite, and every other non-browser client send no Origin
+   * and no Sec-Fetch-Site, and none of them is the thing this defends against.
+   * What it defends against is a browser, and a browser cannot be talked out of
+   * sending them: the attacking page has no way to alter either one.
+   */
+  assert.ok(exchange('POST').passed);
+});
+
+test('reading is never refused', () => {
+  for (const m of ['GET', 'HEAD', 'OPTIONS']) {
+    assert.ok(exchange(m, { Origin: 'https://evil.example', 'Sec-Fetch-Site': 'cross-site' }).passed,
+      `${m} is not a write and must not be judged as one`);
+  }
+});

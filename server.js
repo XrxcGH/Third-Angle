@@ -33,6 +33,7 @@ const expressLayouts = require('express-ejs-layouts');
 app.use(expressLayouts);
 app.set('layout', 'layout');
 
+app.use(mw.sameOrigin);
 app.use(mw.securityHeaders);
 /*
  * Before anything renders, and before express.static, because both of those

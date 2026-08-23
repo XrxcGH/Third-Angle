@@ -240,6 +240,49 @@ function securityHeaders(req, res, next) {
   next();
 }
 
+/* ---- cross-site writes --------------------------------------------------
+ * The sign in form is the one form on the site that cannot carry a CSRF token.
+ * A token is bound to a session and the whole point of sign in is that there is
+ * not one yet, so POST /admin/login sits outside the check every other form
+ * goes through.
+ *
+ * That is login CSRF, and it is a real attack even against a one-operator
+ * admin: a page anywhere on the internet can silently submit this form with the
+ * ATTACKER's credentials, and the operator carries on working, believing the
+ * session is theirs, in an account that is not. Everything typed after that
+ * point belongs to whoever owns those credentials.
+ *
+ * A token cannot fix it, so the request is judged by where it came from
+ * instead. A browser attaches Origin to every cross-site POST and has done for
+ * years, and Sec-Fetch-Site says the same thing in one word. A request that
+ * announces it came from somewhere else is refused, whatever it is posting to.
+ *
+ * Absent headers are allowed through on purpose: curl, the test suite and every
+ * other non-browser client send neither, and they are also not the thing this
+ * defends against. What it defends against is a browser, and a browser tells
+ * the truth here because the page doing the attacking cannot alter either
+ * header.
+ */
+function sameOrigin(req, res, next) {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+
+  const refuse = () => res.status(403).type('text/plain')
+    .send('That form was submitted from another site.\n');
+
+  /* 'none' is a typed address or a bookmark. 'same-origin' and 'same-site' are
+     this site. Anything else is the attack. */
+  const fetchSite = req.get('sec-fetch-site');
+  if (fetchSite && !['same-origin', 'same-site', 'none'].includes(fetchSite)) return refuse();
+
+  const origin = req.get('origin');
+  if (origin && origin !== 'null') {
+    let host;
+    try { host = new URL(origin).host; } catch { return refuse(); }
+    if (host !== req.get('host')) return refuse();
+  }
+  return next();
+}
+
 /* ---- redirects ----------------------------------------------------------
  * So a URL can change without breaking a bookmark a recruiter kept.
  */
@@ -320,5 +363,5 @@ function locals(req, res, next) {
 
 module.exports = {
   theme, setTheme, securityHeaders, redirects, locals, parseCookies,
-  cacheHeaders, publicAsset, clientIp,
+  cacheHeaders, publicAsset, clientIp, sameOrigin,
 };

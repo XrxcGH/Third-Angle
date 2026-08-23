@@ -3,7 +3,11 @@
 /*
  * Create or reset the single admin account, and enrol TOTP.
  *
- *   node scripts/create-admin.js you@example.com "Eric J. Dean" "a long passphrase"
+ *   npm run admin -- you@example.com "Eric J. Dean" "a long passphrase"
+ *
+ * Or, for a short hand-over password you intend to replace at first sign in:
+ *
+ *   npm run admin -- you@example.com "Eric J. Dean" "12345" --temp
  *
  * Flags:
  *   --temp         accept a short hand-over password and flag the account so
@@ -38,7 +42,7 @@ if (args[0] === '--confirm') {
 
 const [email, name, password] = args.filter((a) => !a.startsWith('--'));
 if (!email || !name || !password) {
-  console.error('Usage: node scripts/create-admin.js <email> <name> <password>');
+  console.error('Usage: npm run admin -- <email> <name> <password> [--temp]');
   process.exit(1);
 }
 /*
@@ -72,9 +76,10 @@ if (existing) {
 
 if (TEMP) {
   console.log('\nTEMPORARY password set. The account is flagged must_change_password,');
-  console.log('so every admin page carries a warning banner until it is replaced at');
-  console.log('/admin/account. The admin is not locked: the point of a hand-over');
-  console.log('password is that it works.');
+  console.log('which CLOSES the rest of the admin: you can sign in, and every address');
+  console.log('sends you to /admin/account until you choose a real password there.');
+  console.log('A hand-over credential has been transmitted somewhere, so it gets you');
+  console.log('in and no further.');
 }
 
 /*
