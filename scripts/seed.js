@@ -50,7 +50,7 @@ const DISCIPLINES = [
   ['business', 'Business', 'ch-business',
     'Fundraising and sponsorship, grant writing, budgeting, business planning, and founding a California nonprofit.'],
   ['teaching', 'Teaching', 'ch-teaching',
-    'Instructing at iD Tech for ages 10 to 17, mentoring three FIRST teams, and writing the curriculum that outlives the session.'],
+    'Instructing at iD Tech for ages 10 to 17, mentoring two FIRST teams, and writing the curriculum that outlives the session.'],
 ];
 
 const dKeys = generateNKeysBetween(null, null, DISCIPLINES.length);
@@ -264,7 +264,7 @@ const PROJECTS = [
       'Secured a $45,000 annual base budget from the school in the second and third years, an increase driven by ' +
       'competition results, supplemented by sponsorships, grants, individual donations, and a crowdfunding campaign. ' +
       'Submitted grant applications to the Bayer Fund, REV Robotics, Intuitive, BAE Systems, and the YMCA Youth ' +
-      'Empowerment Fund among others.',
+      'Empowerment Fund, among others.',
       'Authored or co-authored the team business plan, sponsorship programme, handbook, EDI plan, branding guide, ' +
       'accounting and inventory sheets, and the 2023 Entrepreneurship Award submission, which was presented in a judged ' +
       'interview at CalGames.',
@@ -273,7 +273,7 @@ const PROJECTS = [
       ['Annual budget', '$45,000', ''],
       ['Members', '15 to 50', ''],
       ['Seasons', '3', ''],
-      ['Team awards', '9', ''],
+      ['Team awards', '10', ''],
     ],
     facets: [
       ['business', 'primary', 'Fundraising, sponsorship tiers, grant writing, budgeting, and the business plan and entrepreneurship submission behind a $45,000 annual programme.'],
@@ -435,7 +435,7 @@ console.log(`projects: ${PROJECTS.length}`);
  */
 const NOW_MD =
   'Interning at the Western Region Robotics Forum, founding Groundwork Robotics, '
-  + 'and mentoring three FIRST teams. At UCLA this term: MECH&AE 101 Statics and '
+  + 'and mentoring two FIRST teams. At UCLA this term: MECH&AE 101 Statics and '
   + 'Strength of Materials, Physics 1B, the Physics 4AL mechanics laboratory, and '
   + 'Stats 10.';
 
