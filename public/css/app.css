@@ -1410,6 +1410,17 @@ code {
 /* An editing surface earns more room than a one-line answer, and a body of
    markdown is genuinely easier to write wide. Still bounded. */
 .field textarea, textarea.input { --field-max: 60rem; }
+/*
+ * A textarea that is the whole point of its form runs the whole width of it.
+ *
+ * 60rem is the right cap for a field sitting among others; it is the wrong one
+ * for the field the form exists to collect. On the contact form the three short
+ * fields span 1462px at a 1600px window and the message box stopped at 960 —
+ * two thirds — so it read as two columns under a row of three. Set on the
+ * textarea, not the field, because the rule above declares the property on the
+ * element and an inherited value would lose to it.
+ */
+.field.field-full textarea { --field-max: none; }
 .input:hover,
 .field input:hover, .field textarea:hover, .field select:hover { border-color: var(--rule); }
 .input:focus-visible,

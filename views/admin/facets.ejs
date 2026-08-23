@@ -44,19 +44,20 @@
 
 <form method="post" action="/admin/facets/save" class="panel cols" style="margin-top: var(--s-3);">
   <input type="hidden" name="_csrf" value="<%= csrf %>">
-  <div class="row2">
-    <div class="field">
-      <label for="label">Name</label>
-      <input id="label" name="label" type="text" required>
-    </div>
-    <div class="field">
-      <label for="color_token">Colour</label>
-      <select id="color_token" name="color_token">
-        <% for (const t of tokens) { %>
-          <option value="<%= t %>"><%= titleCase(t.replace('ch-', '')) %></option>
-        <% } %>
-      </select>
-    </div>
+  <%# Direct children of .panel.cols, not wrapped in a .row2: a wrapper is one
+      grid item, so the two fields shared a single column and the rest of the
+      panel stayed empty. %>
+  <div class="field">
+    <label for="label">Name</label>
+    <input id="label" name="label" type="text" required>
+  </div>
+  <div class="field">
+    <label for="color_token">Colour</label>
+    <select id="color_token" name="color_token">
+      <% for (const t of tokens) { %>
+        <option value="<%= t %>"><%= titleCase(t.replace('ch-', '')) %></option>
+      <% } %>
+    </select>
   </div>
   <div class="field">
     <label for="blurb">One Paragraph, for the Discipline Landing Page</label>
