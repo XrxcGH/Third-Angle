@@ -90,13 +90,35 @@ log "Litestream"
 # SILENTLY, with no error output, which is the worst possible failure mode for
 # a backup tool. See RESTORE.md and deploy/litestream.yml.
 LITESTREAM_VERSION=0.5.16
-if ! command -v litestream >/dev/null || [ "$(litestream version 2>/dev/null | tr -d 'v')" != "$LITESTREAM_VERSION" ]; then
-  curl -fsSL "https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-v${LITESTREAM_VERSION}-linux-arm64.deb" \
-    -o /tmp/litestream.deb
-  dpkg -i /tmp/litestream.deb >/dev/null
+LITESTREAM_OK=yes
+install_litestream() {
+  # The git tag carries a leading v; the asset filename does not. That spelling
+  # has changed at least once, so try both rather than trust either one.
+  local base name
+  base="https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}"
+  for name in "litestream-${LITESTREAM_VERSION}-linux-arm64.deb" \
+              "litestream-v${LITESTREAM_VERSION}-linux-arm64.deb"; do
+    if curl -fsSL "$base/$name" -o /tmp/litestream.deb \
+       && dpkg -i /tmp/litestream.deb >/dev/null; then
+      rm -f /tmp/litestream.deb
+      return 0
+    fi
+  done
   rm -f /tmp/litestream.deb
+  return 1
+}
+if [ "$(litestream version 2>/dev/null | tr -d 'v')" = "$LITESTREAM_VERSION" ]; then
+  litestream version
+elif install_litestream; then
+  litestream version
+else
+  # Litestream is off-site replication, not the site. A machine that serves
+  # nothing is worse than one that serves without a replica, so carry on here
+  # and say so loudly at the end, where it will not scroll past.
+  LITESTREAM_OK=no
+  echo "    NOT INSTALLED: no arm64 .deb for $LITESTREAM_VERSION at either URL."
+  echo "    The site does not need it to run. Off-site replication does."
 fi
-litestream version
 
 log "Application user and directories"
 id -u "$APP_USER" >/dev/null 2>&1 || useradd --system --home "$APP_DIR" --shell /usr/sbin/nologin "$APP_USER"
@@ -213,6 +235,19 @@ ufw status numbered | sed 's/^/    /'
 
 log "Status"
 systemctl is-active third-angle && curl -fsS localhost:3000/healthz || true
+
+if [ "$LITESTREAM_OK" = no ]; then
+  cat <<'WARN'
+
+  !! LITESTREAM IS NOT INSTALLED, so there is no off-site replication and step
+     4 below cannot be done. Find the current arm64 .deb and install it by hand:
+       curl -s https://api.github.com/repos/benbjohnson/litestream/releases/latest \
+         | grep browser_download_url | grep 'linux-arm64\.deb'
+       curl -fsSL <that URL> -o /tmp/litestream.deb && sudo dpkg -i /tmp/litestream.deb
+     Then correct LITESTREAM_VERSION in deploy/provision.sh so the next machine
+     does not hit this.
+WARN
+fi
 
 cat <<'NEXT'
 
