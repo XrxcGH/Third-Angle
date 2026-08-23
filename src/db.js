@@ -41,6 +41,52 @@ db.exec('PRAGMA mmap_size = 268435456;');
  * why they are asserted rather than assumed.
  */
 function assertEnvironment() {
+  /*
+   * The session secret is the CSRF key.
+   *
+   * csrfToken() is an HMAC of the session id under SESSION_SECRET, and it used
+   * to fall back to a fixed development string. In production that string is
+   * public: it is in this repository. Anyone could compute a valid token for a
+   * known session id and every mutating admin route would accept a
+   * cross-site POST. A missing secret is a configuration mistake nobody would
+   * notice from the outside, so it stops the boot rather than the request.
+   */
+  if (process.env.NODE_ENV === 'production') {
+    const secret = String(process.env.SESSION_SECRET || '');
+    if (secret.length < 32) {
+      throw new Error(
+        'SESSION_SECRET must be set to at least 32 characters in production. '
+        + 'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+      );
+    }
+  }
+
+  /*
+   * SITE_URL, for the same reason and with a sharper failure mode.
+   *
+   * Every absolute URL on the site derives from it: the canonical link, og:url,
+   * og:image, every <loc> in the sitemap, the Sitemap line in robots.txt, both
+   * feeds, and the Contact line in security.txt. None of those appear in the
+   * browser, so a deployment that shipped the provisioning template's
+   * `https://example.com` unedited would look perfect and publish a sitemap
+   * full of somebody else's domain to every crawler that asked. By the time it
+   * is noticed the wrong URLs are indexed.
+   *
+   * The localhost fallback is fine in development and is exactly what must not
+   * survive into production either.
+   */
+  if (process.env.NODE_ENV === 'production') {
+    const site = String(process.env.SITE_URL || '');
+    let url = null;
+    try { url = new URL(site); } catch { /* reported below */ }
+    if (!url || url.protocol !== 'https:') {
+      throw new Error(`SITE_URL must be set to the site's own https:// origin in production, found ${site || '(unset)'}.`);
+    }
+    if (/^(example\.(com|org|net)|localhost|127\.0\.0\.1)$/i.test(url.hostname)) {
+      throw new Error(`SITE_URL is still the placeholder ${url.hostname}. Set it to the real domain before deploying.`);
+    }
+  }
+
   const [major] = process.versions.node.split('.').map(Number);
   if (major < 24) {
     throw new Error(
@@ -68,9 +114,63 @@ function assertEnvironment() {
   }
 }
 
+/*
+ * Columns added to a table that already exists.
+ *
+ * schema.sql is written with CREATE TABLE IF NOT EXISTS, which is idempotent
+ * for new tables and a no-op for a table that is already there. A column added
+ * to an existing table therefore never appears on a database created by an
+ * earlier version, and the failure is a runtime "no such column" on whichever
+ * page happens to read it first.
+ *
+ * Kept as an explicit, ordered list rather than a migrations directory: this is
+ * a single-writer SQLite file with one operator, and a folder of numbered files
+ * would be more machinery than the problem has.
+ */
+const ADDED_COLUMNS = [
+  // The counter a TOTP code was last accepted from, so the same six digits
+  // cannot be replayed inside their ninety second window. See src/auth.js.
+  ['user', 'totp_last_counter', 'INTEGER'],
+  // A photo belongs to at most one album. The collage pages render an album,
+  // so setting this IS publishing the photo.
+  ['media', 'album_slug', 'TEXT REFERENCES album(slug) ON DELETE SET NULL'],
+  // Pins the resume and the CV to the top of the document library. Everything
+  // else is 'other' and sorts below by its fractional index.
+  ['document', 'doc_role', "TEXT NOT NULL DEFAULT 'other'"],
+  // Delivery state for a contact message. The message is stored first and
+  // mailed second, so a mail failure can never lose the message; this column is
+  // what turns that from a silent loss into a visible retry.
+  ['message', 'mail_status', "TEXT NOT NULL DEFAULT 'pending'"],
+  ['message', 'mail_error', 'TEXT'],
+  ['message', 'mailed_at', 'TEXT'],
+];
+
+function addMissingColumns() {
+  for (const [table, column, decl] of ADDED_COLUMNS) {
+    const exists = db.prepare(`PRAGMA table_info(${table})`).all()
+      .some((c) => c.name === column);
+    if (!exists) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${decl}`);
+  }
+}
+
 function migrate() {
   const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
   db.exec(sql);
+  addMissingColumns();
+  // Indexes over added columns have to come after the columns exist.
+  db.exec('CREATE INDEX IF NOT EXISTS media_album ON media(album_slug)');
+  db.exec('CREATE INDEX IF NOT EXISTS document_role ON document(doc_role, sort_key)');
+  db.exec('CREATE INDEX IF NOT EXISTS message_mail_status ON message(mail_status, created_at DESC)');
+
+  /*
+   * The personal wall is one wall. Any albums left over from when it was a set
+   * of them are folded into it, keeping every photograph. Idempotent, and a
+   * no-op once there is nothing to fold. Required here rather than at the top
+   * of the file because repo.js requires this module.
+   */
+  try {
+    require('./repo').ensurePersonalWall();
+  } catch { /* a database this old has no album table yet; schema.sql just made it */ }
 }
 
 /* ---- thin query helpers -------------------------------------------------
@@ -99,6 +199,6 @@ const nowIso = () => new Date().toISOString();
 
 module.exports = {
   db, get, all, run, exec, transaction,
-  migrate, assertEnvironment, nowIso,
+  migrate, addMissingColumns, assertEnvironment, nowIso,
   DATA_DIR, DB_PATH, UPLOAD_DIR,
 };

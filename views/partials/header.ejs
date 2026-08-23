@@ -2,20 +2,42 @@
   <div class="wrap bar">
 
     <a class="brand" href="/">
-      <%- include('mark', { size: 34 }) %>
+      <%
+        /* An uploaded logo replaces the drawn mark, and only then. A site that
+           has not set one keeps the mark rather than a broken image or a gap. */
+        const logo = ci('site.logo');
+      %>
+      <% if (logo) { %>
+        <img src="/media/<%= logo.storage_key %>" alt="<%= logo.alt || c('site.brand.name') %>"
+             height="34" style="height:34px; width:auto; display:block; flex:none;">
+      <% } else { %>
+        <%- include('mark', { size: 34 }) %>
+      <% } %>
       <span>
-        <span class="wordmark">ERIC DEAN</span>
-        <span class="sub">Third Angle</span>
+        <span class="wordmark"><%= c('site.brand.name') %></span>
+        <span class="sub"><%= c('site.brand.sub') %></span>
       </span>
     </a>
 
-    <nav class="nav" aria-label="Main">
-      <a href="/work"<%- path.startsWith('/work') ? ' aria-current="page"' : '' %>>Work</a>
-      <a href="/disciplines"<%- path.startsWith('/disciplines') ? ' aria-current="page"' : '' %>>Disciplines</a>
-      <a href="/documents"<%- path.startsWith('/documents') ? ' aria-current="page"' : '' %>>Documents</a>
-      <a href="/log"<%- path.startsWith('/log') ? ' aria-current="page"' : '' %>>Log</a>
-      <a href="/resume"<%- path.startsWith('/resume') ? ' aria-current="page"' : '' %>>Resume</a>
-      <a href="/search"<%- path.startsWith('/search') ? ' aria-current="page"' : '' %>>Search</a>
+    <%
+      /* One list, so a page cannot be added to the site and forgotten in the
+         navigation. Labels are Title Case: they are names, not the tracking
+         labels the mono eyebrows use, and the uppercase is applied in CSS. */
+      const NAV = [
+        ['/work', c('site.nav.work')],
+        ['/disciplines', c('site.nav.disciplines')],
+        ['/education', c('site.nav.education')],
+        ['/professional', c('site.nav.professional')],
+        ['/personal', c('site.nav.personal')],
+        ['/documents', c('site.nav.documents')],
+        ['/now', c('site.nav.log')],
+        ['/search', c('site.nav.search')],
+      ];
+    %>
+    <nav class="nav" aria-label="<%= c('site.nav.aria') %>">
+      <% for (const [href, label] of NAV) { %>
+        <a href="<%= href %>"<%- path === href || path.startsWith(href + '/') ? ' aria-current="page"' : '' %>><%= label %></a>
+      <% } %>
     </nav>
 
     <%
@@ -24,11 +46,11 @@
     %>
     <form class="theme-form" method="post" action="/theme">
       <input type="hidden" name="back" value="<%= path %>">
-      <span class="visually-hidden" id="theme-label">Colour theme</span>
+      <span class="visually-hidden" id="theme-label"><%= c('site.theme.label') %></span>
       <% for (const opt of ['system', 'light', 'dark']) { %>
         <button type="submit" name="theme" value="<%= opt %>"
                 aria-pressed="<%= theme === opt ? 'true' : 'false' %>"
-                aria-describedby="theme-label"><%= opt === 'system' ? 'Auto' : opt %></button>
+                aria-describedby="theme-label"><%= c(`site.theme.${opt}`) %></button>
       <% } %>
     </form>
 

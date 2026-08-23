@@ -1,0 +1,339 @@
+<p class="eyebrow">Admin</p>
+<h1>Education</h1>
+<p class="measure" style="color: var(--text-muted);">
+  Institutions, classes, and activities. Status is the field that matters:
+  completed and in progress are different claims, and the public page keeps
+  them apart rather than merging them into one list of subject names.
+</p>
+
+<% if (saved) { %><p class="flash" role="status" style="margin-top: var(--s-4);">Saved.</p><% } %>
+<% if (error) { %><p class="flash error" role="alert" style="margin-top: var(--s-4);"><%= error %></p><% } %>
+
+<%
+  /* Labels come from src/labels.js, so a status reads identically here, on the
+     public page and in a badge. A local copy is how three screens end up
+     disagreeing about what 'in-progress' is called. */
+  const STATUS_LABEL = (v) => label('courseStatus', v);
+  const KIND_LABEL = (v) => label('activityKind', v);
+  const SCHOOL_LABEL = (v) => label('schoolKind', v);
+%>
+
+<%# ------------------------------------------------------------ institutions %>
+<section style="margin-top: var(--s-5);">
+  <h2>Institutions</h2>
+
+  <% for (const s of schools) { %>
+    <div class="panel" style="margin-top: var(--s-3);">
+      <div style="display:flex; gap: var(--s-3); align-items:baseline; flex-wrap:wrap;">
+        <h3 style="margin:0;"><%= s.name %></h3>
+        <span class="badge"><%= SCHOOL_LABEL(s.kind) %></span>
+        <span class="mono" style="font-size:.66rem; color: var(--text-muted);">/education#<%= s.slug %></span>
+        <span class="mono tnum" style="font-size:.7rem; color: var(--text-muted); margin-left:auto;">
+          <%= s.counts.completed %> done &middot; <%= s.counts['in-progress'] %> in progress
+        </span>
+      </div>
+
+      <details style="margin-top: var(--s-3);">
+        <summary style="cursor:pointer;">Edit This Institution</summary>
+        <form method="post" action="/admin/education/school" style="margin-top: var(--s-3);">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <input type="hidden" name="slug" value="<%= s.slug %>">
+          <div class="row2">
+            <div class="field">
+              <label for="name-<%= s.slug %>">Name</label>
+              <input id="name-<%= s.slug %>" name="name" type="text" value="<%= s.name %>" required>
+            </div>
+            <div class="field">
+              <label for="kind-<%= s.slug %>">Kind</label>
+              <select id="kind-<%= s.slug %>" name="kind">
+                <% for (const k of schoolKinds) { %>
+                  <option value="<%= k %>"<%= s.kind === k ? ' selected' : '' %>><%= SCHOOL_LABEL(k) %></option>
+                <% } %>
+              </select>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="cred-<%= s.slug %>">Credential</label>
+              <input id="cred-<%= s.slug %>" name="credential" type="text" value="<%= s.credential || '' %>">
+            </div>
+            <div class="field">
+              <label for="loc-<%= s.slug %>">Location</label>
+              <input id="loc-<%= s.slug %>" name="location" type="text" value="<%= s.location || '' %>">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="start-<%= s.slug %>">Started</label>
+              <input id="start-<%= s.slug %>" name="started_on" type="text" value="<%= s.started_on || '' %>" placeholder="2025-09">
+            </div>
+            <div class="field">
+              <label for="end-<%= s.slug %>">Ended</label>
+              <input id="end-<%= s.slug %>" name="ended_on" type="text" value="<%= s.ended_on || '' %>" placeholder="Leave blank while current">
+            </div>
+          </div>
+          <div class="field">
+            <label for="hon-<%= s.slug %>">Honours</label>
+            <input id="hon-<%= s.slug %>" name="honours" type="text" value="<%= s.honours || '' %>">
+          </div>
+          <div class="field">
+            <label for="blurb-<%= s.slug %>">One Paragraph</label>
+            <textarea id="blurb-<%= s.slug %>" name="blurb" style="min-height:5rem;"><%= s.blurb || '' %></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn" type="submit">Save Institution</button>
+          </div>
+        </form>
+
+        <form method="post" action="/admin/education/school/<%= s.slug %>/delete" style="margin-top: var(--s-3);">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <button class="btn btn-danger btn-sm" type="submit">Delete This Institution and Its Classes</button>
+        </form>
+      </details>
+
+      <%# ------------------------------------------------------------ classes %>
+      <h4 style="margin-top: var(--s-4);"><%= s.courses.length %> Class<%= s.courses.length === 1 ? '' : 'es' %></h4>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Classes, scrolls sideways"
+           style="margin-top: var(--s-2);">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Code</th><th>Title</th><th>Term</th><th>Units</th><th>Status</th><th style="text-align:right;">Actions</th></tr>
+          </thead>
+          <tbody>
+            <% if (!s.courses.length) { %>
+              <tr><td colspan="6" style="color: var(--text-muted);">No classes recorded.</td></tr>
+            <% } %>
+            <% for (const c of s.courses) { %>
+              <tr>
+                <td class="mono" style="font-size:.72rem;"><%= c.code || '' %></td>
+                <td>
+                  <%= c.title %>
+                  <% if (c.note) { %><div style="font-size:.78rem; color: var(--text-muted);"><%= c.note %></div><% } %>
+                </td>
+                <td class="mono" style="font-size:.72rem; white-space:nowrap;"><%= c.term || '' %></td>
+                <td class="mono tnum" style="font-size:.72rem;"><%= c.units || '' %></td>
+                <td><span class="badge" data-course="<%= c.status %>"><%= STATUS_LABEL(c.status) %></span></td>
+                <td>
+                  <div class="actions">
+                    <a class="btn btn-quiet btn-sm" href="/admin/education?course=<%= c.id %>#course-form">Edit</a>
+                    <form method="post" action="/admin/education/course/<%= c.id %>/delete">
+                      <input type="hidden" name="_csrf" value="<%= csrf %>">
+                      <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% } %>
+
+  <%# ----------------------------------------------------- add an institution %>
+  <details style="margin-top: var(--s-4);">
+    <summary style="cursor:pointer;">Add an Institution</summary>
+    <form class="panel" method="post" action="/admin/education/school" style="margin-top: var(--s-3); max-width: 44rem;">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="row2">
+        <div class="field">
+          <label for="new-school-name">Name</label>
+          <input id="new-school-name" name="name" type="text" required>
+        </div>
+        <div class="field">
+          <label for="new-school-kind">Kind</label>
+          <select id="new-school-kind" name="kind">
+            <% for (const k of schoolKinds) { %><option value="<%= k %>"><%= SCHOOL_LABEL(k) %></option><% } %>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="new-school-cred">Credential</label>
+          <input id="new-school-cred" name="credential" type="text" placeholder="BS Mechanical Engineering, Expected June 2029">
+        </div>
+        <div class="field">
+          <label for="new-school-loc">Location</label>
+          <input id="new-school-loc" name="location" type="text">
+        </div>
+      </div>
+      <button class="btn" type="submit">Add Institution</button>
+    </form>
+  </details>
+</section>
+
+<%# ----------------------------------------------------------- add a class %>
+<section style="margin-top: var(--s-6);" id="course-form">
+  <h2><%= editCourse ? 'Edit A Class' : 'Add A Class' %></h2>
+  <p class="measure" style="color: var(--text-muted); font-size:.92rem;">
+    A class can be listed once per school and term. Leave the term blank if it
+    is not recorded: the public page shows a term only where there is one, and
+    an invented term is worse than a missing one.
+  </p>
+
+  <form class="panel" method="post" action="/admin/education/course" style="margin-top: var(--s-3); max-width: 44rem;">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <% if (editCourse) { %><input type="hidden" name="id" value="<%= editCourse.id %>"><% } %>
+
+    <div class="row2">
+      <div class="field">
+        <label for="course-school">Institution</label>
+        <select id="course-school" name="school_slug" required>
+          <% for (const s of schools) { %>
+            <option value="<%= s.slug %>"<%= editCourse && editCourse.school_slug === s.slug ? ' selected' : '' %>><%= s.name %></option>
+          <% } %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="course-status">Status</label>
+        <select id="course-status" name="status">
+          <% for (const st of statuses) { %>
+            <option value="<%= st %>"<%= editCourse && editCourse.status === st ? ' selected' : '' %>><%= STATUS_LABEL(st) %></option>
+          <% } %>
+        </select>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="course-code">Code</label>
+        <input id="course-code" name="code" type="text" placeholder="MAE M20"
+               value="<%= editCourse ? (editCourse.code || '') : '' %>">
+      </div>
+      <div class="field">
+        <label for="course-term">Term</label>
+        <input id="course-term" name="term" type="text" placeholder="Fall 2026"
+               value="<%= editCourse ? (editCourse.term || '') : '' %>">
+        <span class="hint">Season and year, so the order is right. Blank is fine.</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="course-title">Title</label>
+      <input id="course-title" name="title" type="text" required
+             value="<%= editCourse ? editCourse.title : '' %>">
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="course-units">Units</label>
+        <input id="course-units" name="units" type="text" placeholder="4"
+               value="<%= editCourse ? (editCourse.units || '') : '' %>">
+      </div>
+      <div class="field">
+        <label for="course-note">Note</label>
+        <input id="course-note" name="note" type="text"
+               value="<%= editCourse ? (editCourse.note || '') : '' %>">
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" type="submit"><%= editCourse ? 'Save Class' : 'Add Class' %></button>
+      <% if (editCourse) { %><a class="btn btn-quiet" href="/admin/education">Cancel</a><% } %>
+    </div>
+  </form>
+</section>
+
+<%# ------------------------------------------------------------- activities %>
+<section style="margin-top: var(--s-6);" id="activity-form">
+  <h2>Activities, Awards, and Certifications</h2>
+
+  <div class="panel table-wrap" tabindex="0" role="region" aria-label="Activities, scrolls sideways"
+       style="padding:0; margin-top: var(--s-3);">
+    <table class="admin-table">
+      <thead>
+        <tr><th>Title</th><th>Kind</th><th>Institution</th><th>Dates</th><th style="text-align:right;">Actions</th></tr>
+      </thead>
+      <tbody>
+        <% if (!activities.length) { %>
+          <tr><td colspan="5" style="color: var(--text-muted);">Nothing recorded.</td></tr>
+        <% } %>
+        <% for (const a of activities) { %>
+          <tr>
+            <td>
+              <strong><%= a.title %></strong>
+              <% if (a.role) { %><div style="font-size:.8rem; color: var(--text-muted);"><%= a.role %></div><% } %>
+              <% if (a.detail) { %><div style="font-size:.8rem; color: var(--text-muted);"><%= a.detail %></div><% } %>
+            </td>
+            <td><span class="badge"><%= KIND_LABEL(a.kind) %></span></td>
+            <td style="font-size:.85rem;"><%= a.school_slug || 'Not tied to a school' %></td>
+            <td class="mono" style="font-size:.7rem; white-space:nowrap;">
+              <%= a.started_on || '' %><% if (a.ended_on) { %> to <%= a.ended_on %><% } %>
+            </td>
+            <td>
+              <div class="actions">
+                <a class="btn btn-quiet btn-sm" href="/admin/education?activity=<%= a.id %>#activity-form">Edit</a>
+                <form method="post" action="/admin/education/activity/<%= a.id %>/delete">
+                  <input type="hidden" name="_csrf" value="<%= csrf %>">
+                  <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <form class="panel" method="post" action="/admin/education/activity" style="margin-top: var(--s-4); max-width: 44rem;">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <% if (editActivity) { %><input type="hidden" name="id" value="<%= editActivity.id %>"><% } %>
+
+    <div class="row2">
+      <div class="field">
+        <label for="act-title">Title</label>
+        <input id="act-title" name="title" type="text" required
+               value="<%= editActivity ? editActivity.title : '' %>">
+      </div>
+      <div class="field">
+        <label for="act-kind">Kind</label>
+        <select id="act-kind" name="kind">
+          <% for (const k of kinds) { %>
+            <option value="<%= k %>"<%= editActivity && editActivity.kind === k ? ' selected' : '' %>><%= KIND_LABEL(k) %></option>
+          <% } %>
+        </select>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="act-school">Institution</label>
+        <select id="act-school" name="school_slug">
+          <option value="">Not tied to a school</option>
+          <% for (const s of schools) { %>
+            <option value="<%= s.slug %>"<%= editActivity && editActivity.school_slug === s.slug ? ' selected' : '' %>><%= s.name %></option>
+          <% } %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="act-role">Role</label>
+        <input id="act-role" name="role" type="text"
+               value="<%= editActivity ? (editActivity.role || '') : '' %>">
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="act-start">Started</label>
+        <input id="act-start" name="started_on" type="text"
+               value="<%= editActivity ? (editActivity.started_on || '') : '' %>">
+      </div>
+      <div class="field">
+        <label for="act-end">Ended</label>
+        <input id="act-end" name="ended_on" type="text"
+               value="<%= editActivity ? (editActivity.ended_on || '') : '' %>">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="act-detail">Detail</label>
+      <input id="act-detail" name="detail" type="text"
+             value="<%= editActivity ? (editActivity.detail || '') : '' %>">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" type="submit"><%= editActivity ? 'Save Entry' : 'Add Entry' %></button>
+      <% if (editActivity) { %><a class="btn btn-quiet" href="/admin/education">Cancel</a><% } %>
+    </div>
+  </form>
+</section>

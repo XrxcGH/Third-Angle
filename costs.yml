@@ -24,6 +24,22 @@ items:
       box as disposable and the backup as the system of record. Re-read this page
       every 15 June.
 
+  - name: DNS, TLS, cache, and WAF
+    vendor: Cloudflare
+    product: Free plan
+    amount_usd: 0
+    period: year
+    source_url: https://www.cloudflare.com/plans/
+    verified_on: 2026-08-23
+    volatile: true
+    evidence: "Free"
+    note: >
+      The front half of the stack: proxied DNS, a universal certificate, edge
+      caching, the free managed WAF ruleset, one rate-limiting rule, and the
+      tunnel that removes every inbound port from the origin. Workers Paid at
+      5/month is NOT used; see CLOUDFLARE.md. Cloudflare Tunnel is free and
+      unmetered on this plan.
+
   - name: Domain
     vendor: Cloudflare Registrar
     product: one .com, at registry cost
@@ -124,11 +140,11 @@ items:
     verified_on: 2026-08-21
     volatile: true
     evidence: "20 checks"
-    note: Five checks used of twenty.
+    note: Three checks used of twenty.
 
   - name: CI
     vendor: GitHub
-    product: Actions, private repository, Free plan
+    product: Actions, public repository, Free plan
     amount_usd: 0
     period: year
     source_url: https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions
@@ -136,9 +152,11 @@ items:
     volatile: false
     evidence: "2,000 minutes per month"
     note: >
-      Private rather than public deliberately. On a PUBLIC repo, scheduled
-      workflows auto-disable after 60 days without activity, which would silently
-      stop backup verification during exactly the quiet periods that matter.
+      The repository is public. Nothing runs in Actions yet: there is no .github
+      directory in the tree. Backup verification never depended on it either way —
+      it runs on the box from deploy/third-angle-backup.timer, which is why the
+      60-day auto-disable rule for scheduled workflows on public repositories
+      does not reach it.
 
 fallback_host:
   name: Hetzner CAX11

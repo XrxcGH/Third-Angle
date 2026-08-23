@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 #
-# Restore verification. Risk R5, and the one that makes every other backup
+# Restore verification, and the one control that makes every other backup
 # control mean something.
 #
 # Litestream's failure mode gives no signal until you need it. So this does not
 # check that a backup EXISTS, it restores one and interrogates it. An
 # unrehearsed backup is a belief.
 #
-# Runs on the box via a systemd timer rather than in GitHub Actions, because
-# scheduled workflows on a public repository are automatically disabled after
-# 60 days without repository activity, which is precisely the quiet stretch
-# when this matters most.
+# Runs on the box, not in GitHub Actions: scheduled workflows on a public
+# repository are automatically disabled after 60 days without repository
+# activity, which is precisely the quiet stretch when this matters most.
+#
+# It is wired in as ExecStartPost on third-angle-backup.service, so it runs
+# nightly straight after the snapshot it verifies. There is no separate timer
+# for it, which is easy to miss when looking for one.
 #
 #   third-angle-verify            verify from Litestream, then from a snapshot
 #   third-angle-verify snapshot   snapshot only, no network needed

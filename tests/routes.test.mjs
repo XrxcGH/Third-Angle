@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
+const db = require('../src/db.js');
 
 let server;
 let base;
@@ -33,12 +34,46 @@ after(() => {
 
 const PUBLIC_PAGES = [
   '/', '/work', '/work?d=electrical', '/work?d=nonexistent-discipline',
-  '/disciplines', '/disciplines/controls', '/log', '/now', '/attributions',
+  '/disciplines', '/disciplines/controls', '/now', '/attributions',
   '/search', '/search?q=swerve', '/search?q=elctrical',
   '/feed.xml', '/feed.json', '/sitemap.xml', '/robots.txt',
   '/.well-known/security.txt', '/healthz',
   '/licenses/Literata-OFL.txt',
 ];
+
+test('production refuses to boot with a placeholder SITE_URL', () => {
+  /*
+   * Every absolute URL on the site derives from SITE_URL and none of them are
+   * visible in a browser, so a deployment that shipped the provisioning
+   * template's example.com would look perfect and publish a sitemap full of
+   * somebody else's domain to every crawler that asked.
+   */
+  const saved = {
+    NODE_ENV: process.env.NODE_ENV,
+    SESSION_SECRET: process.env.SESSION_SECRET,
+    SITE_URL: process.env.SITE_URL,
+  };
+  const restore = () => {
+    for (const [k, v] of Object.entries(saved)) {
+      if (v === undefined) delete process.env[k]; else process.env[k] = v;
+    }
+  };
+  const check = (value) => {
+    process.env.NODE_ENV = 'production';
+    process.env.SESSION_SECRET = 'x'.repeat(40);
+    if (value === null) delete process.env.SITE_URL; else process.env.SITE_URL = value;
+    try { db.assertEnvironment(); return null; } catch (e) { return e.message; }
+  };
+  try {
+    assert.match(check(null), /SITE_URL must be set/);
+    assert.match(check('https://example.com'), /still the placeholder/);
+    assert.match(check('https://localhost'), /still the placeholder/);
+    assert.match(check('http://third-angle.dev'), /https:\/\/ origin/);
+    assert.equal(check('https://ericjdean.dev'), null, 'a real https origin must be accepted');
+  } finally {
+    restore();
+  }
+});
 
 test('every public page renders', async () => {
   // Machine endpoints are legitimately short. Exempting them by name keeps the

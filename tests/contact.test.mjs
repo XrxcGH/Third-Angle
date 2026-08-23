@@ -10,12 +10,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
 const require = createRequire(import.meta.url);
+const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const contact = require('../src/contact.js');
 const repo = require('../src/repo.js');
 const db = require('../src/db.js');
-const { render } = require('../scripts/seed-pages.js');
+// The renderer moved to src/markup.js. Importing it from the seed script ran
+// the script: assertEnvironment, migrate, and the seeding loop all fired just to
+// reach one function.
+const { richText: render } = require('../src/markup.js');
 
 /* A stamp older than the minimum, so the speed check is satisfied. */
 function agedStamp(secondsAgo) {
@@ -53,6 +60,16 @@ test('a form submitted faster than a human could type is rejected', () => {
   assert.equal(r.reason, 'too-fast');
 });
 
+/*
+ * Change the last character to a DIFFERENT one.
+ *
+ * This was `.replace(/.$/, 'A')`, which is only a tamper when the signature did
+ * not already end in an A — so roughly one run in thirty six the "forged" stamp
+ * was the genuine one and the suite failed for no reason anybody could
+ * reproduce. A flaky test in a deploy pipeline is worse than no test.
+ */
+const flipLast = (s) => s.slice(0, -1) + (s.at(-1) === 'a' ? 'b' : 'a');
+
 test('a forged or unsigned timestamp is rejected', () => {
   for (const t of [
     'abc.deadbeefdeadbeefdeadbe',           // wrong signature
@@ -60,7 +77,7 @@ test('a forged or unsigned timestamp is rejected', () => {
     '',
     undefined,
     'notbase36.' + 'x'.repeat(24),
-    agedStamp(10).replace(/.$/, 'A'),        // tampered signature
+    flipLast(agedStamp(10)),                 // tampered signature
   ]) {
     const r = contact.validate({ ...good(), t }, '1.2.3.4');
     assert.equal(r.ok, false, `accepted stamp ${JSON.stringify(t)}`);
@@ -145,11 +162,14 @@ test('page slugs are a closed set, so a URL cannot be invented', () => {
   assert.throws(() => repo.savePage('arbitrary', { title: 'x', body_md: '', body_html: '' }), /Unknown page/);
 });
 
-test('the resume page exists, is published and is indexed', () => {
-  const page = repo.getPage('resume');
-  assert.ok(page, 'no resume page');
-  assert.ok(page.body_html.length > 500, 'resume body is suspiciously short');
-  const row = db.get("SELECT published FROM search_index WHERE kind = 'page' AND url = '/resume'");
-  assert.ok(row, 'the resume is not in the search index');
-  assert.equal(row.published, 1);
+test('the old resume address still resolves, permanently', () => {
+  /*
+   * The separate resume page is gone: the PDF is one of the documents, pinned
+   * at the top of /documents with a reader, a download, and search inside it.
+   * The address is on applications and in email signatures, which cannot be
+   * edited afterwards, so it redirects rather than 404s.
+   */
+  const routes = readFileSync(path.join(ROOT, 'src', 'routes', 'public.js'), 'utf8');
+  assert.match(routes, /router\.get\('\/resume', \(req, res\) => res\.redirect\(301, '\/documents'\)\)/);
+  assert.match(routes, /\\\/resume\\\/\[A-Za-z0-9_\.-\]\+\\\.pdf/);
 });

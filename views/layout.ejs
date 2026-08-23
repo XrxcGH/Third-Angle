@@ -25,7 +25,13 @@
   /* Crawlers fetch only this first response and never run JavaScript, which is
      exactly why a server rendered stack is an advantage here rather than a
      compromise. Absolute URLs: several platforms will not resolve a relative one. */
-  const og = (typeof ogImage !== 'undefined' && ogImage) ? ogImage : '/og/default.png';
+  /* An uploaded card wins over the generated one, and the generated one wins
+     over the site-wide default. A page that names its own card is the most
+     specific answer available, so it is checked first. */
+  const uploadedOg = ci('site.og.image');
+  const og = (typeof ogImage !== 'undefined' && ogImage) ? ogImage
+    : uploadedOg ? `/media/${uploadedOg.storage_key}`
+    : '/og/default.png';
 %>
 <meta property="og:image" content="<%= siteUrl + og %>">
 <meta property="og:image:width" content="1200">
@@ -42,6 +48,7 @@
 <link rel="stylesheet" href="/static/css/tokens.css">
 <link rel="stylesheet" href="/static/css/app.css">
 <link rel="stylesheet" href="/static/css/icons.css">
+<link rel="stylesheet" href="/static/css/motion.css">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>

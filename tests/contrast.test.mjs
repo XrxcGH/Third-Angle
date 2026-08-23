@@ -47,9 +47,20 @@ export function contrast(fg, bg) {
  * Parsing the real CSS rather than a duplicated JSON copy, so the two can
  * never drift apart. Blocks are matched by their selector.
  */
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 function block(selectorFragment) {
-  const i = CSS.indexOf(selectorFragment);
-  assert.ok(i >= 0, `selector not found in tokens.css: ${selectorFragment}`);
+  // Anchored to the start of a line, so the fragment has to BE the selector
+  // rather than merely appear inside one. A bare indexOf matched anywhere,
+  // including inside another rule's selector list: the print block groups
+  // :root[data-theme="dark"] with two other selectors, so an unanchored search
+  // would eventually read the print palette, assert the wrong values, and still
+  // report green.
+  const selector = selectorFragment.replace(/\s*\{\s*$/, '');
+  const re = new RegExp('^[ \\t]*' + escapeRe(selector) + '\\s*\\{', 'm');
+  const m = re.exec(CSS);
+  assert.ok(m, `selector not found at the start of a line in tokens.css: ${selectorFragment}`);
+  const i = m.index;
   const open = CSS.indexOf('{', i);
   let depth = 0;
   let end = open;
@@ -71,7 +82,7 @@ const dark = block(':root[data-theme="dark"]');
 const THEMES = [['light', light], ['dark', dark]];
 
 /* ---- the pairs the design actually uses ----
- * AA: 4.5:1 body text, 3:1 large text and non-text UI boundaries (SC 1.4.11).
+ * AA: 4.5:1 body text, 3:1 large text, and non-text UI boundaries (SC 1.4.11).
  */
 const TEXT_PAIRS = [
   ['text-body', 'canvas'], ['text-body', 'surface'],
@@ -159,5 +170,131 @@ test('the two dark blocks are identical, or the toggle and the OS disagree', () 
       (media[k] || '').toLowerCase(),
       `--${k} differs: [data-theme="dark"] has ${dark[k]}, the media query has ${media[k]}`
     );
+  }
+});
+
+/* ---- the print palette ----
+ * Everything on the page takes its colour from a token, and app.css forces
+ * white paper. Without a print block the reader's theme tokens went onto that
+ * paper: dark theme printing produced #D9DED6 body text on white, which renders
+ * and is not readable. Nobody opens print preview, so this is asserted instead.
+ */
+const print = block('@media print');
+
+function printBlock() {
+  // The palette lives one level in, under the grouped :root selector.
+  const start = CSS.indexOf('@media print');
+  assert.ok(start >= 0, 'tokens.css has no @media print block');
+  const body = CSS.slice(start);
+  const out = {};
+  for (const m of body.matchAll(/--([a-z0-9-]+)\s*:\s*(#[0-9A-Fa-f]{6})\s*;/g)) out[m[1]] = m[2];
+  return out;
+}
+
+test('print: ink on paper meets AA, whatever theme the reader had on screen', () => {
+  const t = printBlock();
+  for (const fg of ['text-body', 'text-strong', 'text-muted', 'dim-text', 'dim-title', 'accent-ink']) {
+    assert.ok(t[fg], `print palette is missing --${fg}`);
+    const r = contrast(t[fg], t.canvas);
+    assert.ok(r >= 4.5, `print: --${fg} on paper is ${r.toFixed(2)}:1, needs 4.5:1`);
+  }
+});
+
+test('print: every discipline channel stays legible on paper', () => {
+  const t = printBlock();
+  for (const k of Object.keys(t)) {
+    if (!k.startsWith('ch-')) continue;
+    const r = contrast(t[k], t.canvas);
+    assert.ok(r >= 4.5, `print: --${k} on paper is ${r.toFixed(2)}:1, needs 4.5:1`);
+  }
+});
+
+test('print: the palette covers every token the screen palettes define', () => {
+  // A token defined on screen and forgotten here keeps the reader's theme
+  // value on paper, which is the exact failure this block exists to close.
+  const t = printBlock();
+  const colourTokens = Object.keys(light);
+  const missing = colourTokens.filter((k) => !(k in t));
+  assert.deepEqual(missing, [], `print palette is missing: ${missing.join(', ')}`);
+});
+
+/* ---- the search hit highlight ----
+ * <mark> shipped with the user-agent yellow, which belongs to no palette and
+ * put near-black text on a saturated yellow block over the dark canvas.
+ */
+test('the search highlight is a token pair and reads in both themes', () => {
+  for (const [name, t] of THEMES) {
+    assert.ok(t['mark-bg'] && t['mark-ink'], `${name} is missing the --mark-* pair`);
+    const r = contrast(t['mark-ink'], t['mark-bg']);
+    assert.ok(r >= 4.5, `${name}: --mark-ink on --mark-bg is ${r.toFixed(2)}:1, needs 4.5:1`);
+  }
+});
+
+test('no stylesheet outside tokens.css names a colour', () => {
+  // DESIGN.md: nothing else defines a colour. app.css used to carry #fff and
+  // #000 in its print block, which is how the dark-theme printing bug survived.
+  const files = ['app.css', 'admin.css', 'icons.css', 'motion.css'];
+  for (const f of files) {
+    const css = readFileSync(path.join(ROOT, 'public', 'css', f), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+    const literals = css.match(/#[0-9A-Fa-f]{3,8}\b|\brgba?\(|\bhsla?\(|\boklch\(/g) || [];
+    assert.deepEqual(literals, [], `${f} defines a colour directly: ${literals.join(', ')}`);
+  }
+});
+
+test('every weight token the component layer uses exists in all three palettes', () => {
+  // The dark palette lowers each weight to correct the optical gain of light
+  // text on a dark ground. A component that reaches for a token no palette
+  // defines silently falls back to the browser default and skips that
+  // correction, which is what a row of hardcoded 600s used to do.
+  const app = readFileSync(path.join(ROOT, 'public', 'css', 'app.css'), 'utf8');
+  const used = [...new Set([...app.matchAll(/var\((--w-[a-z]+)\)/g)].map((m) => m[1]))];
+  assert.ok(used.length >= 3, `app.css uses only ${used.length} weight tokens, which cannot be right`);
+
+  const weights = (selector) => {
+    const i = CSS.search(new RegExp('^[ \\t]*' + escapeRe(selector) + '\\s*\\{', 'm'));
+    assert.ok(i >= 0, `no block for ${selector}`);
+    const open = CSS.indexOf('{', i);
+    let depth = 0, end = open;
+    for (let j = open; j < CSS.length; j++) {
+      if (CSS[j] === '{') depth++;
+      else if (CSS[j] === '}') { depth--; if (depth === 0) { end = j; break; } }
+    }
+    const out = {};
+    for (const m of CSS.slice(open + 1, end).matchAll(/(--w-[a-z]+)\s*:\s*(\d+)\s*;/g)) out[m[1]] = Number(m[2]);
+    return out;
+  };
+
+  const palettes = {
+    light: weights(':root'),
+    dark: weights(':root[data-theme="dark"]'),
+    'dark media query': weights(':root:not([data-theme="light"])'),
+  };
+
+  for (const [name, w] of Object.entries(palettes)) {
+    for (const token of used) {
+      assert.ok(token in w, `${name} palette is missing ${token}, which app.css uses`);
+    }
+  }
+
+  // And the correction has to actually go the right way.
+  for (const token of used) {
+    assert.ok(
+      palettes.dark[token] < palettes.light[token],
+      `${token} is ${palettes.dark[token]} on dark and ${palettes.light[token]} on light. ` +
+      'Light text on a dark ground gains optical weight, so the dark value must be lower.'
+    );
+  }
+});
+
+test('a hardcoded font weight in the component layer is a bug, not a style', () => {
+  // The whole point of the tokens above. Enumerated exception: none.
+  const app = readFileSync(path.join(ROOT, 'public', 'css', 'app.css'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  const admin = readFileSync(path.join(ROOT, 'public', 'css', 'admin.css'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const [name, css] of [['app.css', app], ['admin.css', admin]]) {
+    const hard = [...css.matchAll(/font-weight:\s*(\d+)/g)].map((m) => m[1]);
+    assert.deepEqual(hard, [], `${name} hardcodes font-weight: ${hard.join(', ')}`);
   }
 });

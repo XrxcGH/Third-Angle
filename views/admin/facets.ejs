@@ -8,7 +8,7 @@
 
 <% if (error) { %><p class="flash error"><%= error %></p><% } %>
 
-<div class="panel" style="padding:0; margin-top: var(--s-4);">
+<div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="padding:0; margin-top: var(--s-4);">
   <table class="admin-table">
     <thead>
       <tr><th>Discipline</th><th>Colour</th><th>Projects</th><th>Address</th></tr>
@@ -36,7 +36,7 @@
   </table>
 </div>
 
-<h2 style="font-size:1.15rem; margin-top: var(--s-6);">Add or rename</h2>
+<h2 style="font-size:1.15rem; margin-top: var(--s-6);">Add or Rename</h2>
 <p style="color: var(--text-muted); max-width: 62ch; font-size:.92rem;">
   Saving a name that already exists updates it. Names that differ only by case are rejected
   by the database, which is what stops Electrical and electrical becoming two separate chips.
@@ -53,15 +53,15 @@
       <label for="color_token">Colour</label>
       <select id="color_token" name="color_token">
         <% for (const t of tokens) { %>
-          <option value="<%= t %>"><%= t.replace('ch-', '') %></option>
+          <option value="<%= t %>"><%= titleCase(t.replace('ch-', '')) %></option>
         <% } %>
       </select>
     </div>
   </div>
   <div class="field">
-    <label for="blurb">One paragraph, for the discipline landing page</label>
+    <label for="blurb">One Paragraph, for the Discipline Landing Page</label>
     <textarea id="blurb" name="blurb" style="min-height:5rem;"></textarea>
     <span class="hint">A filter chip proves nothing. This paragraph is what a recruiter can be sent directly.</span>
   </div>
-  <button class="btn" type="submit">Save discipline</button>
+  <button class="btn" type="submit">Save Discipline</button>
 </form>

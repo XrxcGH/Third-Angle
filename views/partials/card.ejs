@@ -6,7 +6,7 @@
 %>
 <a class="card" href="/work/<%= p.slug %>" data-match="<%= m ? 'true' : 'false' %>">
   <span class="card-meta">
-    <span class="badge" data-status="<%= p.status %>"><%= p.status.replace('-', ' ') %></span>
+    <span class="badge" data-status="<%= p.status %>"><%= label('status', p.status) %></span>
     <% if (p.context) { %><span><%= p.context %></span><% } %>
   </span>
   <span class="card-title"><%= p.title %></span>

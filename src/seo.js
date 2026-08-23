@@ -44,7 +44,7 @@ function personNode(siteUrl) {
     ],
     sameAs: [
       'https://github.com/XrxcGH',
-      'https://linkedin.com/in/edean07',
+      'https://www.linkedin.com/in/edean07',
     ],
   };
 }
@@ -111,7 +111,20 @@ function jsonLd(siteUrl, opts) {
   const graph = [personNode(siteUrl)];
   if (o.project) graph.push(projectNode(siteUrl, o.project));
   if (o.trail && o.trail.length) graph.push(breadcrumbs(siteUrl, o.trail));
-  return JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+  /*
+   * Escaped for the script context, not just serialised.
+   *
+   * The result is printed with <%- into <script type="application/ld+json">,
+   * and JSON.stringify leaves <, > and / literal — so a project title
+   * containing </script> would close the element early and the rest of the
+   * title would be parsed as markup. Only the admin can write a title, and the
+   * CSP has no unsafe-inline, so the worst case is defacing your own page
+   * rather than script execution; it is still one replace to make impossible.
+   */
+  return JSON.stringify({ '@context': 'https://schema.org', '@graph': graph })
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/\//g, '\\u002f');
 }
 
 /* --------------------------------------------------------------- OG cards */

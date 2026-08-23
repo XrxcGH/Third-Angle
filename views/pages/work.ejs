@@ -1,13 +1,12 @@
-<section class="wrap" style="padding-top: var(--s-6);">
-  <p class="eyebrow">Work</p>
-  <h1>Everything, filterable</h1>
+<section class="wrap pad-top">
+  <p class="eyebrow"><%= c('work.eyebrow') %></p>
+  <h1><%= c('work.heading') %></h1>
   <p class="prose lede" style="color: var(--text-muted);">
-    Selecting a discipline emphasises the work where it applies and de-emphasises the rest.
-    Nothing is hidden, so the breadth stays visible and the page does not jump.
+    <%= c('work.lede') %>
   </p>
 
   <div class="chips" style="margin-top: var(--s-4);">
-    <a class="chip" href="/work"<%- active ? '' : ' aria-current="true"' %>>All<span class="tnum" style="color: var(--text-muted);"><%= projects.length %></span></a>
+    <a class="chip" href="/work"<%- active ? '' : ' aria-current="true"' %>><%= c('work.chip.all') %><span class="tnum" style="color: var(--text-muted);"><%= projects.length %></span></a>
     <% for (const d of disciplines) { %>
       <a class="chip" href="/work?d=<%= d.slug %>"<%- active === d.slug ? ' aria-current="true"' : '' %>>
         <span class="dot" style="background: var(--<%= d.color_token %>);"></span>
@@ -18,7 +17,7 @@
   </div>
 
   <p class="eyebrow" role="status" style="margin-top: var(--s-4);">
-    <% if (active) { %><%= matchCount %> of <%= projects.length %> match<% } else { %><%= projects.length %> projects<% } %>
+    <% if (active) { %><%= matchCount %> <%= c('work.status.of') %> <%= projects.length %> <%= c('work.status.match') %><% } else { %><%= projects.length %> <%= c('work.status.projects') %><% } %>
   </p>
 
   <div class="grid"<%- active ? ' data-filtering' : '' %>>

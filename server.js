@@ -33,15 +33,33 @@ const expressLayouts = require('express-ejs-layouts');
 app.use(expressLayouts);
 app.set('layout', 'layout');
 
+app.use(mw.sameOrigin);
 app.use(mw.securityHeaders);
+/*
+ * Before anything renders, and before express.static, because both of those
+ * override it deliberately. The default it sets is the careful one: nothing
+ * shared may keep this. See src/middleware.js.
+ */
+app.use(mw.cacheHeaders);
 app.use(mw.theme);
 app.use(mw.locals);
 
+/*
+ * The stylesheets, the fonts and the favicon.
+ *
+ * The headers are written here rather than left to `maxAge`, because `send`
+ * only sets Cache-Control when the response does not already carry one, and
+ * mw.cacheHeaders above always does. Left to itself that ordering silently
+ * turned a year of edge caching on every font into revalidate-every-time, with
+ * no error and no visible symptom except a slower site.
+ */
+const STATIC_MAX_AGE = process.env.NODE_ENV === 'production' ? 31536000 : 0;
 app.use(
   '/static',
   express.static(path.join(__dirname, 'public'), {
-    maxAge: process.env.NODE_ENV === 'production' ? '365d' : 0,
-    immutable: process.env.NODE_ENV === 'production',
+    setHeaders: (res) => {
+      mw.publicAsset(res, STATIC_MAX_AGE, STATIC_MAX_AGE > 0);
+    },
   })
 );
 
@@ -53,7 +71,7 @@ app.use(require('./src/routes/public'));
 /* 404 */
 app.use((req, res) => {
   res.status(404).render('pages/404', {
-    title: 'Not found',
+    title: 'Not Found',
     description: 'That page does not exist.',
     disciplines: repo.listFacets('discipline'),
     counts: {},
@@ -82,7 +100,14 @@ app.use((err, req, res, _next) => {
   try { disciplines = repo.listFacets('discipline'); } catch { /* database may be the thing that broke */ }
 
   res.status(500).render('pages/500', {
-    title: 'Something broke',
+    /*
+     * The content helpers explicitly, because res.locals may never have been
+     * populated: if the failure happened in the middleware that sets them, the
+     * 500 template would throw on c() and the reader would get the plain text
+     * fallback instead of a page.
+     */
+    ...require('./src/content').helpers(),
+    title: 'Something Broke',
     description: 'An error occurred.',
     disciplines,
     counts: {},

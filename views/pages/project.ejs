@@ -21,7 +21,7 @@
   const rest = media.slice(1);
 %>
 
-<article class="wrap" style="padding-top: var(--s-6);">
+<article class="wrap pad-top">
 
   <p class="eyebrow">
     <%= project.context || 'Project' %><% if (project.role) { %> &middot; <%= project.role %><% } %><% if (project.started_on) { %> &middot; <%= project.started_on %><% if (project.ended_on) { %> to <%= project.ended_on %><% } %><% } %>
@@ -32,7 +32,7 @@
   <% } %>
 
   <div class="chips" style="margin-top: var(--s-4);">
-    <span class="badge" data-status="<%= project.status %>"><%= project.status.replace('-', ' ') %></span>
+    <span class="badge" data-status="<%= project.status %>"><%= label('status', project.status) %></span>
     <% for (const f of project.facets) { %>
       <a class="chip" href="/disciplines/<%= f.slug %>">
         <span class="dot" style="background: var(--<%= f.color_token %>);"></span><%= f.label %>
@@ -70,13 +70,20 @@
   %>
   <% if (depth >= 6 && noted.length) { %>
     <section class="section">
-      <p class="eyebrow">Discipline breakdown</p>
-      <h2>What this was, per discipline</h2>
+      <p class="eyebrow"><%= c('project.breakdown.eyebrow') %></p>
+      <h2><%= c('project.breakdown.heading') %></h2>
       <div class="stack" style="margin-top: var(--s-4);">
         <% for (const f of noted) { %>
           <div class="discipline-row">
+            <%
+              /* The weight goes on its own line rather than after a middot.
+                 A long label such as "Mechanical and CAD" wraps inside the
+                 11rem column, which left the separator stranded at the end of
+                 the first line with the weight orphaned underneath it. */
+            %>
             <div class="eyebrow" style="margin:0; color: var(--<%= f.color_token %>);">
-              <%= f.label %> <span style="color: var(--text-muted);">&middot; <%= f.weight %></span>
+              <%= f.label %>
+              <span style="color: var(--text-muted); display:block;"><%= label('weight', f.weight) %></span>
             </div>
             <p style="margin:0;"><%= f.contribution_note %></p>
           </div>
@@ -91,8 +98,8 @@
 
   <% if (rest.length) { %>
     <section class="section">
-      <p class="eyebrow">Evidence</p>
-      <h2><%= media.length %> artefact<%= media.length === 1 ? '' : 's' %></h2>
+      <p class="eyebrow"><%= c('project.evidence.eyebrow') %></p>
+      <h2><%= media.length %> <%= c('project.evidence.noun') %><%= media.length === 1 ? '' : 's' %></h2>
       <div class="figure-grid" style="margin-top: var(--s-4);">
         <% for (const mm of rest) { %>
           <%- include('../partials/figure', { m: mm, slot: '(min-width: 900px) 520px, 100vw' }) %>
@@ -103,22 +110,36 @@
 
   <% if (depth >= 6 && has(project.links)) { %>
     <section class="section">
-      <p class="eyebrow">Links</p>
-      <ul class="stack" style="list-style:none; padding:0; margin-top: var(--s-3);">
+      <p class="eyebrow"><%= c('project.links.eyebrow') %></p>
+      <%
+        /*
+         * One row of links, with no kind column beside them.
+         *
+         * Every row used to carry its kind in a 5.5rem mono label to the left
+         * of the link, which on most projects read "REPOSITORY  Repository":
+         * the same word twice, once as a heading for a column one item long.
+         * The kind is still on the record and still sorts the list; it is the
+         * label that was redundant.
+         */
+      %>
+      <ul class="btn-row" style="list-style:none; padding:0; margin-top: var(--s-3);">
         <% for (const l of project.links) { %>
-          <li style="display:flex; gap: var(--s-3); align-items:baseline;">
-            <span class="mono" style="font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color: var(--text-muted); min-width:5.5rem;"><%= l.kind %></span>
-            <a href="<%= l.url %>" rel="noopener"><%= l.label %></a>
+          <li>
+            <a class="btn btn-quiet" href="<%= l.url %>" rel="noopener"><%= l.label %></a>
           </li>
         <% } %>
       </ul>
     </section>
   <% } %>
 
-  <nav style="margin-top: var(--s-7); display:flex; gap: var(--s-4); flex-wrap:wrap;">
-    <a href="/work">All work</a>
+  <nav style="margin-top: var(--s-5); display:flex; gap: var(--s-4); flex-wrap:wrap;">
+    <a href="/work"><%= c('project.back') %></a>
     <% if (project.facets[0]) { %>
-      <a href="/disciplines/<%= project.facets[0].slug %>">More <%= project.facets[0].label.toLowerCase() %></a>
+      <%
+        /* Not toLowerCase(). The labels carry acronyms, and lower-casing
+           "Mechanical and CAD" produced "More mechanical and cad". */
+      %>
+      <a href="/disciplines/<%= project.facets[0].slug %>"><%= c('project.more') %> <%= project.facets[0].label %></a>
     <% } %>
   </nav>
 </article>

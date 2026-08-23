@@ -1,30 +1,26 @@
-<section class="wrap prose" style="padding-top: var(--s-6);">
-  <p class="eyebrow">Colophon</p>
-  <h1>Attributions</h1>
+<section class="wrap prose pad-top">
+  <p class="eyebrow"><%= c('attributions.eyebrow') %></p>
+  <h1><%= c('attributions.heading') %></h1>
   <p class="lede" style="color: var(--text-muted);">
-    What this site is built from, and the notices the licences require me to carry.
+    <%= c('attributions.lede') %>
   </p>
 
   <section class="section">
-    <h2>Typefaces</h2>
-    <p>
-      All three are licensed under the SIL Open Font License 1.1, which permits
-      self hosting and requires that the copyright and licence notice travel with the
-      fonts. They are served from this domain rather than a font CDN.
-    </p>
+    <h2><%= c('attributions.fonts.heading') %></h2>
+    <div class="prose"><%- cr('attributions.fonts.body') %></div>
 
     <div class="stack" style="margin-top: var(--s-4);">
       <% for (const f of fonts) { %>
         <div class="discipline-row">
           <div>
-            <div style="font-family: var(--f-display); font-weight:650; color: var(--text-strong);"><%= f.name %></div>
+            <div style="font-family: var(--f-display); font-weight: var(--w-head); color: var(--text-strong);"><%= f.name %></div>
             <div class="mono" style="font-size:.62rem; letter-spacing:.1em; text-transform:uppercase; color: var(--text-muted);"><%= f.role %></div>
           </div>
           <div>
             <p style="margin:0 0 .3em;"><%= f.copyright %></p>
             <p style="margin:0; font-size:.9rem;">
-              <a href="<%= f.url %>" rel="noopener">Source</a> &middot;
-              <a href="/licenses/<%= f.file %>">SIL OFL 1.1 notice</a>
+              <a href="<%= f.url %>" rel="noopener"><%= c('attributions.fonts.source') %></a> &middot;
+              <a href="/licenses/<%= f.file %>"><%= c('attributions.fonts.notice') %></a>
             </p>
           </div>
         </div>
@@ -33,56 +29,17 @@
   </section>
 
   <section class="section">
-    <h2>Software</h2>
-    <p>
-      Node, Express and EJS, on SQLite through Node's built-in <code>node:sqlite</code>.
-      Ordering uses <code>fractional-indexing</code> (CC0). Uploads are parsed by
-      <code>multer</code> and re-encoded by <code>sharp</code>. Search is SQLite FTS5.
-      There is no framework, no build step and no analytics that sets a cookie.
-    </p>
-    <p>
-      The source is public at
-      <a href="https://github.com/XrxcGH/third-angle" rel="noopener">github.com/XrxcGH/third-angle</a>.
-    </p>
+    <h2><%= c('attributions.software.heading') %></h2>
+    <div class="prose"><%- cr('attributions.software.body') %></div>
   </section>
 
   <section class="section">
-    <h2>Privacy</h2>
-    <p>
-      This site sets exactly one cookie, and only if you press the theme control: a
-      preference recording whether you chose light, dark or your system setting. It holds
-      no identifier and nothing personal, and it exists so the correct theme is in the
-      first response rather than flashing the wrong one at you.
-    </p>
-    <p>
-      Signing into the admin area sets a session cookie. That is for me, not for you.
-    </p>
-    <p>
-      There is no advertising, no third party script, no tracking pixel and no fingerprinting.
-      Nothing on these pages loads from another domain, which is also why the fonts are
-      self hosted. Server logs record ordinary request data and are not used to build a
-      profile of anyone.
-    </p>
+    <h2><%= c('attributions.privacy.heading') %></h2>
+    <div class="prose"><%- cr('attributions.privacy.body') %></div>
   </section>
 
   <section class="section">
-    <h2>How I work</h2>
-    <p>
-      Parts of this site were built with AI assistance, working from a written
-      specification rather than a prompt. The order was: decide the architecture, write
-      the design rules down, then generate against them, then review and test by hand.
-    </p>
-    <p>
-      The verification is the part worth pointing at. The test suite exists because of
-      specific defects found while building, not because a checklist asked for tests: a
-      de-emphasis state that met the design brief and failed WCAG contrast while looking
-      fine; a search query of <code>C++</code> that matched every row in the database; a
-      single malformed cookie that returned a server error on every page; and a content
-      security policy that silently blocked the site's own layout. Each of those is now a
-      test that fails if it comes back.
-    </p>
-    <p>
-      The commit history is public if you want to check any of that.
-    </p>
+    <h2><%= c('attributions.method.heading') %></h2>
+    <div class="prose"><%- cr('attributions.method.body') %></div>
   </section>
 </section>

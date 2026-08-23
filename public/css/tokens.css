@@ -40,6 +40,22 @@
   --accent-wash:   #FFECE1;  /* Primer */
   --on-accent:     #151C11;  /* see rule 2 above. Never #FFF. */
 
+  /* ---- search hit highlight ----
+     The browser default for <mark> is a hard yellow that belongs to no palette
+     and is unreadable over the dark canvas. Tokenised here so the highlight is
+     part of the system, and so the contrast test can assert the pair. */
+  --mark-bg:       #FFC773;  /* hazard amber wash */
+  --mark-ink:      #151C11;  /* 11.33:1 on --mark-bg */
+
+  /* ---- scrim ----
+     A caption sits on top of a photograph, not on the canvas, so it takes its
+     contrast from a gradient rather than from a surface token. Identical in
+     both themes for the same reason: the photograph underneath does not change
+     when the reader flips the site to dark. */
+  --shade-strong:  rgba(10, 14, 9, .78);
+  --shade-none:    rgba(10, 14, 9, 0);
+  --on-shade:      #FFFFFF;  /* 13.7:1 on --shade-strong over any image */
+
   /* ---- quiet supports ---- */
   --copper:        #925512;  /* Bus,       5.44:1 */
   --patina:        #006963;  /* Verdigris, 6.00:1 */
@@ -66,7 +82,13 @@
   --f-body:    "Literata", Georgia, "Times New Roman", serif;
   --f-mono:    "Martian Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
 
+  /* Dimming is a token swap, and weight is one of the channels it swaps: a
+     de-emphasised card title drops a step as well as losing contrast. */
+  --w-dim: 500;
   --w-body: 400;
+  /* The weight between body and head. Every hardcoded 600 in app.css used to
+     be this, which meant those elements missed the dark mode correction below. */
+  --w-med: 600;
   --w-head: 650;
   --w-strong: 700;
 
@@ -78,10 +100,24 @@
   --r-card: 4px;
   --r-control: 3px;
 
+  /* Height of the sticky header. scroll-margin-top is derived from it, so a
+     focused card is never tucked underneath. Overridden at the narrow
+     breakpoint in app.css, where the bar is taller. */
+  --header-h: 64px;
+
   /* ---- motion. Fast on the target, slower on the group. ---- */
   --ease: cubic-bezier(.2, 0, 0, 1);
   --t-hover: 140ms;
   --t-group: 260ms;
+  /* Entrances, in DESIGN.md's 300 to 500ms band. */
+  --t-entrance: 420ms;
+  /* How far an entrance travels. Small on purpose: a long slide is a page that
+     looks like it is still arriving. */
+  --rise: 10px;
+  /* The sticky header once the page has moved under it. A shadow rather than a
+     heavier rule, because the rule is already doing the separating and two
+     lines would read as a seam. */
+  --lift-shadow: 0 10px 26px -22px rgba(10, 14, 9, .5);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -101,6 +137,13 @@
     --accent-wash: #382011;
     --on-accent:   #111510;
 
+    --mark-bg:     #7A4712;  /* 7.02:1 against --mark-ink */
+    --mark-ink:    #F2F6F0;
+
+    --shade-strong: rgba(10, 14, 9, .78);
+    --shade-none:   rgba(10, 14, 9, 0);
+    --on-shade:     #FFFFFF;
+
     --copper:      #DBA475;  /*  8.41:1 */
     --patina:      #73C9C1;  /*  9.53:1 */
 
@@ -108,6 +151,9 @@
     --dim-title:   #A8AFA5;
     --dim-border:  #252A22;
     --dim-surface: #111510;
+
+    /* A dark canvas swallows a soft shadow, so the lift is deeper here. */
+    --lift-shadow: 0 12px 30px -20px rgba(0, 0, 0, .72);
 
     --ch-mechanical: #81E977;
     --ch-electrical: #FFB935;
@@ -119,7 +165,9 @@
     --ch-teaching:   #C9E84C;
 
     /* Light text on dark optically gains weight. Correct it. */
+    --w-dim: 460;
     --w-body: 380;
+    --w-med: 560;
     --w-head: 620;
     --w-strong: 650;
   }
@@ -141,6 +189,13 @@
   --accent-wash: #382011;
   --on-accent:   #111510;
 
+  --mark-bg:     #7A4712;
+  --mark-ink:    #F2F6F0;
+
+  --shade-strong: rgba(10, 14, 9, .78);
+  --shade-none:   rgba(10, 14, 9, 0);
+  --on-shade:     #FFFFFF;
+
   --copper:      #DBA475;
   --patina:      #73C9C1;
 
@@ -148,6 +203,9 @@
   --dim-title:   #A8AFA5;
   --dim-border:  #252A22;
   --dim-surface: #111510;
+
+  /* A dark canvas swallows a soft shadow, so the lift is deeper here. */
+  --lift-shadow: 0 12px 30px -20px rgba(0, 0, 0, .72);
 
   --ch-mechanical: #81E977;
   --ch-electrical: #FFB935;
@@ -158,7 +216,78 @@
   --ch-business:   #E67D58;
   --ch-teaching:   #C9E84C;
 
+  --w-dim: 460;
   --w-body: 380;
+  --w-med: 560;
   --w-head: 620;
   --w-strong: 650;
+}
+
+/*
+ * Print.
+ *
+ * app.css forces the page to white paper with black ink, but every element on
+ * it takes its colour from a token, and those tokens keep whatever the reader's
+ * theme set them to. Printing the resume with the dark theme active therefore
+ * put #D9DED6 body text and #9AA197 labels onto white paper: technically
+ * rendered, effectively blank, and invisible on screen because print preview is
+ * the one view nobody checks.
+ *
+ * Re-stating the palette here keeps the rule that nothing outside this file
+ * defines a colour. These are the light values, flattened: no washes, because a
+ * tinted panel costs ink and gains nothing on paper.
+ */
+@media print {
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
+    color-scheme: light;
+
+    --canvas:      #FFFFFF;
+    --surface:     #FFFFFF;
+    --sunken:      #FFFFFF;
+    --hairline:    #BBBBBB;
+    --rule:        #999999;
+
+    --text-muted:  #444444;
+    --text-body:   #000000;
+    --text-strong: #000000;
+
+    --accent:      #000000;
+    --accent-ink:  #000000;
+    --accent-wash: #FFFFFF;
+    --on-accent:   #FFFFFF;
+
+    --mark-bg:     #FFFFFF;
+    --mark-ink:    #000000;
+
+    /* No scrim on paper: the caption prints under the photograph in ordinary
+       ink rather than reversed out of a gradient that costs a page of toner. */
+    --shade-strong: rgba(255, 255, 255, 0);
+    --shade-none:   rgba(255, 255, 255, 0);
+    --on-shade:     #000000;
+
+    --copper:      #333333;
+    --patina:      #333333;
+
+    --dim-text:    #444444;
+    --dim-title:   #333333;
+    --dim-border:  #BBBBBB;
+    --dim-surface: #FFFFFF;
+
+    /* The channel colours stay distinct in hue but drop to values that survive
+       a monochrome laser printer as different greys. */
+    --ch-mechanical:   #1F1F1F;
+    --ch-electrical:   #2B2B2B;
+    --ch-controls:     #333333;
+    --ch-software:     #3B3B3B;
+    --ch-fabrication:  #434343;
+    --ch-documentation:#2B2B2B;
+    --ch-business:     #1F1F1F;
+    --ch-teaching:     #333333;
+
+    --w-dim: 500;
+    --w-body: 400;
+    --w-med: 600;
+    --w-head: 650;
+    --w-strong: 700;
+  }
 }

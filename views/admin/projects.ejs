@@ -5,9 +5,9 @@
   Order here is the order on the public work index.
 </p>
 
-<p style="margin: var(--s-4) 0;"><a class="btn" href="/admin/projects/new">New project</a></p>
+<p style="margin: var(--s-4) 0;"><a class="btn" href="/admin/projects/new">New Project</a></p>
 
-<div class="panel" style="padding:0;">
+<div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="padding:0;">
   <table class="admin-table" id="project-table" data-csrf="<%= csrf %>">
     <thead>
       <tr><th style="width:2rem;"></th><th>Title</th><th>Tier</th><th>Status</th><th>Live</th><th style="text-align:right;">Actions</th></tr>
@@ -20,8 +20,8 @@
             <strong><%= p.title %></strong>
             <div class="mono" style="font-size:.66rem; color: var(--text-muted);">/work/<%= p.slug %></div>
           </td>
-          <td><span class="badge"><%= p.tier %></span></td>
-          <td><span class="badge" data-status="<%= p.status %>"><%= p.status.replace('-', ' ') %></span></td>
+          <td><span class="badge"><%= label('tier', p.tier) %></span></td>
+          <td><span class="badge" data-status="<%= p.status %>"><%= label('status', p.status) %></span></td>
           <td class="mono" style="font-size:.7rem;"><%= p.published ? 'yes' : 'draft' %></td>
           <td>
             <div class="actions">

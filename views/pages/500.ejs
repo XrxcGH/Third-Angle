@@ -1,8 +1,8 @@
-<section class="wrap" style="padding: var(--s-7) 0;">
-  <p class="eyebrow">500</p>
-  <h1>Something broke on my end</h1>
+<section class="wrap pad-page-lg">
+  <p class="eyebrow"><%= c('errors.500.eyebrow') %></p>
+  <h1><%= c('errors.500.heading') %></h1>
   <p class="prose lede" style="color: var(--text-muted);">
-    The error was recorded. Try again, or head back to the work index.
+    <%= c('errors.500.body') %>
   </p>
-  <p style="margin-top: var(--s-4);"><a href="/work">All work</a> &middot; <a href="/">Home</a></p>
+  <p style="margin-top: var(--s-4);"><a href="/work"><%= c('errors.back.work') %></a> &middot; <a href="/"><%= c('site.home.link') %></a></p>
 </section>

@@ -1,0 +1,50 @@
+{
+  // Third Angle on Cloudflare Containers.
+  //
+  // The application is not ported: it is the same Node process that runs on a
+  // VPS, in a container, with a Worker in front of it. See DEPLOY.md for the
+  // steps, and CLOUDFLARE.md for why this route rather than a rewrite onto
+  // Workers and D1.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "third-angle",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "containers": [
+    {
+      "class_name": "ThirdAngle",
+      "image": "./Dockerfile",
+      // One writer. See the note in worker/index.js.
+      "max_instances": 1,
+      // 1/4 vCPU, 1 GiB memory, 4 GB disk. The memory floor is set by sharp
+      // re-encoding an upload, not by serving: rendering a page is a few
+      // hundred kilobytes. Move to standard-1 only if an upload of a very large
+      // photograph is killed.
+      "instance_type": "basic"
+    }
+  ],
+
+  // The container class is a Durable Object. This migration must stay in the
+  // file forever, tag and all: it is the record of the class having been
+  // created, and removing it orphans the object and its container.
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ThirdAngle"]
+    }
+  ],
+
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "THIRD_ANGLE",
+        "class_name": "ThirdAngle"
+      }
+    ]
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}

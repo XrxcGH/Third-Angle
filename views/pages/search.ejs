@@ -1,33 +1,61 @@
-<section class="wrap" style="padding-top: var(--s-6);">
-  <p class="eyebrow">Search</p>
-  <h1>Find anything</h1>
+<section class="wrap pad-top">
+  <p class="eyebrow"><%= c('search.eyebrow') %></p>
+  <h1><%= c('search.heading') %></h1>
 
-  <form method="get" action="/search" role="search" style="margin-top: var(--s-4); display:flex; gap: var(--s-2); max-width: 34rem;">
-    <label class="visually-hidden" for="q">Search projects, documents and disciplines</label>
-    <input id="q" name="q" type="search" value="<%= q %>" placeholder="swerve, CAN bus, governance, MegaTag2"
-           autocomplete="off" spellcheck="false"
-           style="flex:1; font-family: var(--f-body); font-size: 1rem; padding: 10px 12px; border-radius: var(--r-control); border:1px solid var(--hairline); background: var(--surface); color: var(--text-body);">
-    <button type="submit" style="font-family: var(--f-mono); font-size:.66rem; letter-spacing:.12em; text-transform:uppercase; padding: 10px 16px; border-radius: var(--r-control); border:1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor:pointer;">Search</button>
+  <form method="get" action="/search" role="search" class="searchbar" style="margin-top: var(--s-4);">
+    <label class="visually-hidden" for="q"><%= c('search.label') %></label>
+    <input class="input" id="q" name="q" type="search" value="<%= q %>"
+           placeholder="<%= c('search.placeholder') %>"
+           autocomplete="off" spellcheck="false">
+    <button class="btn" type="submit"><%= c('search.button') %></button>
   </form>
+
+  <% if (!q) { %>
+    <%
+      /* An empty search page used to be a field on an otherwise blank screen.
+         These are the two things somebody arriving here is most likely to be
+         looking for, and both are one click rather than a guess at a term. */
+    %>
+    <section class="section">
+      <p class="eyebrow"><%= c('search.browse.eyebrow') %></p>
+      <div class="chips">
+        <% for (const d of disciplines) { %>
+          <a class="chip icon-host" href="/disciplines/<%= d.slug %>">
+            <span style="color: var(--<%= d.color_token %>); display:flex;"><%- include('../partials/icon', { name: d.slug, size: 14 }) %></span>
+            <%= d.label %>
+          </a>
+        <% } %>
+      </div>
+    </section>
+
+    <% if (recent && recent.length) { %>
+      <section class="section">
+        <p class="eyebrow"><%= c('search.recent.eyebrow') %></p>
+        <div class="grid" style="margin-top: var(--s-3);">
+          <% for (const p of recent) { %><%- include('../partials/card', { p }) %><% } %>
+        </div>
+      </section>
+    <% } %>
+  <% } %>
 
   <% if (q) { %>
     <p class="eyebrow" role="status" style="margin-top: var(--s-4);">
-      <%= results.length %> result<%= results.length === 1 ? '' : 's' %> for &ldquo;<%= q %>&rdquo;<%
-        if (fallback && fallback.kind === 'corrected') { %> &middot; showing results for &ldquo;<%= fallback.term %>&rdquo;<%
-        } else if (fallback && fallback.kind === 'near') { %> &middot; showing near matches<% } %>
+      <%= results.length %> <%= c('search.results.for') %><%= results.length === 1 ? '' : 's' %> <%= c('search.results.forword') %> &ldquo;<%= q %>&rdquo;<%
+        if (fallback && fallback.kind === 'corrected') { %> &middot; <%= c('search.results.corrected') %> &ldquo;<%= fallback.term %>&rdquo;<%
+        } else if (fallback && fallback.kind === 'near') { %> &middot; <%= c('search.results.near') %><% } %>
     </p>
 
     <div class="stack" style="margin-top: var(--s-3);">
       <% for (const r of results) { %>
         <a href="<%= r.url %>" style="text-decoration:none; display:block; padding: var(--s-3) 0; border-bottom: 1px solid var(--hairline);">
           <span class="eyebrow" style="margin:0;"><%= r.kind %></span>
-          <span style="display:block; font-family: var(--f-display); font-weight:650; font-size:1.05rem; color: var(--text-strong);"><%= r.title %></span>
+          <span style="display:block; font-family: var(--f-display); font-weight: var(--w-head); font-size:1.05rem; color: var(--text-strong);"><%= r.title %></span>
           <% if (r.excerpt) { %><span style="display:block; color: var(--text-muted); font-size:.95rem;"><%- r.excerpt %></span>
           <% } else if (r.subtitle) { %><span style="display:block; color: var(--text-muted); font-size:.95rem;"><%= r.subtitle %></span><% } %>
         </a>
       <% } %>
       <% if (!results.length) { %>
-        <p style="color: var(--text-muted);">Nothing matched. Try a discipline name, a part, or a tool.</p>
+        <p style="color: var(--text-muted);"><%= c('search.empty') %></p>
       <% } %>
     </div>
   <% } %>

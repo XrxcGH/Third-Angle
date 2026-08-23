@@ -1,79 +1,36 @@
-<section class="wrap" style="padding-top: var(--s-6); max-width: 46rem;">
-  <p class="eyebrow">Contact</p>
+<%
+  /* The narrow measure goes on an inner column, not on .wrap. Capping .wrap
+     itself also re-centres it, because .wrap carries margin-inline:auto: the
+     whole page then sat 220px to the right of every other page on the site,
+     so navigating from search to contact shifted the column sideways. */
+%>
+<section class="wrap pad-top">
+ <div>
+  <p class="eyebrow"><%= c('contact.eyebrow') %></p>
 
   <% if (sent) { %>
-    <h1>Message sent</h1>
+    <h1><%= c('contact.sent.heading') %></h1>
     <p class="lede" style="color: var(--text-muted); margin-top: var(--s-3);">
-      That reached me. I read everything and reply to anything that is not automated.
+      <%= c('contact.sent.lede') %>
     </p>
     <p style="margin-top: var(--s-4);">
-      <a href="/work">Back to the work</a> &middot; <a href="/">Home</a>
+      <a href="/work"><%= c('contact.back.work') %></a> &middot; <a href="/"><%= c('site.home.link') %></a>
     </p>
 
   <% } else { %>
-    <h1>Get in touch</h1>
+    <h1><%= c('contact.heading') %></h1>
     <p class="lede prose" style="color: var(--text-muted); margin-top: var(--s-3);">
-      Available for summer 2027 internships in mechanical design, controls, electrical or
-      embedded work, in the Bay Area or Los Angeles. Also happy to talk about FIRST, or
-      about anything on this site.
+      <%= c('contact.lede') %>
     </p>
 
-    <% if (errors.length) { %>
-      <div class="flash error" style="margin-top: var(--s-4);">
-        <% for (const e of errors) { %><p style="margin:0;"><%= e %></p><% } %>
-      </div>
-    <% } %>
-
-    <form method="post" action="/contact" class="panel" style="margin-top: var(--s-4);">
-      <%
-        /* A signed timestamp rather than a session, so the form works for a
-           visitor who has never been given a cookie. The signature is what
-           stops a bot posting a fabricated time to defeat the speed check. */
-      %>
-      <input type="hidden" name="t" value="<%= stamp %>">
-
-      <%
-        /* The honeypot. Moved off screen rather than display:none, which some
-           bots now check for, and marked aria-hidden plus tabindex -1 so a
-           screen reader and the keyboard both skip it. */
-      %>
-      <div class="honeypot" aria-hidden="true">
-        <label for="company">Company</label>
-        <input id="company" name="company" type="text" tabindex="-1" autocomplete="off">
-      </div>
-
-      <div class="row2">
-        <div class="field">
-          <label for="name">Your name</label>
-          <input id="name" name="name" type="text" required maxlength="120"
-                 autocomplete="name" value="<%= values.name %>">
-        </div>
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" required maxlength="200"
-                 autocomplete="email" value="<%= values.email %>">
-          <span class="hint">Only used to reply. Nothing else, ever.</span>
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="subject">Subject</label>
-        <input id="subject" name="subject" type="text" maxlength="200" value="<%= values.subject %>">
-      </div>
-
-      <div class="field">
-        <label for="message">Message</label>
-        <textarea id="message" name="message" required minlength="10" maxlength="5000"
-                  style="min-height: 10rem;"><%= values.message %></textarea>
-      </div>
-
-      <button class="btn" type="submit">Send</button>
-    </form>
+    <%- include('../partials/contact-form', { formId: 'main', stamp, errors, values }) %>
 
     <p style="margin-top: var(--s-5); color: var(--text-muted); font-size:.92rem;">
-      There is no tracking on this form, no third party script and no captcha.
-      It is checked on the server instead. If you would rather not use a form,
-      <a href="https://linkedin.com/in/edean07" rel="me noopener">LinkedIn</a> works too.
+      <%= c('contact.note') %>
+      <%= c('contact.note.pre') %>
+      <a href="<%= c('site.linkedin.url') %>" rel="me noopener"><%= c('site.footer.linkedin') %></a>
+      <%= c('contact.note.post') %>
     </p>
   <% } %>
+ </div>
 </section>

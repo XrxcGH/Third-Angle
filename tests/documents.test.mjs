@@ -52,14 +52,36 @@ test('page text is stored per page, so a hit can name a page number', { skip: !h
 });
 
 test('searching finds document CONTENT, not just the filename', { skip: !have() }, () => {
-  // The whole point. None of these words appear in any title.
-  const contentWords = ['ohm', 'abuse', 'solder'];
-  let found = 0;
-  for (const w of contentWords) {
-    const hits = repo.search(w).results.filter((r) => r.kind === 'document');
-    if (hits.length) found += 1;
+  /*
+   * The whole point of indexing per page.
+   *
+   * The words are taken from the text that is actually indexed rather than
+   * hardcoded, and any word that also appears in a title is discarded first.
+   * A fixed list of words made this test an assertion about which documents
+   * happen to be uploaded: it passed on one machine, skipped on an empty
+   * database, and failed on any other library while the code was fine.
+   */
+  const titles = db.all('SELECT title, description FROM document')
+    .map((d) => `${d.title} ${d.description || ''}`.toLowerCase()).join(' ');
+
+  const words = new Map();
+  for (const row of db.all('SELECT text FROM document_page LIMIT 200')) {
+    for (const w of String(row.text).toLowerCase().match(/[a-z]{5,}/g) || []) {
+      if (titles.includes(w)) continue;
+      words.set(w, (words.get(w) || 0) + 1);
+    }
   }
-  assert.ok(found >= 2, `only ${found} of ${contentWords.length} content words matched a document`);
+  const candidates = [...words.keys()].slice(0, 12);
+  if (!candidates.length) return; // a library of image-only PDFs has no text layer
+
+  let found = 0;
+  for (const w of candidates) {
+    if (repo.search(w).results.some((r) => r.kind === 'document')) found += 1;
+  }
+  assert.ok(
+    found >= Math.ceil(candidates.length / 2),
+    `only ${found} of ${candidates.length} indexed content words matched a document`
+  );
 });
 
 test('pageHits returns real page numbers with an excerpt', { skip: !have() }, () => {
@@ -120,7 +142,7 @@ test('indexed page count is reported honestly against the total', { skip: !have(
   }
 });
 
-test('deleting a document removes its pages, its file and its search row', { skip: !have() }, async () => {
+test('deleting a document removes its pages, its file, and its search row', { skip: !have() }, async () => {
   const fs = require('node:fs');
   const path = require('node:path');
   const { UPLOAD_DIR } = db;

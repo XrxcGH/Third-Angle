@@ -2,7 +2,7 @@
  * Discipline icons.
  *
  * Hand drawn rather than bought, because no stock pack contains this
- * vocabulary: every one offers a gear, a lightbulb and a rocket, all three of
+ * vocabulary: every one offers a gear, a lightbulb, and a rocket, all three of
  * which are on the ban list. Tier 1 of the motion system, so the assertions
  * here are mostly about what is NOT present: no JavaScript, no runtime, no
  * autonomous animation.

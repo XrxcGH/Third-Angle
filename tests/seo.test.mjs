@@ -49,7 +49,7 @@ test('every page carries valid JSON-LD with a stable person identity', async () 
     const person = data['@graph'].find((n) => n['@type'] === 'Person');
     assert.ok(person, `${p} has no Person node`);
     // The stable @id reused across every page is what lets a search engine
-    // merge this site, LinkedIn and GitHub into one entity rather than three.
+    // merge this site, LinkedIn, and GitHub into one entity rather than three.
     assert.ok(person['@id'].endsWith('#eric-dean'), 'Person @id is not stable');
     assert.ok(person.sameAs.some((u) => u.includes('github.com/XrxcGH')));
     assert.ok(person.sameAs.some((u) => u.includes('linkedin.com/in/edean07')));

@@ -1,0 +1,61 @@
+<section class="wrap pad-top">
+  <p class="eyebrow"><%= c('personal.eyebrow') %></p>
+  <h1><%= c('personal.heading') %></h1>
+  <p class="lede prose" style="color: var(--text-muted);">
+    <%= c('personal.lede') %>
+  </p>
+</section>
+
+<% if (!count) { %>
+  <section class="wrap">
+    <p style="color: var(--text-muted); margin-top: var(--s-5);">
+      <%= c('personal.empty') %>
+    </p>
+  </section>
+<% } else { %>
+
+  <%
+    /*
+     * The wall.
+     *
+     * Outside .wrap on purpose. It supplies its own gutter, matching .wrap's
+     * exactly, so the wall lines up with the text above it without inheriting
+     * anything else the reading pages do.
+     *
+     * Every slot is a percentage of the wall's own box, packed in src/collage.js
+     * by cutting the rectangle in two over and over until each photograph has
+     * one. Percentages, not pixels, so the browser still decides the real size
+     * and the wall still fills whatever width the window turns out to have. The
+     * wall's own shape comes from how many photographs are on it. Order is
+     * newest capture first, from SQL, and the packing preserves it exactly.
+     *
+     * Below 700px this is thrown away for two masonry columns; see app.css.
+     */
+  %>
+  <div class="collage collage-full" style="--wall-ar: <%= wallAspect %>;">
+    <% for (const t of tiles) { %>
+      <figure class="collage-item" tabindex="0"
+              style="--ar: <%= t.aspect %>; --l: <%= t.left %>%; --t: <%= t.top %>%; --w: <%= t.slotWidth %>%; --h: <%= t.slotHeight %>%; --ox: <%= t.originX %>; --oy: <%= t.originY %>;">
+        <img src="/media/<%= t.storage_key %>"
+             <% const wp = srcset(t, 'webp'); %>
+             <% if (wp) { %>srcset="<%= wp %>" sizes="(max-width: 700px) 34vw, <%= Math.max(4, Math.round(t.slotWidth)) %>vw"<% } %>
+             alt="<%= t.alt %>"
+             width="<%= t.width %>" height="<%= t.height %>"
+             loading="lazy" decoding="async">
+        <% if (t.caption) { %>
+          <figcaption>
+            <%= t.caption %><% if (t.capturedOn) { %>
+              <span class="mono tnum" style="font-size:.62rem; opacity:.85;"><%= t.capturedOn %></span>
+            <% } %>
+          </figcaption>
+        <% } %>
+      </figure>
+    <% } %>
+  </div>
+
+  <section class="wrap">
+    <p class="eyebrow" style="margin-top: var(--s-5);">
+      <%= count %> <%= c('personal.photograph.noun') %><%= count === 1 ? '' : 's' %>. <%= c('personal.footnote') %>
+    </p>
+  </section>
+<% } %>

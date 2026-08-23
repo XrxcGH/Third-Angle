@@ -1,0 +1,131 @@
+<p class="eyebrow">Admin</p>
+<h1>Content</h1>
+<p class="measure" style="color: var(--text-muted);">
+  Every fixed word on the public site is here: headings, ledes, button labels,
+  the lines that show when something is empty, the two site-wide images, and the
+  rules between sections. Pick a page, change what you want, and save. Nothing
+  needs a code change and nothing is lost on a restart.
+</p>
+
+<% if (saved) { %><p class="flash" role="status" style="margin-top: var(--s-4);">Saved.</p><% } %>
+
+<%# ---------------------------------------------------------- page chooser %>
+<%
+  /* A GET form with a real submit, not an onchange handler. There is no
+     JavaScript on this site, and the admin holds to the same rule. */
+%>
+<form class="panel" method="get" action="/admin/content" style="margin-top: var(--s-4);">
+  <div class="row2" style="align-items:end;">
+    <div class="field">
+      <label for="page">Page</label>
+      <select id="page" name="page">
+        <% for (const p of pages) { %>
+          <option value="<%= p.slug %>"<%= p.slug === page.slug ? ' selected' : '' %>><%= p.label %></option>
+        <% } %>
+      </select>
+    </div>
+    <div class="field" style="justify-content:flex-end;">
+      <div class="btn-row">
+        <button class="btn" type="submit">Open This Page</button>
+        <a class="btn btn-quiet" href="<%= page.route %>" target="_blank" rel="noopener">View It on the Site</a>
+      </div>
+    </div>
+  </div>
+  <% if (page.note) { %><span class="hint" style="display:block; margin-top: var(--s-2);"><%= page.note %></span><% } %>
+</form>
+
+<p class="eyebrow" style="margin-top: var(--s-5);">
+  <%= page.label %> &middot; <%= slots.length %> field<%= slots.length === 1 ? '' : 's' %> &middot;
+  <%= edited %> edited across the site
+</p>
+
+<%# ----------------------------------------------------------- the editor %>
+<form method="post" action="/admin/content" style="margin-top: var(--s-3);">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <input type="hidden" name="page" value="<%= page.slug %>">
+
+  <div class="btn-row" style="margin-bottom: var(--s-4);">
+    <button class="btn" type="submit">Save This Page</button>
+  </div>
+
+  <% for (const s of slots) { %>
+    <div class="panel" style="margin-bottom: var(--s-3);">
+      <div style="display:flex; gap: var(--s-3); align-items:baseline; flex-wrap:wrap;">
+        <label for="f-<%= s.key %>" style="font-family: var(--f-display); font-weight: var(--w-med); color: var(--text-strong);">
+          <%= s.label %>
+        </label>
+        <span class="badge"><%= s.kind %></span>
+        <% if (s.edited) { %>
+          <span class="badge" style="border-color: var(--patina); color: var(--patina);">Edited</span>
+        <% } %>
+        <span class="mono" style="font-size:.6rem; color: var(--text-muted); margin-left:auto;"><%= s.key %></span>
+      </div>
+
+      <% if (s.hint) { %><span class="hint" style="display:block; margin-top:4px;"><%= s.hint %></span><% } %>
+
+      <div style="margin-top: var(--s-3);">
+        <% if (s.kind === 'flag') { %>
+          <label class="check" for="f-<%= s.key %>">
+            <input id="f-<%= s.key %>" type="checkbox" name="c:<%= s.key %>" value="1" <%= s.value === '1' ? 'checked' : '' %>>
+            <span>Shown</span>
+          </label>
+
+        <% } else if (s.kind === 'image') { %>
+          <%
+            /* A select of the media library rather than an upload field. Upload
+               is one job and is done on the media screen; choosing which
+               photograph a slot points at is another. */
+            const chosen = s.value ? images.find((m) => String(m.id) === String(s.value)) : null;
+          %>
+          <div style="display:flex; gap: var(--s-4); align-items:flex-start; flex-wrap:wrap;">
+            <div class="field" style="flex:1; min-width: 16rem;">
+              <select id="f-<%= s.key %>" name="c:<%= s.key %>">
+                <option value="">Not set</option>
+                <% for (const m of images) { %>
+                  <option value="<%= m.id %>"<%= String(m.id) === String(s.value) ? ' selected' : '' %>>
+                    <%= m.alt || ('Image ' + m.id) %> (<%= m.width %>&times;<%= m.height %>)
+                  </option>
+                <% } %>
+              </select>
+              <span class="hint">Upload on the <a href="/admin/media">media screen</a> first.</span>
+            </div>
+            <% if (chosen) { %>
+              <img src="/media/<%= chosen.storage_key %>" alt="<%= chosen.alt %>"
+                   width="120" height="90" loading="lazy" decoding="async"
+                   style="width:120px; height:90px; object-fit:cover; border-radius: var(--r-control); border:1px solid var(--hairline);">
+            <% } %>
+          </div>
+
+        <% } else if (s.kind === 'line') { %>
+          <input class="input" id="f-<%= s.key %>" name="c:<%= s.key %>" type="text"
+                 value="<%= s.value %>" style="width:100%;">
+
+        <% } else { %>
+          <textarea id="f-<%= s.key %>" name="c:<%= s.key %>"
+                    style="width:100%; min-height: <%= s.kind === 'rich' ? '9rem' : '5rem' %>;"><%= s.value %></textarea>
+          <% if (s.kind === 'rich') { %>
+            <span class="hint" style="display:block;">
+              A blank line starts a new paragraph. <code>**bold**</code>,
+              <code>*italic*</code>, <code>`code`</code> and
+              <code>[text](/link)</code> all work, same as the project editor.
+            </span>
+          <% } %>
+        <% } %>
+      </div>
+
+      <% if (s.edited) { %>
+        <label class="check" for="r-<%= s.key %>" style="margin-top: var(--s-3);">
+          <input id="r-<%= s.key %>" type="checkbox" name="r:<%= s.key %>" value="1">
+          <span>Put this back to the original
+            <span class="hint">Original: <%= s.def || '(empty)' %></span>
+          </span>
+        </label>
+      <% } %>
+    </div>
+  <% } %>
+
+  <div class="btn-row" style="margin-top: var(--s-4);">
+    <button class="btn" type="submit">Save This Page</button>
+    <a class="btn btn-quiet" href="<%= page.route %>" target="_blank" rel="noopener">View It on the Site</a>
+  </div>
+</form>

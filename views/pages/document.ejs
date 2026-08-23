@@ -1,6 +1,6 @@
-<article class="wrap" style="padding-top: var(--s-6);">
+<article class="wrap pad-top">
   <p class="eyebrow">
-    Document
+    <%= c('document.eyebrow') %>
     <% if (doc.project_title) { %>
       &middot; <a href="/work/<%= doc.project_slug %>" style="color: inherit;"><%= doc.project_title %></a>
     <% } %>
@@ -13,59 +13,59 @@
   <div class="metrics" style="margin-top: var(--s-5);">
     <div class="metric">
       <div class="metric-value"><%= doc.pages %></div>
-      <div class="metric-label">Pages</div>
+      <div class="metric-label"><%= c('document.tb.pages') %></div>
     </div>
     <div class="metric">
-      <div class="metric-value"><%= (doc.bytes / 1024 / 1024).toFixed(1) %><span style="font-size:.6em; color: var(--text-muted);"> MB</span></div>
-      <div class="metric-label">Size</div>
+      <div class="metric-value"><%= fmtBytes(doc.bytes) %></div>
+      <div class="metric-label"><%= c('document.tb.size') %></div>
     </div>
     <div class="metric">
       <div class="metric-value"><%= doc.updated_at.slice(0, 4) %></div>
-      <div class="metric-label">Updated</div>
+      <div class="metric-label"><%= c('site.updated') %></div>
     </div>
   </div>
 
-  <div style="display:flex; gap: var(--s-2); margin-top: var(--s-4); flex-wrap: wrap;">
+  <div class="btn-row" style="margin-top: var(--s-4);">
     <%
       /* Served with Content-Disposition: attachment from the media route,
          because a PDF rendered inline is the residual vector once every other
          control is in place: a PDF is the one accepted type that cannot be
          re-encoded on the way in. */
     %>
-    <a class="chip" href="/media/<%= doc.storage_key %>">Download the PDF</a>
+    <a class="chip" href="/documents/<%= doc.slug %>/download"><%= c('documents.cta.download') %></a>
     <% if (doc.project_slug) { %>
-      <a class="chip" href="/work/<%= doc.project_slug %>">The project it belongs to</a>
+      <a class="chip" href="/work/<%= doc.project_slug %>"><%= c('document.tb.project') %></a>
     <% } %>
   </div>
 
   <section class="section">
-    <p class="eyebrow">Search inside this document</p>
+    <p class="eyebrow"><%= c('document.search.heading') %></p>
     <form method="get" action="/documents/<%= doc.slug %>" role="search"
-          style="display:flex; gap: var(--s-2); max-width: 32rem; margin-top: var(--s-3);">
-      <label class="visually-hidden" for="q">Search inside <%= doc.title %></label>
-      <input id="q" name="q" type="search" value="<%= q %>" autocomplete="off" spellcheck="false"
-             placeholder="retention, crimp, inspection"
-             style="flex:1; font-family: var(--f-body); font-size: 1rem; padding: 10px 12px; border-radius: var(--r-control); border:1px solid var(--hairline); background: var(--surface); color: var(--text-body);">
-      <button type="submit" style="font-family: var(--f-mono); font-size:.66rem; letter-spacing:.12em; text-transform:uppercase; padding: 10px 16px; border-radius: var(--r-control); border:1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor:pointer;">Find</button>
+          class="searchbar" style="margin-top: var(--s-3);">
+      <label class="visually-hidden" for="q"><%= c('document.search.label') %> <%= doc.title %></label>
+      <input class="input" id="q" name="q" type="search" value="<%= q %>"
+             autocomplete="off" spellcheck="false"
+             placeholder="<%= c('document.search.placeholder') %>">
+      <button class="btn" type="submit"><%= c('document.search.button') %></button>
     </form>
 
     <% if (q) { %>
       <p class="eyebrow" role="status" style="margin-top: var(--s-4);">
-        <%= hits.length %> page<%= hits.length === 1 ? '' : 's' %> mention &ldquo;<%= q %>&rdquo;
+        <%= hits.length %> <%= c('document.page.noun') %><%= hits.length === 1 ? '' : 's' %> <%= c('document.mention') %> &ldquo;<%= q %>&rdquo;
       </p>
       <div class="stack" style="margin-top: var(--s-3);">
         <% for (const h of hits) { %>
           <div style="display:grid; grid-template-columns: 5rem minmax(0,1fr); gap: var(--s-4); align-items: baseline; border-bottom:1px solid var(--hairline); padding-bottom: var(--s-3);">
-            <span class="mono tnum" style="font-size:.68rem; letter-spacing:.08em; color: var(--accent-ink);">PAGE <%= h.page_no %></span>
+            <span class="mono tnum" style="font-size:.68rem; letter-spacing:.08em; color: var(--accent-ink);"><%= c('document.page.tag') %> <%= h.page_no %></span>
             <p style="margin:0; font-size:.92rem; color: var(--text-muted);"><%= h.excerpt %>...</p>
           </div>
         <% } %>
         <% if (!hits.length) { %>
-          <p style="color: var(--text-muted);">No page in this document mentions that.</p>
+          <p style="color: var(--text-muted);"><%= c('document.search.empty') %></p>
         <% } %>
       </div>
     <% } %>
   </section>
 
-  <p style="margin-top: var(--s-6);"><a href="/documents">All documents</a></p>
+  <p style="margin-top: var(--s-6);"><a href="/documents"><%= c('document.back') %></a></p>
 </article>

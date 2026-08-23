@@ -2,16 +2,19 @@
   /* Third angle projection symbol: the circular end view of a truncated cone
      beside its trapezoidal side view. Drawn on a 100 unit grid, stroke 8,
      butt caps, mitre joins, no fill. Outer circle r34, inner r17, a strict 2:1.
-     The connecting tick is the only element permitted in hazard orange.
+     Every stroke, the connecting tick included, takes currentColor: the mark
+     is one object and it changes colour as one. It used to hold the tick in
+     hazard orange at all times, which read as a rendering fault beside white
+     strokes rather than as an accent.
      Do not round the caps, change the ratio, or fill the circles. */
   const s = typeof size === 'undefined' ? 34 : size;
 %>
 <svg width="<%= Math.round(s * 2.04) %>" height="<%= s %>" viewBox="0 0 196 96"
-     role="img" aria-label="Third angle projection mark" focusable="false">
+     role="img" aria-label="<%= c('site.mark.alt') %>" focusable="false">
   <g fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="butt" stroke-linejoin="miter">
     <circle cx="42" cy="48" r="34"/>
     <circle cx="42" cy="48" r="17"/>
     <path d="M108 14 L164 30 L164 66 L108 82 Z"/>
   </g>
-  <path d="M94 48 L104 48" stroke="var(--accent)" stroke-width="7"/>
+  <path d="M94 48 L104 48" stroke="currentColor" stroke-width="7"/>
 </svg>

@@ -1,0 +1,203 @@
+<section class="wrap pad-top">
+  <p class="eyebrow"><%= c('professional.eyebrow') %></p>
+  <h1><%= c('professional.heading') %></h1>
+  <p class="lede prose" style="color: var(--text-muted);">
+    <%= c('professional.lede') %>
+  </p>
+
+  <div class="profile-grid" style="margin-top: var(--s-5);">
+
+    <%# --------------------------------------------------------------- GitHub %>
+    <section class="panel" aria-labelledby="gh-heading">
+      <% if (gh.profile) { %>
+        <div class="profile-head">
+          <%
+            /* The mark, not the avatar. This card is the GitHub panel: the
+               reader is looking for the service, and a 56px photograph of a
+               person on a page that is already somebody's portfolio identifies
+               nothing. The account name moves up beside the heading, so the
+               two lines it used to take become one. */
+          %>
+          <span class="profile-mark"><%- include('../partials/gh-mark', { size: 30 }) %></span>
+          <span class="profile-title">
+            <span class="profile-name" id="gh-heading"><%= c('professional.gh.heading') %></span>
+            <a class="mono profile-handle" href="<%= gh.profile.url %>" rel="me noopener">
+              github.com/<%= gh.profile.login %>
+            </a>
+          </span>
+        </div>
+
+        <% if (gh.profile.bio) { %>
+          <p style="margin: 0 0 var(--s-3); font-size:.95rem;"><%= gh.profile.bio %></p>
+        <% } %>
+
+        <div class="metrics" style="margin-bottom: var(--s-4);">
+          <div class="metric">
+            <div class="metric-value tnum"><%= gh.profile.publicRepos %></div>
+            <div class="metric-label"><%= c('professional.gh.metric.repos') %></div>
+          </div>
+          <div class="metric">
+            <div class="metric-value tnum"><%= gh.totalStars %></div>
+            <div class="metric-label"><%= c('professional.gh.metric.stars') %></div>
+          </div>
+          <div class="metric">
+            <div class="metric-value tnum"><%= gh.profile.followers %></div>
+            <div class="metric-label"><%= c('professional.gh.metric.followers') %></div>
+          </div>
+          <% if (gh.profile.createdAt) { %>
+            <div class="metric">
+              <div class="metric-value tnum"><%= gh.profile.createdAt.slice(0, 4) %></div>
+              <div class="metric-label"><%= c('professional.gh.metric.since') %></div>
+            </div>
+          <% } %>
+        </div>
+
+        <% if (gh.languages.length) { %>
+          <p class="eyebrow" style="margin-bottom: var(--s-2);"><%= c('professional.gh.languages') %></p>
+          <div class="chips" style="margin-bottom: var(--s-4);">
+            <% for (const l of gh.languages.slice(0, 6)) { %>
+              <span class="chip"><%= l.language %> <span class="tnum" style="color: var(--text-muted);"><%= l.share %>%</span></span>
+            <% } %>
+          </div>
+        <% } %>
+
+        <%
+          /* The panel ends on a button row, the same as the LinkedIn panel
+             beside it. Without one this card was shorter than its neighbour and
+             the slack fell into a single gap above the language chips. */
+        %>
+        <div class="btn-row">
+          <a class="btn" href="<%= gh.profile.url %>" rel="me noopener"><%= c('professional.gh.cta') %></a>
+          <% if (gh.top.length) { %>
+            <a class="btn btn-quiet" href="#repositories"><%= c('professional.gh.cta2') %></a>
+          <% } %>
+        </div>
+
+      <% } else { %>
+        <h2 id="gh-heading" style="margin-bottom: var(--s-2);"><%= c('professional.gh.heading') %></h2>
+        <p style="color: var(--text-muted); font-size:.95rem;">
+          <% if (!settings.github_live) { %>
+            <%= c('professional.gh.off') %>
+          <% } else { %>
+            <%= c('professional.gh.pending') %>
+          <% } %>
+        </p>
+        <p style="margin-bottom:0;">
+          <a href="<%= c('site.github.url') %>" rel="me noopener">github.com/<%= gh.username %></a>
+        </p>
+      <% } %>
+    </section>
+
+    <%# ------------------------------------------------------------- LinkedIn %>
+    <section class="panel" aria-labelledby="li-heading">
+      <div class="profile-head">
+        <span class="profile-mark"><%- include('../partials/li-mark', { size: 30 }) %></span>
+        <span class="profile-title">
+          <span class="profile-name" id="li-heading"><%= c('professional.li.name') %></span>
+          <a class="mono profile-handle" href="<%= linkedin.url %>" rel="me noopener">
+            linkedin.com/in/<%= linkedin.handle %>
+          </a>
+        </span>
+      </div>
+
+      <%
+        /*
+         * Why this is a card and not a live embed.
+         *
+         * There is no public LinkedIn profile API without a partner agreement,
+         * and a profile page cannot be framed: LinkedIn serves
+         * X-Frame-Options: DENY specifically to prevent it. The only supported
+         * embed is their badge script, which is a third party connection from
+         * every visitor and needs a CSP exception. It is available as a switch
+         * in the admin; this card is what renders either way, from the record
+         * already maintained on this site.
+         */
+      %>
+      <% if (settings.linkedin_badge) { %>
+        <div class="badge-base LI-profile-badge" data-locale="en_US" data-size="medium"
+             data-theme="light" data-type="VERTICAL" data-vanity="<%= linkedin.handle %>"
+             data-version="v1" style="margin-bottom: var(--s-3);">
+          <a class="badge-base__link LI-simple-link" href="<%= linkedin.url %>" rel="noopener">
+            <%= c('professional.li.badge.link') %>
+          </a>
+        </div>
+        <script src="https://platform.linkedin.com/badges/js/profile.js" async defer type="text/javascript"></script>
+      <% } %>
+
+      <div class="titleblock" style="margin-bottom: var(--s-4);">
+        <% for (const s of schools.slice(0, 2)) { %>
+          <div><span class="k"><%= s.kind === 'high-school' ? c('professional.li.school.k') : c('professional.li.university.k') %></span><span class="v"><%= s.name %></span></div>
+          <% if (s.credential) { %>
+            <div><span class="k"><%= c('professional.li.credential.k') %></span><span class="v"><%= s.credential %></span></div>
+          <% } %>
+        <% } %>
+        <div><span class="k"><%= c('professional.li.based.k') %></span><span class="v"><%= c('professional.li.based.v') %></span></div>
+        <div><span class="k"><%= c('professional.li.seeking.k') %></span><span class="v"><%= c('professional.li.seeking.v') %></span></div>
+      </div>
+
+      <div class="btn-row">
+        <a class="btn" href="<%= linkedin.url %>" rel="me noopener"><%= c('professional.li.cta') %></a>
+        <a class="btn btn-quiet" href="/documents"><%= c('professional.li.cta2') %></a>
+      </div>
+    </section>
+  </div>
+
+  <%# ---------------------------------------------------------- repositories %>
+  <% if (gh.top.length) { %>
+    <section class="section" id="repositories">
+      <p class="eyebrow"><%= c('professional.repos.eyebrow') %></p>
+      <h2><%= c('professional.repos.heading') %></h2>
+      <p class="measure" style="color: var(--text-muted); font-size:.95rem;">
+        <%= c('professional.repos.note') %>
+      </p>
+
+      <div class="repo-list" style="margin-top: var(--s-4);">
+        <% for (const r of gh.top) { %>
+          <a class="repo" href="<%= r.url %>" rel="noopener">
+            <span class="repo-name"><%= r.name %></span>
+            <% if (r.description) { %><p class="repo-desc"><%= r.description %></p><% } %>
+            <span class="repo-meta">
+              <% if (r.language) { %>
+                <span><span class="repo-lang-dot" aria-hidden="true"></span><%= r.language %></span>
+              <% } %>
+              <% if (r.stars) { %><span class="tnum"><%= r.stars %> <%= c('professional.repo.stars') %><%= r.stars === 1 ? '' : 's' %></span><% } %>
+              <% if (r.forks) { %><span class="tnum"><%= r.forks %> <%= c('professional.repo.forks') %><%= r.forks === 1 ? '' : 's' %></span><% } %>
+              <% if (r.pushedAt) { %><span><%= c('professional.repo.pushed') %> <%= fmtDate(r.pushedAt) %></span><% } %>
+              <% if (r.fork) { %><span class="badge"><%= c('professional.repo.fork') %></span><% } %>
+              <% if (r.archived) { %><span class="badge"><%= c('professional.repo.archived') %></span><% } %>
+            </span>
+          </a>
+        <% } %>
+      </div>
+
+      <p style="margin-top: var(--s-4);">
+        <a href="https://github.com/<%= gh.username %>?tab=repositories" rel="noopener">
+          <%= c('professional.repos.all.pre') %> <%= gh.profile ? gh.profile.publicRepos : gh.repos.length %> <%= c('professional.repos.all') %>
+        </a>
+      </p>
+
+      <p class="eyebrow" style="margin-top: var(--s-4);">
+        <% if (gh.fetchedAt) { %>
+          <%= c('professional.repos.fetched') %> <time datetime="<%= gh.fetchedAt %>"><%= fmtWhen(gh.fetchedAt) %></time> <%= c('professional.repos.utc') %><%
+            if (gh.refreshing) { %> &middot; <%= c('professional.repos.refreshing') %><% } %>
+        <% } %>
+      </p>
+    </section>
+  <% } %>
+
+  <%# --------------------------------------------------------------- contact %>
+  <section class="section" id="contact">
+    <p class="eyebrow"><%= c('professional.contact.eyebrow') %></p>
+    <h2><%= c('professional.contact.heading') %></h2>
+    <% if (sent) { %>
+      <p class="lede measure" style="color: var(--text-muted); margin-top: var(--s-3);">
+        <%= c('contact.sent.lede') %>
+      </p>
+    <% } else { %>
+      <p class="measure" style="color: var(--text-muted);">
+        <%= c('professional.contact.note') %>
+      </p>
+      <%- include('../partials/contact-form', { formId: 'pro', stamp, errors, values }) %>
+    <% } %>
+  </section>
+</section>

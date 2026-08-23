@@ -96,7 +96,7 @@ async function ingest({ buffer, originalName, kind, alt, caption, origin, captur
 
   const type = sniff(buffer);
   if (!type) {
-    throw new Error('That file type is not accepted. Allowed: JPEG, PNG, GIF, WebP, AVIF, PDF, MP4 and GLB.');
+    throw new Error('That file type is not accepted. Allowed: JPEG, PNG, GIF, WebP, AVIF, PDF, MP4, and GLB.');
   }
 
   const isRaster = RASTER.has(type.mime);

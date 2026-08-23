@@ -13,36 +13,57 @@
 <link rel="stylesheet" href="/static/css/tokens.css">
 <link rel="stylesheet" href="/static/css/app.css">
 <link rel="stylesheet" href="/static/css/admin.css">
+<link rel="stylesheet" href="/static/css/motion.css">
 </head>
 <body class="admin">
 <a class="skip-link" href="#main">Skip to content</a>
 
 <header class="admin-bar">
   <div class="wrap bar">
+    <%# No mark here. The projection symbol is the public site's, and shrunk to
+        26px beside the word it read as an unexplained pictogram rather than as
+        a logo. The word is the link, and the word is enough. %>
     <a class="brand" href="/admin">
-      <%- include('partials/mark', { size: 26 }) %>
       <span class="wordmark">ADMIN</span>
     </a>
     <% if (typeof session !== 'undefined' && session) { %>
+      <% const here = (p) => (path === p || path.startsWith(p + '/')) ? ' aria-current="page"' : ''; %>
       <nav class="nav" aria-label="Admin">
-        <a href="/admin/projects">Projects</a>
-        <a href="/admin/media">Media</a>
-        <a href="/admin/documents">Documents</a>
-        <a href="/admin/facets">Disciplines</a>
-        <a href="/admin/notes">Log</a>
-        <a href="/admin/messages">Messages</a>
-        <a href="/admin/pages/resume">Resume</a>
-        <a href="/" target="_self">View site</a>
+        <a href="/admin/content"<%- here('/admin/content') %>>Content</a>
+        <a href="/admin/projects"<%- here('/admin/projects') %>>Projects</a>
+        <a href="/admin/media"<%- here('/admin/media') %>>Media</a>
+        <a href="/admin/documents"<%- here('/admin/documents') %>>Documents</a>
+        <a href="/admin/facets"<%- here('/admin/facets') %>>Disciplines</a>
+        <a href="/admin/education"<%- here('/admin/education') %>>Education</a>
+        <a href="/admin/photos"<%- here('/admin/photos') %>>Photos</a>
+        <a href="/admin/notes"<%- here('/admin/notes') %>>Log</a>
+        <a href="/admin/messages"<%- here('/admin/messages') %>>Messages</a>
+        <a href="/admin/settings"<%- here('/admin/settings') %>>Settings</a>
+        <a href="/admin/account"<%- here('/admin/account') %>>Account</a>
+        <a href="/" target="_self">View Site</a>
       </nav>
-      <form method="post" action="/admin/logout" style="margin-left:auto;">
+      <form class="signout" method="post" action="/admin/logout" style="margin-left:auto;">
         <input type="hidden" name="_csrf" value="<%= csrf %>">
-        <button class="btn btn-quiet" type="submit">Sign out</button>
+        <button class="btn btn-quiet" type="submit">Sign Out</button>
       </form>
     <% } %>
   </div>
 </header>
 
 <main id="main" class="wrap" style="padding-block: var(--s-5) var(--s-7);">
+<%
+  /* A temporary password that nobody is reminded about is just a weak
+     password. The banner is on every admin page rather than only the account
+     page, because the account page is the one page the operator is least
+     likely to open. */
+%>
+<% if (typeof mustChangePassword !== 'undefined' && mustChangePassword) { %>
+  <p class="flash error" role="status">
+    This account is still on a temporary password, so the rest of the admin is
+    closed until it is replaced. Set a permanent one below, and turn on two
+    factor authentication while you are here.
+  </p>
+<% } %>
 <%- body %>
 </main>
 </body>

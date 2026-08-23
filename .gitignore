@@ -10,3 +10,6 @@ public/fonts/*.woff2
 .DS_Store
 data/og/
 data/resume/
+# The proxied GitHub avatar, re-fetched weekly.
+data/cache/
+data/preview.html

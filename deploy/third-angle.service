@@ -1,6 +1,6 @@
 # systemd unit. Install to /etc/systemd/system/third-angle.service
 #
-# No blue/green, deliberately. Two processes against one SQLite file creates a
+# No blue/green, deliberately. Two processes against one SQLite file create a
 # real two writer window, and one to two seconds of restart made invisible by
 # Caddy retry is the correct trade for a portfolio. See DESIGN.md risk R6.
 
@@ -15,7 +15,7 @@ User=app
 Group=app
 WorkingDirectory=/srv/third-angle
 Environment=NODE_ENV=production
-# Mode 0600, owned by app. Never in the repository.
+# Mode 0640, root:app. Never in the repository.
 EnvironmentFile=/etc/third-angle/env
 ExecStart=/usr/bin/node server.js
 

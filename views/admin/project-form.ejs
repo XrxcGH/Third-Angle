@@ -3,7 +3,7 @@
 
 <% if (error) { %><p class="flash error"><%= error %></p><% } %>
 <% if (query && query.saved) { %>
-  <p class="flash">Saved. <a href="/work/<%= project.slug %>">View it on the site</a></p>
+  <p class="flash">Saved. <a href="/work/<%= project.slug %>">View It on the Site</a></p>
 <% } %>
 
 <form method="post" action="/admin/projects/save" style="margin-top: var(--s-4);">
@@ -17,7 +17,7 @@
     </div>
 
     <div class="field">
-      <label for="subtitle">One line description</label>
+      <label for="subtitle">One Line Description</label>
       <input id="subtitle" name="subtitle" type="text" value="<%= project.subtitle || '' %>">
       <span class="hint">This is the sentence on the card and in search results. Make it specific.</span>
     </div>
@@ -48,7 +48,7 @@
         <label for="tier">Tier</label>
         <select id="tier" name="tier">
           <% for (const t of ['note', 'build', 'case-study']) { %>
-            <option value="<%= t %>"<%= project.tier === t ? ' selected' : '' %>><%= t %></option>
+            <option value="<%= t %>"<%= project.tier === t ? ' selected' : '' %>><%= label('tier', t) %></option>
           <% } %>
         </select>
         <span class="hint">Note renders 3 blocks, build 6, case study all 12. Pick the smallest that fits, so nothing is padded.</span>
@@ -57,7 +57,7 @@
         <label for="status">Status</label>
         <select id="status" name="status">
           <% for (const s of ['shipped', 'competed', 'in-progress', 'specification', 'archived']) { %>
-            <option value="<%= s %>"<%= project.status === s ? ' selected' : '' %>><%= s %></option>
+            <option value="<%= s %>"<%= project.status === s ? ' selected' : '' %>><%= label('status', s) %></option>
           <% } %>
         </select>
         <span class="hint">Specification is a real, respectable status. Label it rather than implying more.</span>
@@ -66,7 +66,7 @@
 
     <div class="row2">
       <div class="field">
-        <label for="role">Your role</label>
+        <label for="role">Your Role</label>
         <input id="role" name="role" type="text" value="<%= project.role || '' %>">
       </div>
       <div class="row2">
@@ -132,7 +132,7 @@
             <label for="weight_<%= d.slug %>">Weight</label>
             <select id="weight_<%= d.slug %>" name="weight_<%= d.slug %>">
               <% for (const w of ['primary', 'significant', 'supporting']) { %>
-                <option value="<%= w %>"<%= sel && sel.weight === w ? ' selected' : '' %>><%= w %></option>
+                <option value="<%= w %>"<%= sel && sel.weight === w ? ' selected' : '' %>><%= label('weight', w) %></option>
               <% } %>
             </select>
           </div>
@@ -146,7 +146,7 @@
     <% } %>
   </div>
 
-  <div style="display:flex; gap: var(--s-2); margin-top: var(--s-5);">
+  <div class="btn-row" style="margin-top: var(--s-5);">
     <button class="btn" type="submit">Save</button>
     <a class="btn btn-quiet" href="/admin/projects">Cancel</a>
   </div>

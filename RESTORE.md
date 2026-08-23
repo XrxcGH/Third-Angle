@@ -4,7 +4,7 @@ The box is disposable. The backup is the system of record.
 
 That is not a slogan, it is a design decision with a specific cause: on 15 June
 2026 Oracle halved the Always Free allowance this site runs on, with no blog
-post, no email and no customer notification. There is no contract, no SLA and no
+post, no email, and no customer notification. There is no contract, no SLA, and no
 support channel. So the plan is not to trust the host, it is to be able to leave
 it in under an hour.
 
@@ -39,8 +39,8 @@ That restores from the Litestream replica **and** from the newest snapshot, then
 puts each through five assertions: structural integrity, referential integrity,
 FTS5 index consistency, actual content, and recency. Each catches a different way
 a restore can be quietly wrong. A restored database that is structurally perfect
-and three weeks stale passes the first four and fails the fifth, which is the
-point.
+and more than 45 days stale passes the first four and fails the fifth, which is
+the point.
 
 Then deliberately break it and confirm the alert lands:
 
@@ -80,13 +80,15 @@ git clone https://github.com/XrxcGH/third-angle.git
 sudo bash third-angle/deploy/provision.sh
 ```
 
-Installs Node 24, Caddy, Litestream, the service units and the firewall, and
-asserts up front that this SQLite build has FTS5 and the trigram tokenizer. If
-that assertion fails, stop: the app would fail later and more confusingly.
+Installs Node 24, Caddy, cloudflared, Litestream, the service units, and the
+firewall, and asserts up front that this SQLite build has FTS5 and the trigram
+tokenizer. If that assertion fails, stop: the app would fail later and more
+confusingly.
 
-On Oracle images, remember the `iptables` rules that survive `ufw` and silently
-drop 80 and 443. The provision script handles it. Forgetting it is the classic
-lost hour where the site is running and nothing reaches it.
+Nothing needs to listen on 80 or 443: the firewall allows SSH only and
+cloudflared dials out to Cloudflare. The classic lost hour here is instead a
+tunnel that never started, because the provision script deliberately leaves
+cloudflared stopped while `/etc/cloudflared/config.yml` still says `TUNNEL_ID`.
 
 ### 3. Restore the database, about 1 minute
 
@@ -124,9 +126,16 @@ file is missing, or files with no row.
 
 ### 5. Point the domain, 1 to 20 minutes
 
-Update the A and AAAA records at Cloudflare to the new address. Set the real
-domain in `/etc/caddy/Caddyfile` and `/etc/third-angle/env`, then
-`systemctl reload caddy`. TLS is automatic. Propagation is usually quick because
+Re-point the tunnel at the new machine: `cloudflared tunnel create third-angle`,
+then `cloudflared tunnel route dns third-angle your-domain.example` for the apex
+and again for www, copy the credentials JSON to `/etc/cloudflared/`, and
+`systemctl enable --now cloudflared`. There is no A or AAAA record for the
+origin — the tunnel's records are proxied CNAMEs and the machine's address is
+never published. Set the real
+domain in `SITE_URL` in `/etc/third-angle/env`, then
+`systemctl restart third-angle`. `/etc/caddy/Caddyfile` names no domain and
+needs no editing, and TLS is Cloudflare's: Caddy runs with `auto_https off` on a
+loopback socket and issues no certificate. Propagation is usually quick because
 the TTL is short by default.
 
 ### 6. Confirm
@@ -134,7 +143,7 @@ the TTL is short by default.
 ```bash
 curl -fsS https://YOURDOMAIN/healthz          # ok facets=8
 curl -sI https://YOURDOMAIN/ | grep -i content-security
-sudo systemctl status third-angle litestream third-angle-backup.timer
+sudo systemctl status third-angle cloudflared litestream third-angle-backup.timer
 ```
 
 Then in a browser: sign in to `/admin`, load one project page, run one search,
@@ -148,8 +157,9 @@ that Node answered.
 
 ## Recovering one deleted project, without a full restore
 
-Every admin write is recorded in `audit_log` with a full JSON snapshot of the row
-as it was. So a deletion is recoverable by hand without touching backups:
+Every admin write is recorded in `audit_log`, and a project delete records the
+whole row as JSON. So a deleted project is recoverable by hand without touching
+backups:
 
 ```bash
 sudo -u app node -e "

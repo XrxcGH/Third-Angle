@@ -1,0 +1,121 @@
+<p class="eyebrow">Admin</p>
+<h1>Settings</h1>
+<p class="measure" style="color: var(--text-muted);">
+  Switches that change what the public site does, without a deploy. The key set
+  is closed on purpose: a settings table with free text keys is how a typo
+  becomes a flag that silently does nothing forever.
+</p>
+
+<% if (saved) { %><p class="flash" role="status" style="margin-top: var(--s-4);">Settings saved.</p><% } %>
+<% if (refreshed === 'ok') { %><p class="flash" role="status" style="margin-top: var(--s-4);">GitHub data refreshed.</p><% } %>
+<% if (refreshed === 'failed') { %>
+  <p class="flash error" role="alert" style="margin-top: var(--s-4);">
+    The GitHub refresh did not complete. The reason is below.
+  </p>
+<% } %>
+
+<div class="stack-lg" style="margin-top: var(--s-5); max-width: 46rem;">
+
+  <section>
+    <h2>Public Site</h2>
+    <form class="panel" method="post" action="/admin/settings" style="margin-top: var(--s-3);">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+      <% for (const [key, def] of Object.entries(definitions)) { %>
+        <% if (def.type === 'bool') { %>
+          <label class="check" for="set-<%= key %>">
+            <input id="set-<%= key %>" type="checkbox" name="<%= key %>" value="1"
+                   <%= values[key] ? 'checked' : '' %>>
+            <span>
+              <strong><%= def.label %></strong>
+              <span class="hint"><%= def.help %></span>
+            </span>
+          </label>
+        <% } else { %>
+          <div class="field">
+            <label for="set-<%= key %>"><%= def.label %></label>
+            <input id="set-<%= key %>" name="<%= key %>" type="text" value="<%= values[key] %>">
+            <span class="hint"><%= def.help %></span>
+          </div>
+        <% } %>
+      <% } %>
+
+      <button class="btn" type="submit">Save Settings</button>
+    </form>
+  </section>
+
+  <%# ------------------------------------------------------------------ mail %>
+  <section>
+    <h2>Outbound Mail</h2>
+    <p class="measure" style="color: var(--text-muted); font-size:.92rem;">
+      Credentials live in the environment, never in this database, so they are
+      shown here as configured or not rather than as values. Every message is
+      stored in the inbox whatever this says.
+    </p>
+
+    <div class="panel" style="margin-top: var(--s-3);">
+      <div class="titleblock">
+        <div>
+          <span class="k">SMTP</span>
+          <span class="v">
+            <% if (mail.configured) { %>
+              <span class="badge" style="border-color: var(--patina); color: var(--patina);">Configured</span>
+            <% } else { %>
+              <span class="badge" style="border-color: var(--ch-business); color: var(--ch-business);">Not Configured</span>
+            <% } %>
+          </span>
+        </div>
+        <% if (mail.configured) { %>
+          <div><span class="k">Relay</span><span class="v"><%= mail.host %>:<%= mail.port %></span></div>
+          <div><span class="k">Sends As</span><span class="v"><%= mail.from %></span></div>
+        <% } %>
+        <div><span class="k">Forwards To</span><span class="v"><%= mail.recipient || 'no address' %></span></div>
+      </div>
+
+      <% if (!mail.configured) { %>
+        <p class="hint" style="margin-top: var(--s-3);">
+          Set <code>SMTP_HOST</code>, <code>SMTP_PORT</code>, <code>SMTP_USER</code> and
+          <code>SMTP_PASS</code> in the environment, then restart. Port 465 is
+          implicit TLS and 587 is STARTTLS; both are supported. With Gmail this
+          has to be an app password, not the account password.
+        </p>
+      <% } %>
+    </div>
+  </section>
+
+  <%# ---------------------------------------------------------------- github %>
+  <section>
+    <h2>GitHub Data</h2>
+    <p class="measure" style="color: var(--text-muted); font-size:.92rem;">
+      Fetched by this server and cached for an hour, so the visitor's browser
+      never talks to GitHub. A revalidation costs nothing against the rate
+      limit, because GitHub does not count a 304.
+    </p>
+
+    <div class="panel" style="margin-top: var(--s-3);">
+      <div class="titleblock" style="margin-bottom: var(--s-3);">
+        <div><span class="k">Account</span><span class="v"><%= gh.username %></span></div>
+        <div>
+          <span class="k">Cached</span>
+          <span class="v">
+            <% if (gh.fetchedAt) { %>
+              <%= gh.fetchedAt.slice(0, 16).replace('T', ' ') %> UTC<% if (gh.stale) { %> (stale)<% } %>
+            <% } else { %>Never<% } %>
+          </span>
+        </div>
+        <div><span class="k">Repositories</span><span class="v tnum"><%= gh.repos.length %></span></div>
+      </div>
+
+      <% if (gh.errors && gh.errors.length) { %>
+        <div class="flash error">
+          <% for (const e of gh.errors) { %><p style="margin:0;"><%= e %></p><% } %>
+        </div>
+      <% } %>
+
+      <form method="post" action="/admin/settings/github/refresh">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <button class="btn btn-quiet" type="submit">Refresh Now</button>
+      </form>
+    </div>
+  </section>
+</div>

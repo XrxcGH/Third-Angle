@@ -1,18 +1,43 @@
 <p class="eyebrow">Admin</p>
 <h1>Messages</h1>
-<p style="color: var(--text-muted); max-width: 62ch;">
+<p class="measure" style="color: var(--text-muted);">
   From the contact form. No captcha and no third party script: a honeypot, a
   minimum time to submit and a per-IP limit do the work on the server instead.
 </p>
+<p class="measure" style="color: var(--text-muted); font-size:.92rem;">
+  Every message is stored here first and forwarded second, so a mail problem
+  costs a notification and never a message. Any row that did not send can be
+  retried.
+</p>
 
-<div class="panel" style="padding:0; margin-top: var(--s-4);">
+<% if (notice) { %><p class="flash" role="status" style="margin-top: var(--s-4);"><%= notice %></p><% } %>
+
+<div class="titleblock" style="margin-top: var(--s-4); max-width: 34rem;">
+  <div>
+    <span class="k">Forwarding</span>
+    <span class="v">
+      <% if (!forwarding) { %><span class="badge">Off</span>
+      <% } else if (!mailConfigured) { %>
+        <span class="badge" style="border-color: var(--ch-business); color: var(--ch-business);">No SMTP</span>
+      <% } else { %>
+        <span class="badge" style="border-color: var(--patina); color: var(--patina);">On</span>
+      <% } %>
+    </span>
+  </div>
+  <div><span class="k">Goes To</span><span class="v"><%= recipient || 'no address set' %></span></div>
+  <% if (undelivered) { %>
+    <div><span class="k">Not Delivered</span><span class="v tnum"><%= undelivered %></span></div>
+  <% } %>
+</div>
+
+<div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="padding:0; margin-top: var(--s-4);">
   <table class="admin-table">
     <thead>
-      <tr><th style="width:7rem;">When</th><th>From</th><th>Message</th><th style="text-align:right;">Actions</th></tr>
+      <tr><th style="width:7rem;">When</th><th>From</th><th>Message</th><th>Mail</th><th style="text-align:right;">Actions</th></tr>
     </thead>
     <tbody>
       <% if (!messages.length) { %>
-        <tr><td colspan="4" style="color: var(--text-muted);">Nothing yet.</td></tr>
+        <tr><td colspan="5" style="color: var(--text-muted);">Nothing yet.</td></tr>
       <% } %>
       <% for (const m of messages) { %>
         <tr style="<%= m.read ? 'opacity:.72;' : '' %>">
@@ -29,11 +54,36 @@
             <span style="font-size:.9rem; white-space:pre-wrap;"><%= m.body %></span>
           </td>
           <td>
+            <%
+              const MAIL_LABEL = {
+                sent: 'Sent', failed: 'Failed', pending: 'Pending',
+                off: 'Forwarding Off', unconfigured: 'No SMTP',
+              };
+              const ok = m.mail_status === 'sent';
+            %>
+            <span class="badge" style="<%= ok ? 'border-color: var(--patina); color: var(--patina);'
+              : (m.mail_status === 'failed' ? 'border-color: var(--ch-business); color: var(--ch-business);' : '') %>">
+              <%= MAIL_LABEL[m.mail_status] || m.mail_status %>
+            </span>
+            <% if (m.mailed_at) { %>
+              <div class="mono" style="font-size:.62rem; color: var(--text-muted);"><%= m.mailed_at.slice(0,16).replace('T',' ') %></div>
+            <% } %>
+            <% if (m.mail_error) { %>
+              <div style="font-size:.72rem; color: var(--text-muted); max-width:22ch;"><%= m.mail_error %></div>
+            <% } %>
+          </td>
+          <td>
             <div class="actions">
+              <% if (m.mail_status !== 'sent') { %>
+                <form method="post" action="/admin/messages/<%= m.id %>/forward">
+                  <input type="hidden" name="_csrf" value="<%= csrf %>">
+                  <button class="btn btn-quiet btn-sm" type="submit">Send</button>
+                </form>
+              <% } %>
               <% if (!m.read) { %>
                 <form method="post" action="/admin/messages/<%= m.id %>/read">
                   <input type="hidden" name="_csrf" value="<%= csrf %>">
-                  <button class="btn btn-quiet btn-sm" type="submit">Mark read</button>
+                  <button class="btn btn-quiet btn-sm" type="submit">Mark Read</button>
                 </form>
               <% } %>
               <form method="post" action="/admin/messages/<%= m.id %>/delete">

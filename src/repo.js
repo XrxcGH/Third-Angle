@@ -8,6 +8,7 @@
 
 const { get, all, run, transaction, nowIso } = require('./db');
 const { generateKeyBetween, generateNKeysBetween } = require('fractional-indexing');
+const { escapeHtml } = require('./markup');
 
 /* ---------------------------------------------------------------- facets */
 
@@ -173,7 +174,7 @@ function nextKeyFor(table, where = '1=1', ...params) {
 
 function listNotes(limit = 20) {
   return all(
-    `SELECT n.id, n.slug, n.title, n.body_html, n.created_at,
+    `SELECT n.id, n.slug, n.title, n.body_html, n.created_at, n.updated_at,
             p.slug AS project_slug, p.title AS project_title
        FROM note n
        LEFT JOIN project p ON p.id = n.project_id
@@ -287,11 +288,30 @@ function correctTerms(terms) {
  * which is what gives substring and near-miss matching without paying for it
  * on every query.
  */
+/*
+ * Sentinels rather than tags, because the excerpt is rendered unescaped.
+ *
+ * snippet() wraps matches in whatever it is given and leaves the surrounding
+ * text alone, so any '<' that reached the index would be emitted into the page
+ * as markup. plain() strips HTML on the way in and is the first line of
+ * defence; this is the second, at the boundary where it actually matters. The
+ * two sentinels are control characters, which cannot occur in indexed text and
+ * survive escaping untouched.
+ */
+const MARK_OPEN = '\u0001';
+const MARK_CLOSE = '\u0002';
+
+function highlight(excerpt) {
+  return escapeHtml(String(excerpt || ''))
+    .split(MARK_OPEN).join('<mark>')
+    .split(MARK_CLOSE).join('</mark>');
+}
+
 function runFts(table, matchExpr, limit, withSnippet) {
   const excerpt = withSnippet
-    ? `snippet(search_fts, 2, '<mark>', '</mark>', ' ... ', 18)`
+    ? `snippet(search_fts, 2, '${MARK_OPEN}', '${MARK_CLOSE}', ' ... ', 18)`
     : `''`;
-  return all(
+  const rows = all(
     `SELECT si.kind, si.url, si.title, si.subtitle,
             ${excerpt} AS excerpt,
             bm25(${table}) AS score
@@ -302,6 +322,7 @@ function runFts(table, matchExpr, limit, withSnippet) {
       LIMIT ?`,
     matchExpr, limit
   );
+  return rows.map((r) => ({ ...r, excerpt: highlight(r.excerpt) }));
 }
 
 /**
@@ -484,6 +505,307 @@ function logError(route, err) {
   } catch { /* never let error logging throw */ }
 }
 
+
+/* -------------------------------------------------------------- education
+ *
+ * The resume page is a document; this is a record. A class added here shows up
+ * on /education, in the term summary, and in search without anyone rewriting a
+ * paragraph, which is the difference between a list that stays current and one
+ * that is accurate on the day it is written.
+ */
+
+const COURSE_STATUS = ['completed', 'in-progress', 'planned'];
+const ACTIVITY_KINDS = ['activity', 'award', 'certification'];
+const SCHOOL_KINDS = ['university', 'high-school', 'certification'];
+
+function listSchools() {
+  return all('SELECT * FROM school ORDER BY sort_key');
+}
+
+function getSchool(slug) {
+  return get('SELECT * FROM school WHERE slug = ?', slug);
+}
+
+function saveSchool(slug, fields) {
+  const kind = SCHOOL_KINDS.includes(fields.kind) ? fields.kind : 'university';
+  const existing = getSchool(slug);
+  if (existing) {
+    run(
+      `UPDATE school SET name=?, kind=?, credential=?, location=?, started_on=?,
+         ended_on=?, honours=?, blurb=? WHERE slug=?`,
+      fields.name, kind, fields.credential || null, fields.location || null,
+      fields.started_on || null, fields.ended_on || null, fields.honours || null,
+      fields.blurb || null, slug
+    );
+  } else {
+    run(
+      `INSERT INTO school (slug, name, kind, credential, location, started_on, ended_on, honours, blurb, sort_key)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      slug, fields.name, kind, fields.credential || null, fields.location || null,
+      fields.started_on || null, fields.ended_on || null, fields.honours || null,
+      fields.blurb || null, nextKeyFor('school')
+    );
+  }
+  return slug;
+}
+
+const deleteSchool = transaction((slug) => {
+  // course cascades, activity is set null: an activity can outlive the school
+  // record it was attached to, and losing it would be a silent data loss.
+  run('DELETE FROM school WHERE slug = ?', slug);
+});
+
+function listCourses(schoolSlug) {
+  return schoolSlug
+    ? all('SELECT * FROM course WHERE school_slug = ? ORDER BY sort_key', schoolSlug)
+    : all('SELECT * FROM course ORDER BY school_slug, sort_key');
+}
+
+/**
+ * Courses grouped by term, newest term first, with the terms in a stable order.
+ *
+ * Terms are compared as text with a deliberate season ordering rather than
+ * alphabetically: "Fall 2026" sorts before "Winter 2027" only if the code knows
+ * that Fall comes first in an academic year, and localeCompare does not.
+ */
+const SEASON_ORDER = { winter: 1, spring: 2, summer: 3, fall: 4, autumn: 4 };
+
+function termSortValue(term) {
+  const t = String(term || '').trim();
+
+  const quarter = /^([A-Za-z]+)\s*(\d{4})$/.exec(t);
+  if (quarter) {
+    return {
+      year: Number(quarter[2]),
+      season: SEASON_ORDER[quarter[1].toLowerCase()] || 0,
+      label: t,
+    };
+  }
+
+  /*
+   * An academic year: "2024-25", "2024\u201325", or a bare "2024".
+   *
+   * A school that runs on years rather than quarters writes its terms this way,
+   * and without this every one of them scored year 0, tied with each other, and
+   * fell through to the alphabetical comparison — so "sort by term, newest
+   * first" quietly returned an alphabetical list. The starting year is the key;
+   * a two digit ending year is not a year at all.
+   */
+  const academic = /^(\d{4})(?:\s*[\u2012-\u2015-]\s*\d{2,4})?$/.exec(t);
+  if (academic) return { year: Number(academic[1]), season: 0, label: t };
+
+  return { year: 0, season: 0, label: t };
+}
+
+/**
+ * Courses grouped by status, which is the axis that carries a claim.
+ *
+ * "Completed" and "in progress" are different statements about the same
+ * subject, and a single alphabetical list of class names quietly makes the
+ * stronger one. Term is shown per row where it is recorded, rather than being
+ * the grouping: a class whose term nobody wrote down still belongs on the page.
+ */
+/*
+ * `sort` is 'term' or 'name'.
+ *
+ * Term order is the default, most recent term first, and alphabetical inside a
+ * term. A class list is a record of what somebody is doing and has done, and
+ * the first question a reader has is what they are taking now — which an
+ * alphabetical list buries somewhere in the middle. Alphabetical is the other
+ * question, for somebody scanning for "did they take statics", and it is one
+ * click away.
+ */
+function coursesByStatus(schoolSlug, sort = 'term') {
+  const rows = listCourses(schoolSlug);
+  const order = ['in-progress', 'completed', 'planned'];
+
+  /*
+   * Alphabetical means alphabetical in the column the reader is actually
+   * scanning, which is the code: it is the left hand column of every row and
+   * the thing the eye tracks down the list. Sorting by title first put MECH&AE
+   * 101 after STATS 10 because "Statics" follows "Statistical", and a list that
+   * is correctly sorted by a key nobody can see reads as unsorted.
+   *
+   * numeric, so PHYSICS 1B comes before PHYSICS 4AL and MECH&AE 1 before
+   * MECH&AE 101 rather than in string order.
+   */
+  const byName = (a, b) =>
+    String(a.code || '').localeCompare(String(b.code || ''), 'en', { numeric: true, sensitivity: 'base' })
+    || String(a.title || '').localeCompare(String(b.title || ''), 'en', { sensitivity: 'base' });
+
+  const byTerm = (a, b) => {
+    const ta = termSortValue(a.term);
+    const tb = termSortValue(b.term);
+    // A recorded term sorts above an unrecorded one, newest first.
+    if (ta.year !== tb.year) return tb.year - ta.year;
+    if (ta.season !== tb.season) return tb.season - ta.season;
+    return byName(a, b);
+  };
+
+  const compare = sort === 'term' ? byTerm : byName;
+  return order
+    .map((status) => ({ status, courses: rows.filter((c) => c.status === status).sort(compare) }))
+    .filter((g) => g.courses.length);
+}
+
+function coursesByTerm(schoolSlug) {
+  const rows = listCourses(schoolSlug);
+  const groups = new Map();
+  for (const c of rows) {
+    const key = c.term || 'Unscheduled';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(c);
+  }
+  return [...groups.entries()]
+    .map(([term, courses]) => ({ term, courses, ...termSortValue(term) }))
+    .sort((a, b) => (b.year - a.year) || (b.season - a.season) || b.label.localeCompare(a.label));
+}
+
+function courseCounts(schoolSlug) {
+  const rows = listCourses(schoolSlug);
+  const out = { completed: 0, 'in-progress': 0, planned: 0, total: rows.length };
+  for (const c of rows) out[c.status] = (out[c.status] || 0) + 1;
+  return out;
+}
+
+function saveCourse(fields) {
+  const status = COURSE_STATUS.includes(fields.status) ? fields.status : 'planned';
+  if (fields.id) {
+    run(
+      `UPDATE course SET school_slug=?, code=?, title=?, term=?, units=?, status=?, note=? WHERE id=?`,
+      fields.school_slug, fields.code || null, fields.title, fields.term || null,
+      fields.units || null, status, fields.note || null, Number(fields.id)
+    );
+    return Number(fields.id);
+  }
+  const res = run(
+    `INSERT INTO course (school_slug, code, title, term, units, status, note, sort_key)
+     VALUES (?,?,?,?,?,?,?,?)`,
+    fields.school_slug, fields.code || null, fields.title, fields.term || null,
+    fields.units || null, status, fields.note || null,
+    nextKeyFor('course', 'school_slug = ?', fields.school_slug)
+  );
+  return Number(res.lastInsertRowid);
+}
+
+function deleteCourse(id) {
+  run('DELETE FROM course WHERE id = ?', Number(id));
+}
+
+function listActivities(schoolSlug) {
+  return schoolSlug === undefined
+    ? all('SELECT * FROM activity ORDER BY sort_key')
+    : all(
+      schoolSlug === null
+        ? 'SELECT * FROM activity WHERE school_slug IS NULL ORDER BY sort_key'
+        : 'SELECT * FROM activity WHERE school_slug = ? ORDER BY sort_key',
+      ...(schoolSlug === null ? [] : [schoolSlug])
+    );
+}
+
+function saveActivity(fields) {
+  const kind = ACTIVITY_KINDS.includes(fields.kind) ? fields.kind : 'activity';
+  if (fields.id) {
+    run(
+      `UPDATE activity SET school_slug=?, title=?, role=?, detail=?, started_on=?, ended_on=?, kind=? WHERE id=?`,
+      fields.school_slug || null, fields.title, fields.role || null, fields.detail || null,
+      fields.started_on || null, fields.ended_on || null, kind, Number(fields.id)
+    );
+    return Number(fields.id);
+  }
+  const res = run(
+    `INSERT INTO activity (school_slug, title, role, detail, started_on, ended_on, kind, sort_key)
+     VALUES (?,?,?,?,?,?,?,?)`,
+    fields.school_slug || null, fields.title, fields.role || null, fields.detail || null,
+    fields.started_on || null, fields.ended_on || null, kind, nextKeyFor('activity')
+  );
+  return Number(res.lastInsertRowid);
+}
+
+function deleteActivity(id) {
+  run('DELETE FROM activity WHERE id = ?', Number(id));
+}
+
+/* ------------------------------------------------------------ personal wall
+ *
+ * One wall, not a set of albums.
+ *
+ * This started as albums with a title and a blurb each, and the personal page
+ * rendered a section per album. That is categorisation, and categorisation is
+ * the thing that makes a photo wall stop being added to: every upload becomes a
+ * decision about which bucket it belongs in, and the page becomes a stack of
+ * short sections rather than a wall.
+ *
+ * So there is exactly one question about a photograph: is it on the wall or is
+ * it not. `media.album_slug` is that flag. It stays a foreign key to a single
+ * album row rather than becoming a boolean column, because rebuilding a STRICT
+ * table to drop a constraint is a worse trade than one lookup row that never
+ * changes.
+ */
+
+const PERSONAL_ALBUM = 'personal';
+
+/**
+ * Guarantee the single album row, and fold any others into it.
+ *
+ * Idempotent, and a no-op once there is nothing to fold, so it costs two cheap
+ * reads on every boot rather than a destructive write.
+ */
+function ensurePersonalWall() {
+  run(
+    `INSERT INTO album (slug, title, blurb, published, sort_key)
+     VALUES (?, 'Personal', NULL, 1, 'a0')
+     ON CONFLICT(slug) DO NOTHING`,
+    PERSONAL_ALBUM
+  );
+  const strays = get('SELECT COUNT(*) AS n FROM album WHERE slug != ?', PERSONAL_ALBUM).n;
+  if (!strays) return 0;
+  // A photograph that was in any album is on the wall. Nothing is dropped.
+  run('UPDATE media SET album_slug = ? WHERE album_slug IS NOT NULL AND album_slug != ?',
+    PERSONAL_ALBUM, PERSONAL_ALBUM);
+  run('DELETE FROM album WHERE slug != ?', PERSONAL_ALBUM);
+  return strays;
+}
+
+/**
+ * Every photograph on the wall, newest capture first.
+ *
+ * Only rows with real dimensions come back. The collage packs by aspect ratio,
+ * and a row with no width or height has no ratio: including it would make the
+ * layout fall back to a guess for that one tile and visibly break the row.
+ */
+function personalPhotos() {
+  return all(
+    `SELECT id, storage_key, alt, caption, width, height, captured_on, created_at, mime
+       FROM media
+      WHERE album_slug IS NOT NULL
+        AND mime LIKE 'image/%'
+        AND width IS NOT NULL AND height IS NOT NULL AND width > 0 AND height > 0
+      ORDER BY COALESCE(captured_on, created_at) DESC, id DESC`
+  );
+}
+
+/** Photographs in the library that are not on the wall. */
+function offWallPhotos(limit = 200) {
+  return all(
+    `SELECT id, storage_key, alt, width, height, created_at
+       FROM media
+      WHERE album_slug IS NULL AND mime LIKE 'image/%'
+      ORDER BY created_at DESC LIMIT ?`,
+    limit
+  );
+}
+
+function countOnWall() {
+  return get("SELECT COUNT(*) AS n FROM media WHERE album_slug IS NOT NULL AND mime LIKE 'image/%'").n;
+}
+
+/** The only write. `on` decides whether a photograph appears on /personal. */
+function setOnWall(mediaId, on) {
+  if (on) ensurePersonalWall();
+  run('UPDATE media SET album_slug = ? WHERE id = ?', on ? PERSONAL_ALBUM : null, Number(mediaId));
+}
+
 module.exports = {
   listFacets, getFacet, facetCounts,
   listProjects, getProjectBySlug, listProjectsByFacet,
@@ -492,4 +814,9 @@ module.exports = {
   search, toMatchQuery, queryTerms, editDistance, correctTerms, upsertSearchRow, reindexProject, reindexAll, plain,
   getPage, getPageForEdit, savePage, PAGE_SLUGS,
   logChange, findRedirect, logError,
+  listSchools, getSchool, saveSchool, deleteSchool,
+  listCourses, coursesByTerm, coursesByStatus, courseCounts, saveCourse, deleteCourse,
+  listActivities, saveActivity, deleteActivity,
+  ensurePersonalWall, personalPhotos, offWallPhotos, countOnWall, setOnWall, PERSONAL_ALBUM,
+  COURSE_STATUS, ACTIVITY_KINDS, SCHOOL_KINDS, termSortValue,
 };

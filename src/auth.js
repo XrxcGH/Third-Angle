@@ -3,13 +3,13 @@
 /*
  * Authentication for exactly one admin.
  *
- * Zero new dependencies: scrypt, HMAC, random bytes and timing-safe compare
+ * Zero new dependencies: scrypt, HMAC, random bytes, and timing-safe compare
  * are all in node:crypto, and TOTP is thirty lines of HMAC. Adding a native
  * argon2 build to a project whose entire point is "no native dependencies on
  * the ARM target" would be a poor trade for a marginal KDF improvement.
  *
  * Threat model, stated so the controls can be judged against it: a personal
- * portfolio with one operator, no user accounts, no payments and no third party
+ * portfolio with one operator, no user accounts, no payments, and no third party
  * data. The realistic attacks are credential stuffing and drive-by scanning,
  * not a targeted adversary with a GPU cluster. Passkeys were considered and
  * declined for V1: four credential paths is four lockout risks for one person.
@@ -98,15 +98,39 @@ function totpAt(secret, counter) {
  * Verify a 6 digit code. A one step window either side absorbs clock skew,
  * which is the usual cause of a legitimate code being rejected.
  */
-function verifyTotp(secret, token, atMs = Date.now()) {
+function totpCounterFor(secret, token, atMs = Date.now()) {
   const t = String(token || '').replace(/\s/g, '');
   if (!/^\d{6}$/.test(t)) return false;
   const counter = Math.floor(atMs / 30_000);
   for (let w = -1; w <= 1; w++) {
     const expected = totpAt(secret, counter + w);
-    if (crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(t))) return true;
+    if (crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(t))) return counter + w;
   }
   return false;
+}
+
+function verifyTotp(secret, token, atMs = Date.now()) {
+  return totpCounterFor(secret, token, atMs) !== false;
+}
+
+/**
+ * Verify a code for a user, and spend it.
+ *
+ * A bare verifyTotp accepts the same six digits for as long as they are inside
+ * the window, which is about ninety seconds with the skew allowance either
+ * side. Anyone who sees one code over a shoulder or in a screen share can
+ * replay it in that window if they also have the password, which is exactly the
+ * case the second factor exists for. Recording the counter each code came from
+ * and refusing anything at or below it makes a code good once.
+ *
+ * Returns true only if the code verified AND had not been spent.
+ */
+function verifyTotpOnce(user, token, atMs = Date.now()) {
+  const counter = totpCounterFor(user.totp_secret, token, atMs);
+  if (counter === false) return false;
+  if (user.totp_last_counter != null && counter <= Number(user.totp_last_counter)) return false;
+  run('UPDATE user SET totp_last_counter = ? WHERE id = ?', counter, user.id);
+  return true;
 }
 
 function totpUri(secret, account, issuer = 'Third Angle') {
@@ -169,10 +193,33 @@ function recordAttempt(email, ip, ok) {
 function isRateLimited(email, ip) {
   const since = (mins) => new Date(Date.now() - mins * 60_000).toISOString();
 
+  /*
+   * Failures count only if they happened AFTER the last successful sign in from
+   * the same address, which is what "a fumbled password is not sticky" needs.
+   *
+   * That used to be done by deleting the failed rows on every success, and it
+   * meant the record of an attack was destroyed by the owner's next sign in:
+   * somebody could spend a week guessing, be locked out repeatedly, and leave
+   * nothing behind the moment the real operator logged in. The table is the only
+   * evidence there is that anyone tried, so it is now read from rather than
+   * emptied.
+   */
+  /*
+   * By id, not by timestamp. nowIso() is second resolution, so a failure
+   * written in the same second as the success it followed compares as "not
+   * after" it and would be dropped from the count. The id is a monotonic
+   * sequence and is exactly the ordering this needs.
+   */
+  const lastOk = get(
+    'SELECT id FROM login_attempt WHERE ok = 1 AND ip = ? AND email IS ? ORDER BY id DESC LIMIT 1',
+    ip, email || null
+  );
+  const floor = lastOk ? lastOk.id : 0;
+
   const pair = get(
     `SELECT COUNT(*) AS n FROM login_attempt
-      WHERE ok = 0 AND ip = ? AND email IS ? AND at > ?`,
-    ip, email || null, since(PER_PAIR_WINDOW_MIN)
+      WHERE ok = 0 AND ip = ? AND email IS ? AND at > ? AND id > ?`,
+    ip, email || null, since(PER_PAIR_WINDOW_MIN), floor
   );
   if (pair && pair.n >= PER_PAIR_LIMIT) return { limited: true, scope: 'account', retryMinutes: PER_PAIR_WINDOW_MIN };
 
@@ -185,9 +232,34 @@ function isRateLimited(email, ip) {
   return { limited: false };
 }
 
-/** A successful login clears the account tier so a fumbled password is not sticky. */
-function clearAttempts(email, ip) {
-  run('DELETE FROM login_attempt WHERE ok = 0 AND ip = ? AND email IS ?', ip, email || null);
+/*
+ * Retention, not amnesty.
+ *
+ * A successful sign in no longer erases the failures before it — isRateLimited
+ * counts from the last success instead. What this does is stop the table
+ * growing forever: ninety days is long enough to notice a slow attempt and see
+ * the shape of it, and short enough that the file does not carry a year of
+ * scanner noise.
+ */
+const ATTEMPT_RETENTION_DAYS = 90;
+
+function pruneAttempts() {
+  const cutoff = new Date(Date.now() - ATTEMPT_RETENTION_DAYS * 86_400_000).toISOString();
+  run('DELETE FROM login_attempt WHERE at < ?', cutoff);
+}
+
+/**
+ * Recent sign in activity, successes and failures together, newest first.
+ *
+ * Surfaced on the account page. A lockout table nobody can read tells the
+ * operator nothing: the point of recording an attempt is that an unfamiliar one
+ * is visible.
+ */
+function signInActivity(limit = 20) {
+  return all(
+    'SELECT at, email, ip, ok FROM login_attempt ORDER BY id DESC LIMIT ?',
+    Math.max(1, Math.min(100, Number(limit) || 20))
+  );
 }
 
 /* -------------------------------------------------------------------- CSRF
@@ -195,6 +267,12 @@ function clearAttempts(email, ip) {
  * side storage and cannot be forged without the secret.
  */
 
+/*
+ * The CSRF key. Production cannot boot without a real one: see
+ * assertEnvironment() in src/db.js. The development fallback is deliberately
+ * named for what it is, because it is in a public repository and is therefore
+ * known to everybody.
+ */
 function csrfToken(sessionId) {
   const secret = process.env.SESSION_SECRET || 'dev-only-insecure-secret';
   return crypto.createHmac('sha256', secret).update(String(sessionId || 'anon')).digest('base64url');
@@ -233,11 +311,85 @@ function recordLogin(userId) {
   run('UPDATE user SET last_login_at = ? WHERE id = ?', nowIso(), userId);
 }
 
+/* ------------------------------------------------------- account maintenance
+ *
+ * The operator has to be able to change their own address and password from
+ * inside the site. Without this the only route is shell access to the box and
+ * scripts/create-admin.js, which means a hand-over password stays whatever it
+ * was set to, and a compromised address cannot be moved at all.
+ */
+
+function getUser(userId) {
+  return get('SELECT * FROM user WHERE id = ?', userId);
+}
+
+const MIN_PASSWORD = 12;
+
+/** The one place the length floor is stated, so the script and the form agree. */
+function passwordProblem(password) {
+  const p = String(password || '');
+  if (p.length < MIN_PASSWORD) return `Use at least ${MIN_PASSWORD} characters. This is the only credential on the site.`;
+  if (p.length > 512) return 'That is longer than 512 characters.';
+  return null;
+}
+
+/*
+ * Deliberately permissive. A validator that rejects a legitimate address is a
+ * worse failure than one that accepts a typo, because the typo is visible on
+ * the account page and the rejection is not fixable from inside the app.
+ */
+function emailProblem(email) {
+  const e = String(email || '').trim();
+  if (!e) return 'An email address is required.';
+  if (e.length > 200) return 'That address is too long.';
+  if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(e)) return 'That does not look like an email address.';
+  return null;
+}
+
+function updateProfile(userId, { name, email }) {
+  run(
+    'UPDATE user SET name = ?, email = ? WHERE id = ?',
+    String(name).trim(), String(email).toLowerCase().trim(), userId
+  );
+}
+
+/**
+ * Setting a password always clears must_change_password: the flag exists to
+ * force exactly this action, so leaving it set afterwards would lock the
+ * operator into the account page permanently.
+ */
+function setPassword(userId, password) {
+  run(
+    'UPDATE user SET password_hash = ?, must_change_password = 0 WHERE id = ?',
+    hashPassword(password), userId
+  );
+}
+
+function listSessions(userId) {
+  return all(
+    'SELECT id, created_at, expires_at, user_agent, ip FROM session WHERE user_id = ? ORDER BY created_at DESC',
+    userId
+  );
+}
+
+/**
+ * Ends every session except the one calling. A password change that leaves
+ * older sessions alive has not actually revoked anything, which is the whole
+ * reason someone changes a password they think was seen.
+ */
+function destroyOtherSessions(userId, keepSessionId) {
+  const res = run('DELETE FROM session WHERE user_id = ? AND id != ?', userId, keepSessionId);
+  return Number(res.changes || 0);
+}
+
 module.exports = {
   hashPassword, verifyPassword,
-  generateTotpSecret, verifyTotp, totpAt, totpUri, base32Encode, base32Decode,
+  pruneAttempts, signInActivity,
+  generateTotpSecret, verifyTotp, verifyTotpOnce, totpCounterFor, totpAt, totpUri, base32Encode, base32Decode,
   createSession, getSession, destroySession, purgeExpiredSessions,
-  recordAttempt, isRateLimited, clearAttempts,
+  recordAttempt, isRateLimited,
   csrfToken, checkCsrf,
   findUserByEmail, countUsers, createUser, setTotpSecret, recordLogin,
+  getUser, updateProfile, setPassword, listSessions, destroyOtherSessions,
+  passwordProblem, emailProblem, MIN_PASSWORD,
 };

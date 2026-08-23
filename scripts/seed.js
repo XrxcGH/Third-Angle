@@ -24,6 +24,7 @@ if (RESET) {
 
 const db = require('../src/db');
 const repo = require('../src/repo');
+const markup = require('../src/markup');
 const { generateNKeysBetween } = require('fractional-indexing');
 
 db.assertEnvironment();
@@ -34,22 +35,22 @@ const now = db.nowIso();
 /* ---------------------------------------------------------- disciplines */
 
 const DISCIPLINES = [
-  ['mechanical', 'Mechanical and CAD', 'ch-mechanical',
-    'Part and assembly modelling in Onshape and Fusion 360, mechanism and drivetrain design, dimensioned drawings, bills of materials, tolerance and fit checks.'],
+  ['mechanical', 'Mechanical & CAD', 'ch-mechanical',
+    'Part and assembly modelling in Onshape and Fusion 360, mechanism and drivetrain design, dimensioned drawings, bills of materials, and tolerance and fit checks.'],
   ['electrical', 'Electrical', 'ch-electrical',
     'Wiring harness fabrication, crimping and connectorisation, through hole assembly standards, 12V distribution at several hundred amps, breakers and fusing, and first line triage of a robot that will not move.'],
   ['controls', 'Controls', 'ch-controls',
-    'Closed loop control, swerve kinematics, odometry and pose estimation, sensor fusion, AprilTag localisation and autonomous path planning.'],
+    'Closed loop control, swerve kinematics, odometry and pose estimation, sensor fusion, AprilTag localisation, and autonomous path planning.'],
   ['software', 'Software', 'ch-software',
     'Java robot code, TypeScript and Node applications, server rendered web apps with SQLite, WebSockets, and test suites that actually run.'],
   ['fabrication', 'Fabrication', 'ch-fabrication',
     'CNC milling, FDM printing, laser cutting, drill press and band saw, and the shop practice that keeps all of it safe.'],
   ['documentation', 'Documentation', 'ch-documentation',
-    'Game manuals, migration runbooks, governance packages, training curricula and build trackers. Documents that other people have to use without me in the room.'],
+    'Game manuals, migration runbooks, governance packages, training curricula, and build trackers. Documents that other people have to use without me in the room.'],
   ['business', 'Business', 'ch-business',
     'Fundraising and sponsorship, grant writing, budgeting, business planning, and founding a California nonprofit.'],
   ['teaching', 'Teaching', 'ch-teaching',
-    'Instructing at iD Tech for ages 10 to 17, mentoring three FIRST teams, and writing the curriculum that outlives the session.'],
+    'Instructing at iD Tech for ages 10 to 17, mentoring two FIRST teams, and writing the curriculum that outlives the session.'],
 ];
 
 const dKeys = generateNKeysBetween(null, null, DISCIPLINES.length);
@@ -70,7 +71,7 @@ const PROJECTS = [
   {
     slug: 'summit-push',
     title: 'SUMMIT PUSH',
-    subtitle: 'A complete off-season FRC game, designed end to end: manual, field CAD, drawings and vision layout.',
+    subtitle: 'A complete off-season FRC game, designed end to end: manual, field CAD, drawings, and vision layout.',
     tier: 'case-study',
     status: 'shipped',
     context: 'CADathon 2026',
@@ -81,14 +82,15 @@ const PROJECTS = [
     summary_md:
       'Two alliances of three robots climb opposite flanks of the same peak, ferrying supplies to a 90 inch spire ' +
       'that lights tier by tier as camps are established. A randomised forecast at the start of the match forces ' +
-      'genuinely branching autonomous routines, and the last thirty seconds are a climb on a truss leaning at 15 degrees.',
-    body_md:
-      '<p>The package contains a design research foundation, a locked design specification, a full game manual that went ' +
+      'genuinely branching autonomous routines, and the last thirty seconds are a climb on a truss leaning at fifteen degrees.',
+    body_md: [
+      'The package contains a design research foundation, a locked design specification, a full game manual that went ' +
       'through a red team pass, per element field CAD with bills of materials in both an official and a low cost plywood ' +
       'version, dimensioned SVG drawings of the field and game pieces, and a 26 tag AprilTag 36h11 layout with mounting ' +
-      'and simulation guidance for PhotonVision and Limelight.</p>' +
-      '<p>The hardest constraint was buildability. A game that cannot be built out of plywood by a team with a circular saw ' +
-      'is not an off-season game, it is a wish. Every field element carries two bills of materials for that reason.</p>',
+      'and simulation guidance for PhotonVision and Limelight.',
+      'The hardest constraint was buildability. A game that cannot be built out of plywood by a team with a circular saw ' +
+      'is not an off-season game, it is a wish. Every field element carries two bills of materials for that reason.',
+    ].join('\n\n'),
     metrics: [
       ['Game manual', '1,375', 'lines'],
       ['Concepts scored', '8', ''],
@@ -101,7 +103,12 @@ const PROJECTS = [
       ['controls', 'significant', 'A 26 tag AprilTag 36h11 field layout with mounting geometry and simulation guidance for both PhotonVision and Limelight backends.'],
       ['fabrication', 'supporting', 'Every field element specified so it can be cut from plywood by a team with a circular saw, not only by a machine shop.'],
     ],
-    links: [['Field renderings', 'https://github.com/XrxcGH', 'cad']],
+    /* No link. There was one labelled "Field renderings" pointing at the bare
+       GitHub profile, which is a placeholder that shipped: a reader clicking it
+       lands on a profile page with no renderings on it. Better absent than
+       promising something it does not deliver. Add the real one from
+       /admin/projects when the CAD is published. */
+    links: [],
   },
   {
     slug: 'frc-robot-template',
@@ -114,16 +121,17 @@ const PROJECTS = [
     featured: 1,
     started_on: '2026-07',
     summary_md:
-      'A batteries-included Java robot template for teams starting a season from scratch. Swerve, PathPlanner and ' +
-      'Choreo autonomous with on-the-fly pathfinding, AdvantageKit logging into AdvantageScope, physics simulation ' +
-      'and unit tests, all driven from one Constants file and coordinated by one Superstructure state machine.',
-    body_md:
-      '<p>Every subsystem, including the swerve drivetrain, sits behind an IO hardware abstraction layer, so a recorded ' +
+      'A batteries-included Java robot template for teams starting a season from scratch. Swerve, PathPlanner, and ' +
+      'Choreo autonomous with on-the-fly pathfinding, AdvantageKit logging into AdvantageScope, and physics ' +
+      'simulation with unit tests, all driven from one Constants file and coordinated by one Superstructure state machine.',
+    body_md: [
+      'Every subsystem, including the swerve drivetrain, sits behind an IO hardware abstraction layer, so a recorded ' +
       'match replays bit for bit. Every mechanism has both a Kraken X60 and a NEO implementation, switchable with one ' +
-      'constant, and the vision backend switches between Limelight and PhotonVision the same way.</p>' +
-      '<p>It ships fill-in-the-blank mechanisms for an elevator, arm, wrist, turret, shooter, intake, indexer, end ' +
-      'effector, climber and CANdle LEDs. It builds, tests and simulates out of the box with placeholders, which is the ' +
-      'part most templates skip and the part a team starting in January actually needs.</p>',
+      'constant, and the vision backend switches between Limelight and PhotonVision the same way.',
+      'It ships fill-in-the-blank mechanisms for an elevator, arm, wrist, turret, shooter, intake, indexer, end ' +
+      'effector, climber, and CANdle LEDs. It builds, tests, and simulates out of the box with placeholders, which is the ' +
+      'part most templates skip and the part a team starting in January actually needs.',
+    ].join('\n\n'),
     metrics: [
       ['Java files', '80', ''],
       ['Mechanisms', '10', ''],
@@ -150,18 +158,19 @@ const PROJECTS = [
       'A curriculum covering the hazards of a 12V system delivering several hundred amps, component identification, ' +
       'the power path from battery to motor and the signal path from driver station to motor controller, crimp and ' +
       'wire routing standards, and first line triage of a robot that will not move.',
-    body_md:
-      '<p>The design decision that matters: this is written for the whole team, not the electrical subteam. On a ' +
+    body_md: [
+      'The design decision that matters: this is written for the whole team, not the electrical subteam. On a ' +
       'competition field the person standing next to a robot that will not move is usually not the person who wired it, ' +
-      'and the failure is usually a connector.</p>' +
-      '<p>Delivered as both slides and a printable PDF, and taught live to Pirate Robolution, FRC 5430.</p>',
+      'and the failure is usually a connector.',
+      'Delivered as both slides and a printable PDF, and taught live to Pirate Robolution, FRC 5430.',
+    ].join('\n\n'),
     metrics: [
       ['Sessions', '2', ''],
       ['System voltage', '12', 'V'],
       ['Peak current', '300+', 'A'],
     ],
     facets: [
-      ['electrical', 'primary', 'Power and signal paths, crimp and connectorisation standards to through hole assembly practice, breaker and fuse sizing, and multimeter triage.'],
+      ['electrical', 'primary', 'Power and signal paths, crimp and connectorisation standards, through hole assembly practice, breaker and fuse sizing, and multimeter triage.'],
       ['teaching', 'primary', 'Two sessions written and taught live, aimed at students with no prior electrical background, then handed over so someone else can run them.'],
       ['documentation', 'significant', 'Published as slides and a printable PDF so a mentor who was not in the room can deliver the same session.'],
     ],
@@ -170,7 +179,7 @@ const PROJECTS = [
   {
     slug: 'wrrf-workspace',
     title: 'WRRF Google Workspace Architecture',
-    subtitle: 'An architecture document, 90 day migration runbook, interactive wireframe and ten tab tracker, all generated from one folder tree definition.',
+    subtitle: 'An architecture document, 90 day migration runbook, interactive wireframe, and ten tab tracker, all generated from one folder tree definition.',
     tier: 'case-study',
     status: 'shipped',
     context: 'WRRF',
@@ -179,12 +188,13 @@ const PROJECTS = [
     started_on: '2026-05',
     summary_md:
       'Domains and licensing, organisational units, groups and email addresses, ten shared drives with full folder trees, ' +
-      'a permissions matrix, naming conventions and a retention schedule, all mapped to the structure of the new website.',
-    body_md:
-      '<p>The interesting part is not the architecture, it is that the wireframe and the workbook are both generated by ' +
+      'a permissions matrix, naming conventions, and a retention schedule, all mapped to the structure of the new website.',
+    body_md: [
+      'The interesting part is not the architecture, it is that the wireframe and the workbook are both generated by ' +
       'Python from a single shared folder tree definition rather than hand maintained. Two artefacts that describe the same ' +
-      'structure will drift the moment a human edits one of them. These cannot.</p>' +
-      '<p>Shipped with a phased 90 day rollout, a security baseline, onboarding and offboarding checklists, and a risk register.</p>',
+      'structure will drift the moment a human edits one of them. These cannot.',
+      'Shipped with a phased 90 day rollout, a security baseline, onboarding and offboarding checklists, and a risk register.',
+    ].join('\n\n'),
     metrics: [
       ['Folders', '182', ''],
       ['Shared drives', '10', ''],
@@ -192,9 +202,9 @@ const PROJECTS = [
       ['Tracker tabs', '10', ''],
     ],
     facets: [
-      ['documentation', 'primary', 'An architecture document, a migration runbook, a permissions matrix and a retention schedule, written so a volunteer can execute the migration without me.'],
+      ['documentation', 'primary', 'An architecture document, a migration runbook, a permissions matrix, and a retention schedule, written so a volunteer can execute the migration without me.'],
       ['software', 'significant', 'Python generation of both the interactive HTML wireframe and the ten tab XLSX tracker from one shared folder tree definition, so the two artefacts cannot drift apart.'],
-      ['business', 'significant', 'Organisational design work: units, groups, licensing and access policy for a regional nonprofit.'],
+      ['business', 'significant', 'Organisational design work: units, groups, licensing, and access policy for a regional nonprofit.'],
     ],
     links: [],
   },
@@ -211,23 +221,24 @@ const PROJECTS = [
     ended_on: '2025-06',
     summary_md:
       'The A robot runs a Phoenix 6 swerve drivetrain on a 30 inch square frame with mixed SDS MK4i and MK4n modules, ' +
-      'Kraken X60 drive and steer motors, CANcoders and a Pigeon 2. On top sits a dual-NEO elevator with closed loop ' +
+      'Kraken X60 drive and steer motors, CANcoders, and a Pigeon 2. On top sits a dual-NEO elevator with closed loop ' +
       'height control in inches and a pivoting arm that finds its angle off an absolute encoder.',
-    body_md:
-      '<p>Three Limelights fuse MegaTag2 pose estimates into odometry. Game piece detection runs off a CANrange rather ' +
-      'than a beam break, which survives a collision better.</p>' +
-      '<p>The B robot shares the drivetrain and adds a KitBot roller and a pivoting ground intake that holds position ' +
-      'under closed loop control. Both codebases are kept current with each year of WPILib and vendor libraries.</p>',
+    body_md: [
+      'Three Limelights fuse MegaTag2 pose estimates into odometry. Game piece detection runs off a CANrange rather ' +
+      'than a beam break, which survives a collision better.',
+      'The B robot shares the drivetrain and adds a KitBot roller and a pivoting ground intake that holds position ' +
+      'under closed loop control. Both codebases are kept current with each year of WPILib and vendor libraries.',
+    ].join('\n\n'),
     metrics: [
       ['Frame', '30', 'in sq'],
       ['Limelights', '3', ''],
-      ['Seasons', '3', ''],
+      ['Codebases', '2', ''],
     ],
     facets: [
       ['controls', 'primary', 'Swerve kinematics, closed loop elevator height control in inches, absolute encoder homing, and MegaTag2 pose estimates fused into odometry from three cameras.'],
       ['software', 'primary', 'Two Java codebases on Phoenix 6 and REVLib, maintained across WPILib versions.'],
       ['mechanical', 'significant', 'Drivetrain and mechanism design on a 30 inch square frame with mixed SDS MK4i and MK4n modules.'],
-      ['electrical', 'significant', 'CAN bus layout, motor controller addressing, sensor wiring and the harness that survived three competition seasons.'],
+      ['electrical', 'significant', 'CAN bus layout, motor controller addressing, sensor wiring, and the harness behind both robots.'],
     ],
     links: [
       ['A robot', 'https://github.com/XrxcGH/9143-2025-A-Updated', 'repo'],
@@ -247,26 +258,27 @@ const PROJECTS = [
     ended_on: '2025-06',
     summary_md:
       'Grew the programme from a school club to a competitive team and then to a recognised co-ed non-athletic varsity ' +
-      'sport, working with administration on recognition, recruiting and parent volunteer coordination. Membership ranged ' +
+      'sport, working with administration on recognition, recruiting, and parent volunteer coordination. Membership ranged ' +
       'from roughly 15 to 50 students across three seasons.',
-    body_md:
-      '<p>Secured a $45,000 annual base budget from the school in the second and third years, an increase driven by ' +
-      'competition results, supplemented by sponsorships, grants, individual donations and a crowdfunding campaign. ' +
-      'Submitted grant applications to the Bayer Fund, REV Robotics, Intuitive, BAE Systems and the YMCA Youth ' +
-      'Empowerment Fund among others.</p>' +
-      '<p>Authored or co-authored the team business plan, sponsorship programme, handbook, EDI plan, branding guide, ' +
+    body_md: [
+      'Secured a $45,000 annual base budget from the school in the second and third years, an increase driven by ' +
+      'competition results, supplemented by sponsorships, grants, individual donations, and a crowdfunding campaign. ' +
+      'Submitted grant applications to the Bayer Fund, REV Robotics, Intuitive, BAE Systems, and the YMCA Youth ' +
+      'Empowerment Fund, among others.',
+      'Authored or co-authored the team business plan, sponsorship programme, handbook, EDI plan, branding guide, ' +
       'accounting and inventory sheets, and the 2023 Entrepreneurship Award submission, which was presented in a judged ' +
-      'interview at CalGames.</p>',
+      'interview at CalGames.',
+    ].join('\n\n'),
     metrics: [
       ['Annual budget', '$45,000', ''],
       ['Members', '15 to 50', ''],
       ['Seasons', '3', ''],
-      ['Team awards', '9', ''],
+      ['Team awards', '10', ''],
     ],
     facets: [
       ['business', 'primary', 'Fundraising, sponsorship tiers, grant writing, budgeting, and the business plan and entrepreneurship submission behind a $45,000 annual programme.'],
-      ['teaching', 'significant', 'Recruiting, onboarding and running build season planning for a team that ranged from 15 to 50 students.'],
-      ['documentation', 'significant', 'The full operating document set: handbook, EDI plan, branding guide, accounting and inventory sheets, agendas and minutes.'],
+      ['teaching', 'significant', 'Recruiting, onboarding, and running build season planning for a team that ranged from 15 to 50 students.'],
+      ['documentation', 'significant', 'The full operating document set: handbook, EDI plan, branding guide, accounting and inventory sheets, agendas, and minutes.'],
     ],
     links: [],
   },
@@ -282,26 +294,114 @@ const PROJECTS = [
     started_on: '2026-08',
     summary_md:
       'Built across eight milestones covering resume ingestion, discovery, matching, a review queue, the writing engine, ' +
-      'form filling, a tracker and packaging, each with its own test suite.',
-    body_md:
-      '<p>The part worth pointing at is the verification gate: it refuses to generate any sentence it cannot trace back to ' +
-      'a stored fact in the profile. An application tool that invents a credential is worse than no tool.</p>' +
-      '<p>The README names what is still untested rather than claiming completeness, because a number written down in a ' +
-      'README rots and a test count does not.</p>',
+      'form filling, a tracker, and packaging, each with its own test suite.',
+    body_md: [
+      'The part worth pointing at is the verification gate: it refuses to generate any sentence it cannot trace back to ' +
+      'a stored fact in the profile. An application tool that invents a credential is worse than no tool.',
+      'The README names what is still untested rather than claiming completeness, because a number written down in a ' +
+      'README rots and a test count does not.',
+    ].join('\n\n'),
     metrics: [
       ['Milestones', '8', 'of 8'],
-      ['Commits', '124', ''],
+      ['Test suites', '8', ''],
     ],
     facets: [
-      ['software', 'primary', 'A TypeScript monorepo on React, Fastify, SQLite with Drizzle, Playwright and Zod, built across eight milestones each with its own tests.'],
+      ['software', 'primary', 'A TypeScript monorepo on React, Fastify, SQLite with Drizzle, Playwright, and Zod, built across eight milestones, each with its own tests.'],
     ],
-    links: [['Repository', 'https://github.com/XrxcGH/internship-applier', 'repo']],
+    links: [['Repository', 'https://github.com/XrxcGH/Internship-Applier', 'repo']],
+  },
+  {
+    slug: 'id-tech-watch',
+    title: 'iD Tech Watch',
+    subtitle: 'A classroom management system for camp labs: see every screen, close what should not be open, and hand the room back at the end of the week.',
+    tier: 'build',
+    status: 'shipped',
+    context: 'iD Tech',
+    role: 'Author',
+    featured: 0,
+    started_on: '2026-06',
+    ended_on: '2026-08',
+    summary_md:
+      'Instructors can see the open windows on every laptop in the room, close unauthorised applications, block games and '
+      + 'gaming sites for a session, pause screens, rename machines to the current week\'s students, and schedule the day. '
+      + 'Administrators run a whole organisation from one panel, arranged by location, building, class, and computer.',
+    body_md: [
+      'Written for the room rather than for the fleet. A camp lab turns over every week: new students, new names on the '
+      + 'machines, a different class in the same seats. The rename and the schedule exist because that turnover is the '
+      + 'actual job, and doing it by hand on twenty laptops is most of a morning.',
+      'Rebuilt in Node after contributing changes to a peer\'s earlier Flask version. Taking somebody else\'s working tool '
+      + 'and starting again is worth justifying: the Flask version was per-machine and the need was per-room, which is a '
+      + 'different program rather than a bigger one.',
+      'The source is public to read and the copyright is retained: there is no licence granted here, and nothing in it is '
+      + 'offered for reuse. It is published because being able to see how a thing works is the point of pointing at it.',
+    ].join('\n\n'),
+    metrics: [
+      ['Ages taught', '10 to 17', ''],
+      /* Three named courses, which the record states. A week count would be an
+         inference from the employment dates and is not written down anywhere. */
+      ['Courses run', '3', ''],
+    ],
+    facets: [
+      ['software', 'primary', 'A Node and WebSockets application: a live view of every client in a room, an administration panel over locations, buildings, classes, and machines, and scheduled actions.'],
+      ['teaching', 'significant', 'Built to run a classroom of ten to seventeen year olds, where the tool has to disappear behind the lesson rather than become one.'],
+    ],
+    links: [['Repository', 'https://github.com/XrxcGH/iD-Tech-Watch', 'repo']],
+  },
+  {
+    slug: 'groundwork-robotics-platform',
+    title: 'Groundwork Robotics Platform',
+    subtitle: 'The public site, staff CMS, and training system for a robotics education nonprofit, in development.',
+    tier: 'case-study',
+    status: 'in-progress',
+    context: 'Groundwork Robotics',
+    role: 'Founder and Author',
+    featured: 0,
+    started_on: '2026-08',
+    summary_md:
+      'Express, EJS, and Node\'s built-in SQLite, with no build step and no native dependency to compile. Forty two public '
+      + 'pages and thirty eight staff pages over thirteen route modules, a training system with a hundred and twenty eight '
+      + 'decks, and a set of checks that fail the build on a broken link, an empty section, or a placeholder that reached a '
+      + 'visitor.',
+    body_md: [
+      'Groundwork Robotics is a California nonprofit, seeking 501(c)(3) status, that trains and supports the students, '
+      + 'mentors, coaches, and volunteers behind competitive robotics. This is the software it runs on, and it is not '
+      + 'finished: it is in development and has not shipped.',
+      'The part worth pointing at is the checks, and there are five that run before any new copy is committed. One crawls '
+      + 'the running site for links that do not resolve, fragments included, sections that render blank, and seeded '
+      + 'placeholder text that reached a visitor. One holds every count a document states about the repository against the '
+      + 'repository, which catches the figure that was correct when it was written and is not now. One compares the '
+      + 'training tree against the decks in both directions: files no deck produces, and files a deck produces that are '
+      + 'absent.',
+      'A document scanner reads .docx directly, because a .docx is a zip holding one XML file and searching a Drive for a '
+      + 'policy name therefore returns nothing whatever the answer. Three duplicate policies were written on that false '
+      + 'negative before the check existed. It reads each title from inside the file rather than from its name, so a copy '
+      + 'under a different name in a different folder is still caught.',
+      'The training system is the largest piece: watch validation, grading, completion, and certificates, with the rules in '
+      + 'one module and unit tests over them rather than spread through the routes.',
+    ].join('\n\n'),
+    metrics: [
+      ['Public pages', '42', ''],
+      ['Staff pages', '38', ''],
+      ['Training decks', '128', ''],
+      ['Test suites', '16', ''],
+    ],
+    facets: [
+      ['software', 'primary', 'Express and EJS on Node\'s built-in SQLite: thirteen route modules, a training system with grading and certificates, a newsletter, and a document library, with no build step and no native dependencies.'],
+      ['documentation', 'significant', 'A governance and training document set generated by a toolchain, with a checker that reads each .docx from inside the zip so a duplicate policy under another file name is still found.'],
+      ['business', 'significant', 'The platform for a nonprofit seeking 501(c)(3) status: the public face, the staff tools, and the training records it has to keep.'],
+      ['teaching', 'supporting', 'A hundred and twenty eight training decks with watch validation and completion rules, built so a volunteer can be trained without a person in the room.'],
+    ],
+    links: [],
   },
   {
     slug: 'pumpkinlib',
     title: 'PumpkinLib',
     subtitle: 'A 22,778 line design specification for an FRC vendor library. No implementation, deliberately and visibly.',
-    tier: 'note',
+    // 'build', not 'note'. A note renders three blocks, which hid the three
+    // metrics that are the entire point of the record (22,778 lines of
+    // specification against zero lines of Java) and the link to the repository
+    // those numbers describe. The tier is a padding guard, not a content gate.
+    tier: 'build',
     status: 'specification',
     context: 'Open source',
     role: 'Author',
@@ -309,21 +409,22 @@ const PROJECTS = [
     started_on: '2026-08',
     summary_md:
       'A Java library that would pre-wire AdvantageKit, PathPlanner, Choreo, PhotonVision, Limelight, Phoenix 6, REVLib, ' +
-      'SysId and WPILib into one coherent seam. Currently design documents only, revised twice: once after an adversarial ' +
+      'SysId, and WPILib into one coherent seam. Currently design documents only, revised twice: once after an adversarial ' +
       'four lens review and again after a six lens independent expert review.',
-    body_md:
-      '<p>The roadmap states a realistic solo delivery estimate rather than an optimistic one, and nothing will be announced ' +
-      'anywhere until v0.1 is tagged. If you found this repository, you found a plan, not a product.</p>' +
-      '<p>Listed here as a specification rather than as software on purpose. The artefact is the decision record: scope and ' +
+    body_md: [
+      'The roadmap states a realistic solo delivery estimate rather than an optimistic one, and nothing will be announced ' +
+      'anywhere until v0.1 is tagged. If you found this repository, you found a plan, not a product.',
+      'Listed here as a specification rather than as software on purpose. The artefact is the decision record: scope and ' +
       'non-goals, alternatives considered and rejected, and open questions. Those are the sections someone who did not ' +
-      'think the problem through cannot fabricate.</p>',
+      'think the problem through cannot fabricate.',
+    ].join('\n\n'),
     metrics: [
       ['Specification', '22,778', 'lines'],
       ['Review passes', '2', ''],
       ['Java written', '0', 'lines'],
     ],
     facets: [
-      ['software', 'primary', 'A design specification covering architecture, decisions and roadmap for a library that pre-wires the modern FRC toolchain behind one seam.'],
+      ['software', 'primary', 'A design specification covering architecture, decisions, and roadmap for a library that pre-wires the modern FRC toolchain behind one seam.'],
       ['documentation', 'significant', 'Structured as an engineering design review package rather than a README: scope, non-goals, alternatives rejected, and open questions.'],
     ],
     links: [['Repository', 'https://github.com/XrxcGH/PumpkinLib', 'repo']],
@@ -333,9 +434,20 @@ const PROJECTS = [
 const pKeys = generateNKeysBetween(null, null, PROJECTS.length);
 
 const seedProjects = db.transaction(() => {
+  /*
+   * Every seeded project is removed BEFORE any of them is inserted.
+   *
+   * Deleting each one immediately before its own insert looks equivalent and is
+   * not: sort_key is unique, and pKeys is a fresh set generated for the current
+   * length of PROJECTS. Adding a project changes every key in that set, so the
+   * first insert collides with a key still held by a project further down the
+   * array that has not been deleted yet. The seed worked for as long as the
+   * count never changed, and failed with UNIQUE constraint failed the first
+   * time one was added.
+   */
+  for (const p of PROJECTS) db.run('DELETE FROM project WHERE slug = ?', p.slug);
+
   PROJECTS.forEach((p, i) => {
-    const existing = db.get('SELECT id FROM project WHERE slug = ?', p.slug);
-    if (existing) { db.run('DELETE FROM project WHERE id = ?', existing.id); }
 
     const res = db.run(
       `INSERT INTO project
@@ -344,7 +456,7 @@ const seedProjects = db.transaction(() => {
           started_on, ended_on, published, featured, sort_key, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`,
       p.slug, p.title, p.subtitle, p.tier, p.status, p.context, p.role,
-      p.summary_md, `<p>${p.summary_md}</p>`, p.body_md, p.body_md,
+      p.summary_md, markup.paragraphs(p.summary_md), p.body_md, markup.paragraphs(p.body_md),
       p.started_on || null, p.ended_on || null, p.featured || 0, pKeys[i], now, now
     );
     const id = Number(res.lastInsertRowid);
@@ -383,15 +495,48 @@ const seedProjects = db.transaction(() => {
 seedProjects();
 console.log(`projects: ${PROJECTS.length}`);
 
+/*
+ * The seed writes published = 1 directly, which means it does not pass through
+ * the evidence gate the admin enforces on every save. That is deliberate: a
+ * seed that refused to publish would leave the site empty on a fresh install.
+ * What it must not do is stay quiet about it, because the first time the owner
+ * opens one of these records and presses Save the gate demotes it to a draft
+ * with no warning that anything was ever different.
+ */
+{
+  const mediaGate = require('../src/media');
+  const blocked = db.all('SELECT id, slug FROM project WHERE published = 1')
+    .map((row) => ({ slug: row.slug, blockers: mediaGate.publishBlockers(row.id) }))
+    .filter((r) => r.blockers.length);
+
+  if (blocked.length) {
+    console.log(`\nEvidence gate: ${blocked.length} published project${blocked.length === 1 ? '' : 's'} would be`);
+    console.log('demoted to a draft the next time it is saved from the admin, because it');
+    console.log('leads on physical work and has no photography of your own attached yet:');
+    for (const b of blocked) console.log(`  ${b.slug}`);
+    console.log('Upload evidence at /admin/media, or set the status to specification.');
+  }
+}
+
 /* ------------------------------------------------------------------- now */
+
+/*
+ * One string, rendered. This used to pass the markdown and a hand written copy
+ * of the HTML as two separate literals, and they drifted: the HTML carried a
+ * sentence about this term's classes that the markdown did not, so the page
+ * showed it and the admin editor did not, and saving from the admin would have
+ * silently deleted it. See DESIGN.md, R11.
+ */
+const NOW_MD =
+  'Interning at the Western Region Robotics Forum, founding Groundwork Robotics, '
+  + 'and mentoring two FIRST teams. At UCLA this term: MECH&AE 101 Statics and '
+  + 'Strength of Materials, Physics 1B, the Physics 4AL mechanics laboratory, and '
+  + 'Stats 10.';
 
 db.run(
   `INSERT INTO now_page (id, body_md, body_html, updated_at) VALUES (1, ?, ?, ?)
    ON CONFLICT(id) DO UPDATE SET body_md = excluded.body_md, body_html = excluded.body_html, updated_at = excluded.updated_at`,
-  'Interning at the Western Region Robotics Forum, founding Groundwork Robotics, and mentoring three FIRST teams.',
-  '<p>Interning at the Western Region Robotics Forum, founding Groundwork Robotics, and mentoring three FIRST teams. ' +
-  'At UCLA this term: MAE M20, MATH 32B and MSE 104.</p>',
-  now
+  NOW_MD, markup.richText(NOW_MD), now
 );
 
 /* --------------------------------------------------------------- indexes */

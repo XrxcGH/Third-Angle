@@ -74,7 +74,7 @@ for (const it of items) {
 if (problems.length) {
   console.error('\nFAIL:');
   for (const p of problems) console.error(`  ${p}`);
-  console.error('\nRe-read each vendor page, update amount_usd, evidence and verified_on.');
+  console.error('\nRe-read each vendor page, update amount_usd, evidence, and verified_on.');
   process.exit(1);
 }
 

@@ -4,7 +4,7 @@
  * Document library.
  *
  * This is the most under-used asset on the site. Very few engineering students
- * have authored a governance package, a 1,375 line game manual or a migration
+ * have authored a governance package, a 1,375 line game manual, or a migration
  * runbook, and a list of filenames communicates none of that. What turns a file
  * dump into a library is per-page text in the search index: a query for "youth
  * protection" or "retention schedule" should return the document AND the page,

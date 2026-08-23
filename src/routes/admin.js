@@ -18,6 +18,12 @@ const multer = require('multer');
 const media = require('../media');
 const documents = require('../documents');
 const contact = require('../contact');
+const mailer = require('../mailer');
+const content = require('../content');
+const markup = require('../markup');
+const settings = require('../settings');
+const github = require('../github');
+const collage = require('../collage');
 
 /* In memory, because every upload is validated and re-encoded before it ever
    touches the disk. multer 2.2.0 or newer: earlier versions carry CVE-2026-2359
@@ -71,7 +77,7 @@ function requireCsrf(req, res, next) {
   next();
 }
 
-const clientIp = (req) => (req.ip || req.socket.remoteAddress || 'unknown').toString();
+const clientIp = require('../middleware').clientIp;
 
 function view(name, extra = {}) {
   return { layout: 'layout-admin', ...extra, view: name };
@@ -135,24 +141,33 @@ router.post('/login', form, loadSession, (req, res) => {
 
   if (user.totp_secret && user.totp_confirmed) {
     if (!totp) return fail('Enter the six digit code from your authenticator.', true);
-    if (!auth.verifyTotp(user.totp_secret, totp)) {
+    if (!auth.verifyTotpOnce(user, totp)) {
       auth.recordAttempt(email, ip, false);
       return fail('That code is not right. Codes expire every thirty seconds.', true);
     }
   }
 
   auth.recordAttempt(email, ip, true);
-  auth.clearAttempts(email, ip);
   auth.recordLogin(user.id);
   auth.purgeExpiredSessions();
+  auth.pruneAttempts();
 
   const session = auth.createSession(user.id, { userAgent: req.get('user-agent'), ip });
+  /*
+   * A sign in is an audited event, and on a site with one operator it is the
+   * most important one there is: every content change was already recorded and
+   * the thing that would actually tell somebody they had been broken into was
+   * not. A session row is genuinely inserted here, so it is an insert.
+   */
+  repo.logChange(user.email, 'session', user.id, 'insert',
+    { event: 'signed in', ip, agent: String(req.get('user-agent') || '').slice(0, 120) });
   res.setHeader('Set-Cookie',
     `${COOKIE}=${session.id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${14 * 86400}${PROD ? '; Secure' : ''}`);
   res.redirect(303, nextUrl);
 });
 
 router.post('/logout', form, loadSession, requireCsrf, (req, res) => {
+  repo.logChange(req.session.email, 'session', req.session.user_id, 'delete', { event: 'signed out' });
   auth.destroySession(req.session.id);
   res.setHeader('Set-Cookie', `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${PROD ? '; Secure' : ''}`);
   res.redirect(303, '/');
@@ -160,6 +175,183 @@ router.post('/logout', form, loadSession, requireCsrf, (req, res) => {
 
 /* Everything below requires a session. */
 router.use(loadSession, requireAuth);
+
+/*
+ * A temporary password is a hand-over, not a chosen credential, so it is
+ * flagged AND it is a lock.
+ *
+ * This used to be a banner only, on the argument that somebody handed a working
+ * login should be able to walk the admin surface before choosing a permanent
+ * password. That argument does not survive the site being public: a hand-over
+ * credential is by definition one that has been transmitted somewhere, it is
+ * exempt from the twelve character floor that a chosen password has to clear
+ * (see scripts/create-admin.js), and a banner is dismissed by scrolling. Until
+ * it is replaced, the only pages that answer are the account page that replaces
+ * it and the way out.
+ *
+ * The allowlist is by path prefix rather than by route so that a route added
+ * later is locked by default rather than accidentally exempt.
+ */
+const OPEN_WHILE_LOCKED = ['/account', '/logout'];
+
+router.use((req, res, next) => {
+  const locked = Boolean(req.session.must_change_password);
+  res.locals.mustChangePassword = locked;
+  if (!locked) return next();
+  if (OPEN_WHILE_LOCKED.some((p) => req.path === p || req.path.startsWith(p + '/'))) return next();
+  return res.redirect(303, '/admin/account?must=password');
+});
+
+/* ---------------------------------------------------------------- account */
+
+/* Enough to recognise a device you do not own, not an audit log. Sessions last
+   fourteen days, so an unbounded list turns into hundreds of rows of the same
+   browser and stops being readable, which is the opposite of the point. */
+const SESSIONS_SHOWN = 12;
+
+function accountView(req, extra = {}) {
+  const user = auth.getUser(req.session.user_id);
+  const all_ = auth.listSessions(user.id).map((s) => ({ ...s, current: s.id === req.session.id }));
+  return view('account', {
+    title: 'Account',
+    user,
+    sessions: all_.slice(0, SESSIONS_SHOWN),
+    sessionCount: all_.length,
+    sessionsHidden: Math.max(0, all_.length - SESSIONS_SHOWN),
+    minPassword: auth.MIN_PASSWORD,
+    error: null,
+    notice: null,
+    /* Present only immediately after enrolling, and never stored in a cookie
+       or a query string: a TOTP secret in a URL ends up in the browser
+       history and in any proxy log between here and the screen. */
+    enrol: null,
+    /* Successes and failures together: a refused attempt from an address the
+       operator does not recognise is the thing this page exists to show. */
+    attempts: auth.signInActivity(20),
+    failedCount: auth.signInActivity(100).filter((a) => !a.ok).length,
+    ...extra,
+  });
+}
+
+router.get('/account', (req, res) => {
+  const flash = {
+    saved: 'Account details updated.',
+    password: 'Password changed. Every other session was signed out.',
+    totp: 'Two factor authentication is on. It is required at the next sign in.',
+    'totp-off': 'Two factor authentication is off.',
+    sessions: 'Other sessions signed out.',
+  }[String(req.query.done || '')] || null;
+  res.render('admin/account', accountView(req, { notice: flash }));
+});
+
+/* Name and address. Deliberately separate from the password form: one of them
+   is routine and the other revokes access, and a single Save button for both
+   makes the destructive one accidental. */
+router.post('/account/profile', form, requireCsrf, (req, res) => {
+  const name = String(req.body.name || '').trim();
+  const email = String(req.body.email || '').trim().toLowerCase();
+
+  const problem =
+    (!name && 'A name is required.') ||
+    auth.emailProblem(email) ||
+    null;
+  if (problem) {
+    return res.status(400).render('admin/account', accountView(req, { error: problem }));
+  }
+
+  try {
+    auth.updateProfile(req.session.user_id, { name, email });
+  } catch (err) {
+    return res.status(400).render('admin/account', accountView(req, {
+      error: /UNIQUE/i.test(err.message)
+        ? 'Another account already uses that address.'
+        : err.message,
+    }));
+  }
+  repo.logChange(req.session.email, 'user', req.session.user_id, 'update', { name, email });
+  res.redirect(303, '/admin/account?done=saved');
+});
+
+router.post('/account/password', form, requireCsrf, (req, res) => {
+  const user = auth.getUser(req.session.user_id);
+  const current = String(req.body.current_password || '');
+  const next_ = String(req.body.new_password || '');
+  const confirm = String(req.body.confirm_password || '');
+
+  /*
+   * The current password is required even though the session is already
+   * authenticated. A session cookie is what an unattended laptop leaks; the
+   * password is what stops that turning into a permanent takeover.
+   */
+  const problem =
+    (!auth.verifyPassword(current, user.password_hash) && 'That is not the current password.') ||
+    auth.passwordProblem(next_) ||
+    (next_ !== confirm && 'The two new passwords do not match.') ||
+    (next_ === current && 'That is already the current password.') ||
+    null;
+
+  if (problem) {
+    return res.status(400).render('admin/account', accountView(req, { error: problem }));
+  }
+
+  auth.setPassword(user.id, next_);
+  auth.destroyOtherSessions(user.id, req.session.id);
+  repo.logChange(req.session.email, 'user', user.id, 'update', { password_changed: true });
+  res.redirect(303, '/admin/account?done=password');
+});
+
+/*
+ * TOTP enrolment is two steps on purpose. Generating a secret and marking it
+ * required in one action locks the operator out whenever the code was never
+ * actually added to an authenticator, and the recovery for that is shell
+ * access to the box.
+ */
+router.post('/account/totp/start', form, requireCsrf, (req, res) => {
+  const user = auth.getUser(req.session.user_id);
+  const secret = auth.generateTotpSecret();
+  auth.setTotpSecret(user.id, secret, 0);
+  res.render('admin/account', accountView(req, {
+    enrol: { secret, uri: auth.totpUri(secret, user.email) },
+    notice: 'Add this to your authenticator, then confirm the first code below. It is not required until you do.',
+  }));
+});
+
+router.post('/account/totp/confirm', form, requireCsrf, (req, res) => {
+  const user = auth.getUser(req.session.user_id);
+  if (!user.totp_secret) {
+    return res.status(400).render('admin/account', accountView(req, {
+      error: 'Nothing to confirm. Start the enrolment first.',
+    }));
+  }
+  if (!auth.verifyTotpOnce(user, req.body.totp)) {
+    return res.status(400).render('admin/account', accountView(req, {
+      enrol: { secret: user.totp_secret, uri: auth.totpUri(user.totp_secret, user.email) },
+      error: 'That code did not verify. Codes expire every thirty seconds, so try the next one.',
+    }));
+  }
+  auth.setTotpSecret(user.id, user.totp_secret, 1);
+  repo.logChange(req.session.email, 'user', user.id, 'update', { totp: 'confirmed' });
+  res.redirect(303, '/admin/account?done=totp');
+});
+
+/* Turning it off asks for the password, because a borrowed session should not
+   be able to remove the second factor that the session itself bypassed. */
+router.post('/account/totp/off', form, requireCsrf, (req, res) => {
+  const user = auth.getUser(req.session.user_id);
+  if (!auth.verifyPassword(String(req.body.current_password || ''), user.password_hash)) {
+    return res.status(400).render('admin/account', accountView(req, {
+      error: 'Enter the current password to turn two factor authentication off.',
+    }));
+  }
+  auth.setTotpSecret(user.id, null, 0);
+  repo.logChange(req.session.email, 'user', user.id, 'update', { totp: 'removed' });
+  res.redirect(303, '/admin/account?done=totp-off');
+});
+
+router.post('/account/sessions/revoke', form, requireCsrf, (req, res) => {
+  auth.destroyOtherSessions(req.session.user_id, req.session.id);
+  res.redirect(303, '/admin/account?done=sessions');
+});
 
 /* -------------------------------------------------------------- dashboard */
 
@@ -174,6 +366,10 @@ router.get('/', (req, res) => {
     notes: get('SELECT COUNT(*) AS n FROM note').n,
     errors: get('SELECT COUNT(*) AS n FROM app_error WHERE seen = 0').n,
     messages: contact.unreadCount(),
+    undelivered: contact.undeliveredCount(),
+    photos: repo.countOnWall(),
+    courses: get('SELECT COUNT(*) AS n FROM course').n,
+    content: content.editedCount(),
   };
   res.render('admin/dashboard', view('dashboard', {
     title: 'Admin',
@@ -220,6 +416,10 @@ router.get('/projects/:id/edit', (req, res, next) => {
   }));
 });
 
+/* Body text is escaped and paragraphed, never parsed as markup. One
+   implementation, in src/markup.js, shared with the seed. */
+const renderInline = markup.paragraphs;
+
 const slugify = (s) =>
   String(s).toLowerCase().trim()
     .replace(/[^\p{L}\p{N}]+/gu, '-')
@@ -245,8 +445,8 @@ const saveProject = transaction((body, actor) => {
       ? body.status : 'in-progress',
     context: String(body.context || '').trim() || null,
     role: String(body.role || '').trim() || null,
-    summary_md: String(body.summary_md || ''),
-    body_md: String(body.body_md || ''),
+    summary_md: markup.normaliseNewlines(body.summary_md),
+    body_md: markup.normaliseNewlines(body.body_md),
     started_on: String(body.started_on || '').trim() || null,
     ended_on: String(body.ended_on || '').trim() || null,
     published: body.published ? 1 : 0,
@@ -302,19 +502,6 @@ const saveProject = transaction((body, actor) => {
   return projectId;
 });
 
-/* Markdown is not wired up yet, so body text is escaped and paragraphed.
-   This is deliberately conservative: it can never emit markup. */
-function renderInline(text) {
-  const esc = (s) => String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  return String(text || '')
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`)
-    .join('\n');
-}
 
 router.post('/projects/save', form, requireCsrf, (req, res) => {
   if (!String(req.body.title || '').trim()) {
@@ -497,6 +684,16 @@ router.post('/media/:id/delete', form, requireCsrf, (req, res) => {
   res.redirect(303, '/admin/media');
 });
 
+/* On or off the personal wall. The wall is what publishes a photograph, and
+   it is one wall rather than a set of albums, so this is a boolean. */
+router.post('/media/:id/wall', form, requireCsrf, (req, res) => {
+  const id = Number(req.params.id);
+  const on = req.body.on === '1';
+  repo.setOnWall(id, on);
+  repo.logChange(req.session.email, 'media', id, 'update', { wall: on });
+  res.redirect(303, req.body.back === 'photos' ? '/admin/photos?saved=1' : '/admin/media');
+});
+
 router.post('/media/:id/attach', form, requireCsrf, (req, res) => {
   const mediaId = Number(req.params.id);
   const projectId = Number(req.body.project_id);
@@ -511,10 +708,29 @@ router.post('/media/:id/attach', form, requireCsrf, (req, res) => {
 
 /* -------------------------------------------------------------- documents */
 
+/*
+ * Which document is the resume and which is the CV.
+ *
+ * A role rather than a filename convention: "resume-final-v3.pdf" is not a
+ * contract, and the public page has to know which two documents to put at the
+ * top without guessing from a title.
+ */
+router.post('/documents/:id/role', form, requireCsrf, (req, res) => {
+  const role = ['resume', 'cv', 'other'].includes(req.body.doc_role) ? req.body.doc_role : 'other';
+  // At most one of each. Assigning a role takes it off whatever held it before,
+  // because two documents both claiming to be the resume is a page that has to
+  // pick one arbitrarily.
+  if (role !== 'other') run("UPDATE document SET doc_role = 'other' WHERE doc_role = ?", role);
+  run('UPDATE document SET doc_role = ? WHERE id = ?', role, Number(req.params.id));
+  repo.logChange(req.session.email, 'document', Number(req.params.id), 'update', { doc_role: role });
+  res.redirect(303, '/admin/documents');
+});
+
 router.get('/documents', (req, res) => {
   res.render('admin/documents', view('documents', {
     title: 'Documents',
     docs: documents.listDocuments({ includePrivate: true }),
+    roles: ['resume', 'cv', 'other'],
     projects: repo.listProjects({ includeUnpublished: true }),
     error: typeof req.query.error === 'string' ? req.query.error : null,
     uploaded: req.query.uploaded ? Number(req.query.uploaded) : 0,
@@ -599,13 +815,241 @@ router.post('/facets/save', form, requireCsrf, (req, res) => {
   }
 });
 
+/* --------------------------------------------------------------- settings */
+
+router.get('/settings', (req, res) => {
+  res.render('admin/settings', view('settings', {
+    title: 'Settings',
+    definitions: settings.DEFINITIONS,
+    values: settings.allSettings(),
+    mail: {
+      configured: mailer.isConfigured(),
+      host: mailer.config().host,
+      port: mailer.config().port,
+      from: mailer.config().from,
+      recipient: contact.recipient(),
+    },
+    gh: github.snapshot({ live: false }),
+    saved: Boolean(req.query.saved),
+    refreshed: req.query.refreshed || null,
+  }));
+});
+
+router.post('/settings', form, requireCsrf, (req, res) => {
+  settings.saveFromForm(req.body || {});
+  repo.logChange(req.session.email, 'setting', 0, 'update', settings.allSettings());
+  res.redirect(303, '/admin/settings?saved=1');
+});
+
+/* Pull GitHub now rather than waiting for the hourly refresh. Useful straight
+   after a repository is renamed, and the only way to see an API error. */
+router.post('/settings/github/refresh', form, requireCsrf, async (req, res) => {
+  const result = await github.refresh();
+  res.redirect(303, `/admin/settings?refreshed=${result.ok ? 'ok' : 'failed'}`);
+});
+
+/* --------------------------------------------------------------- education */
+
+router.get('/education', (req, res) => {
+  const schools = repo.listSchools().map((sch) => ({
+    ...sch,
+    courses: repo.listCourses(sch.slug),
+    counts: repo.courseCounts(sch.slug),
+  }));
+  res.render('admin/education', view('education', {
+    title: 'Education',
+    schools,
+    activities: repo.listActivities(),
+    statuses: repo.COURSE_STATUS,
+    kinds: repo.ACTIVITY_KINDS,
+    schoolKinds: repo.SCHOOL_KINDS,
+    editCourse: req.query.course
+      ? get('SELECT * FROM course WHERE id = ?', Number(req.query.course))
+      : null,
+    editActivity: req.query.activity
+      ? get('SELECT * FROM activity WHERE id = ?', Number(req.query.activity))
+      : null,
+    saved: Boolean(req.query.saved),
+    error: null,
+  }));
+});
+
+router.post('/education/school', form, requireCsrf, (req, res) => {
+  const slug = slugify(req.body.slug || req.body.name);
+  if (!slug || !String(req.body.name || '').trim()) return res.redirect(303, '/admin/education');
+  repo.saveSchool(slug, req.body);
+  repo.logChange(req.session.email, 'school', 0, 'update', { slug });
+  res.redirect(303, '/admin/education?saved=1');
+});
+
+router.post('/education/school/:slug/delete', form, requireCsrf, (req, res) => {
+  repo.deleteSchool(req.params.slug);
+  repo.logChange(req.session.email, 'school', 0, 'delete', { slug: req.params.slug });
+  res.redirect(303, '/admin/education');
+});
+
+router.post('/education/course', form, requireCsrf, (req, res) => {
+  if (!String(req.body.title || '').trim() || !req.body.school_slug) {
+    return res.redirect(303, '/admin/education');
+  }
+  try {
+    repo.saveCourse(req.body);
+  } catch (err) {
+    // The unique index is what stops the same class being listed twice, and a
+    // 500 on a duplicate would look like a broken page rather than a rejected
+    // entry.
+    const schools = repo.listSchools().map((sch) => ({
+      ...sch, courses: repo.listCourses(sch.slug), counts: repo.courseCounts(sch.slug),
+    }));
+    return res.status(400).render('admin/education', view('education', {
+      title: 'Education',
+      schools,
+      activities: repo.listActivities(),
+      statuses: repo.COURSE_STATUS,
+      kinds: repo.ACTIVITY_KINDS,
+      schoolKinds: repo.SCHOOL_KINDS,
+      editCourse: null,
+      editActivity: null,
+      saved: false,
+      error: /UNIQUE/i.test(err.message)
+        ? 'That class is already listed for this school in that term.'
+        : err.message,
+    }));
+  }
+  res.redirect(303, '/admin/education?saved=1');
+});
+
+router.post('/education/course/:id/delete', form, requireCsrf, (req, res) => {
+  repo.deleteCourse(req.params.id);
+  res.redirect(303, '/admin/education');
+});
+
+router.post('/education/activity', form, requireCsrf, (req, res) => {
+  if (!String(req.body.title || '').trim()) return res.redirect(303, '/admin/education');
+  repo.saveActivity({ ...req.body, school_slug: req.body.school_slug || null });
+  res.redirect(303, '/admin/education?saved=1');
+});
+
+router.post('/education/activity/:id/delete', form, requireCsrf, (req, res) => {
+  repo.deleteActivity(req.params.id);
+  res.redirect(303, '/admin/education');
+});
+
+/* ---------------------------------------------------------------- content */
+
+/*
+ * One screen for every fixed string on the public site.
+ *
+ * A page at a time, because 150 fields in one form is not an editing surface,
+ * and because the unit somebody thinks in is "the education page", not "the
+ * content model". The dropdown is a GET form with a real submit button rather
+ * than an onchange handler: there is no JavaScript on this site, in the admin
+ * either.
+ */
+router.get('/content', (req, res) => {
+  const wanted = String(req.query.page || '');
+  const page = content.PAGES.find((p) => p.slug === wanted) || content.PAGES[0];
+  res.render('admin/content', view('content', {
+    title: 'Content',
+    pages: content.PAGES,
+    page,
+    slots: content.forPage(page.slug),
+    /* Only images, and only ones with dimensions: an image slot that pointed at
+       a PDF would render a broken tag on every page of the site. */
+    images: all(
+      `SELECT id, storage_key, alt, width, height FROM media
+        WHERE mime LIKE 'image/%' ORDER BY created_at DESC LIMIT 200`
+    ),
+    edited: content.editedCount(),
+    saved: Boolean(req.query.saved),
+  }));
+});
+
+router.post('/content', form, requireCsrf, (req, res) => {
+  const page = content.PAGES.find((p) => p.slug === String(req.body.page || ''));
+  if (!page) return res.redirect(303, '/admin/content');
+
+  /*
+   * Iterate the registry, not the body. A checkbox that is off sends nothing at
+   * all, so a loop over what arrived cannot tell "unchecked" from "not on this
+   * form", and every flag would be stuck on forever.
+   */
+  let changed = 0;
+  for (const slot of content.forPage(page.slug)) {
+    if (req.body[`r:${slot.key}`]) {
+      if (slot.edited) { content.reset(slot.key); changed += 1; }
+      continue;
+    }
+    const raw = slot.kind === 'flag'
+      ? Boolean(req.body[`c:${slot.key}`])
+      : String(req.body[`c:${slot.key}`] ?? '');
+    const now = slot.kind === 'flag' ? (slot.value === '1') : slot.value;
+    if (raw !== now) { content.set(slot.key, raw); changed += 1; }
+  }
+
+  if (changed) repo.logChange(req.session.email, 'content', 0, 'update', { page: page.slug, changed });
+  res.redirect(303, `/admin/content?page=${page.slug}&saved=1`);
+});
+
+/* ----------------------------------------------------------------- photos */
+
+/*
+ * The personal page is one wall, not a set of albums, so this screen asks one
+ * question per photograph: on the wall or off it. There is no ordering control
+ * and no folder to pick, because the wall orders itself by capture date and
+ * packs itself from the shape of each photograph.
+ */
+router.get('/photos', (req, res) => {
+  res.render('admin/photos', view('photos', {
+    title: 'Photos',
+    onWall: repo.personalPhotos(),
+    /* In the library and not on the wall, so they appear nowhere on the
+       personal page. This list exists because that is the one state nothing
+       else on the site would show you. */
+    off: repo.offWallPhotos(),
+    saved: Boolean(req.query.saved),
+  }));
+});
+
+/* Put several on the wall at once, from the off-wall list. */
+router.post('/photos/add', form, requireCsrf, (req, res) => {
+  const ids = [].concat(req.body.media_id || []).map(Number).filter(Boolean);
+  for (const id of ids) repo.setOnWall(id, true);
+  if (ids.length) {
+    repo.logChange(req.session.email, 'media', ids[0], 'update', { wall: true, count: ids.length });
+  }
+  res.redirect(303, '/admin/photos?saved=1');
+});
+
+/* The albums screen is gone. Keep the URL working rather than 404 a bookmark. */
+router.get('/albums', (req, res) => res.redirect(301, '/admin/photos'));
+
 /* --------------------------------------------------------------- messages */
 
 router.get('/messages', (req, res) => {
   res.render('admin/messages', view('messages', {
     title: 'Messages',
     messages: contact.listMessages(),
+    mailConfigured: mailer.isConfigured(),
+    forwarding: settings.getSetting('contact_forward'),
+    recipient: contact.recipient(),
+    undelivered: contact.undeliveredCount(),
+    notice: req.query.sent === '1' ? 'Message forwarded.'
+      : (req.query.sent === '0' ? 'That did not send. The reason is on the row.' : null),
   }));
+});
+
+/*
+ * Retry one forward.
+ *
+ * The message is already stored, so this is only ever about the notification.
+ * Retry is a button rather than a background queue: the operator is the only
+ * person who needs it, and a retry loop on a single writer SQLite box is
+ * machinery this does not need.
+ */
+router.post('/messages/:id/forward', form, requireCsrf, async (req, res) => {
+  const result = await contact.forward(Number(req.params.id));
+  res.redirect(303, `/admin/messages?sent=${result.ok ? '1' : '0'}`);
 });
 
 router.post('/messages/:id/read', form, requireCsrf, (req, res) => {
@@ -634,14 +1078,20 @@ router.get('/pages/:slug', (req, res, next) => {
 
 router.post('/pages/:slug', form, requireCsrf, (req, res, next) => {
   if (!repo.PAGE_SLUGS.includes(req.params.slug)) return next();
-  const md = String(req.body.body_md || '');
+  const md = markup.normaliseNewlines(req.body.body_md);
   repo.savePage(req.params.slug, {
     title: String(req.body.title || '').trim() || req.params.slug,
     subtitle: String(req.body.subtitle || '').trim(),
     body_md: md,
-    // Same conservative renderer the seed uses, so what the admin sees and
-    // what the seed produces cannot diverge.
-    body_html: require('../../scripts/seed-pages.js').render(md),
+    // Same renderer the seed uses, so what the admin saves and what the seed
+    // produces cannot diverge.
+    //
+    // This used to require scripts/seed-pages.js. Requiring a script from a
+    // route runs the script: every page save re-ran assertEnvironment,
+    // migrate and the seeding loop, and would recreate a page the operator had
+    // deliberately deleted. The renderer now lives in src/markup.js and the
+    // script is a script again.
+    body_html: markup.richText(md),
     published: req.body.published ? 1 : 0,
   });
   repo.logChange(req.session.email, 'page', 0, 'update', { slug: req.params.slug });
@@ -651,32 +1101,68 @@ router.post('/pages/:slug', form, requireCsrf, (req, res, next) => {
 /* ------------------------------------------------------------------ notes */
 
 router.get('/notes', (req, res) => {
+  const editing = req.query.edit
+    ? get('SELECT * FROM note WHERE id = ?', Number(req.query.edit))
+    : null;
   res.render('admin/notes', view('notes', {
     title: 'Build log',
-    notes: all('SELECT id, slug, title, body_md, created_at FROM note ORDER BY created_at DESC LIMIT 100'),
+    notes: all(
+      `SELECT id, slug, title, body_md, published, created_at, updated_at
+         FROM note ORDER BY created_at DESC LIMIT 100`
+    ),
+    editing,
     projects: repo.listProjects({ includeUnpublished: true }),
   }));
 });
 
+/*
+ * One route for both. An entry that can be written and never corrected is an
+ * entry nobody writes in the first place, because a typo is permanent.
+ *
+ * The slug is derived once, on insert, and never again: it is the entry's
+ * address, and rewriting it because a title was corrected breaks every link
+ * anybody has to it.
+ */
 router.post('/notes/save', form, requireCsrf, (req, res) => {
-  const body = String(req.body.body_md || '').trim();
+  const body = markup.normaliseNewlines(req.body.body_md).trim();
   if (!body) return res.redirect(303, '/admin/notes');
   const now = nowIso();
-  const slug = `${now.slice(0, 10)}-${slugify(req.body.title || body.slice(0, 40)) || 'note'}`;
-  run(
-    `INSERT INTO note (slug, title, body_md, body_html, project_id, published, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
-    slug, String(req.body.title || '').trim() || null, body, renderInline(body),
-    req.body.project_id ? Number(req.body.project_id) : null, now, now
-  );
-  repo.logChange(req.session.email, 'note', 0, 'insert', { slug });
+  const id = Number(req.body.id) || 0;
+  const title = String(req.body.title || '').trim() || null;
+  const projectId = req.body.project_id ? Number(req.body.project_id) : null;
+  const published = req.body.published ? 1 : 0;
+
+  if (id) {
+    run(
+      `UPDATE note SET title = ?, body_md = ?, body_html = ?, project_id = ?,
+              published = ?, updated_at = ?
+        WHERE id = ?`,
+      title, body, renderInline(body), projectId, published, now, id
+    );
+    repo.logChange(req.session.email, 'note', id, 'update', { title });
+  } else {
+    const slug = `${now.slice(0, 10)}-${slugify(req.body.title || body.slice(0, 40)) || 'note'}`;
+    run(
+      `INSERT INTO note (slug, title, body_md, body_html, project_id, published, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      slug, title, body, renderInline(body), projectId, published, now, now
+    );
+    repo.logChange(req.session.email, 'note', 0, 'insert', { slug });
+  }
+  res.redirect(303, '/admin/notes');
+});
+
+router.post('/notes/:id/delete', form, requireCsrf, (req, res) => {
+  const id = Number(req.params.id);
+  run('DELETE FROM note WHERE id = ?', id);
+  repo.logChange(req.session.email, 'note', id, 'delete', null);
   res.redirect(303, '/admin/notes');
 });
 
 /* -------------------------------------------------------------------- now */
 
 router.post('/now', form, requireCsrf, (req, res) => {
-  const md = String(req.body.body_md || '').trim();
+  const md = markup.normaliseNewlines(req.body.body_md).trim();
   run(
     `INSERT INTO now_page (id, body_md, body_html, updated_at) VALUES (1, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET body_md = excluded.body_md,

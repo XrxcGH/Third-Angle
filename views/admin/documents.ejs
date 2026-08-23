@@ -36,7 +36,7 @@
 
   <div class="row2">
     <div class="field">
-      <label for="project_id">Belongs to project</label>
+      <label for="project_id">Belongs to Project</label>
       <select id="project_id" name="project_id">
         <option value="">None</option>
         <% for (const p of projects) { %><option value="<%= p.id %>"><%= p.title %></option><% } %>
@@ -45,32 +45,46 @@
     <div class="field">
       <label for="visibility">Visibility</label>
       <select id="visibility" name="visibility">
-        <option value="public">Public</option>
-        <option value="private">Private, admin only</option>
+        <option value="public"><%= label('visibility', 'public') %></option>
+        <option value="private"><%= label('visibility', 'private') %></option>
       </select>
       <span class="hint">Private documents are excluded from search and the public list.</span>
     </div>
   </div>
 
-  <button class="btn" type="submit">Upload and index</button>
+  <button class="btn" type="submit">Upload and Index</button>
 </form>
 
 <h2 style="font-size:1.15rem; margin-top: var(--s-6);"><%= docs.length %> document<%= docs.length === 1 ? '' : 's' %></h2>
 
-<div class="panel" style="padding:0; margin-top: var(--s-3);">
+<div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="padding:0; margin-top: var(--s-3);">
   <table class="admin-table">
     <thead>
-      <tr><th>Title</th><th>Indexed</th><th>Size</th><th>Project</th><th>Visible</th><th style="text-align:right;">Actions</th></tr>
+      <tr><th>Title</th><th>Role</th><th>Indexed</th><th>Size</th><th>Project</th><th>Visible</th><th style="text-align:right;">Actions</th></tr>
     </thead>
     <tbody>
       <% if (!docs.length) { %>
-        <tr><td colspan="6" style="color: var(--text-muted);">Nothing uploaded yet.</td></tr>
+        <tr><td colspan="7" style="color: var(--text-muted);">Nothing uploaded yet.</td></tr>
       <% } %>
       <% for (const d of docs) { %>
         <tr>
           <td>
             <strong><%= d.title %></strong>
             <div class="mono" style="font-size:.66rem; color: var(--text-muted);">/documents/<%= d.slug %></div>
+          </td>
+          <td>
+            <%# The resume and the CV are pinned to the top of the public page by
+                role, not by a filename convention or by upload order. %>
+            <form method="post" action="/admin/documents/<%= d.id %>/role" style="display:flex; gap:4px;">
+              <input type="hidden" name="_csrf" value="<%= csrf %>">
+              <label class="visually-hidden" for="role-<%= d.id %>">Role</label>
+              <select id="role-<%= d.id %>" name="doc_role">
+                <% for (const r of roles) { %>
+                  <option value="<%= r %>"<%= d.doc_role === r ? ' selected' : '' %>><%= label('docRole', r) %></option>
+                <% } %>
+              </select>
+              <button class="btn btn-quiet btn-sm" type="submit">Set</button>
+            </form>
           </td>
           <td class="mono tnum" style="font-size:.75rem; white-space:nowrap;">
             <%= d.indexed_pages %>/<%= d.pages %>
@@ -80,10 +94,10 @@
               </div>
             <% } %>
           </td>
-          <td class="mono tnum" style="font-size:.72rem; white-space:nowrap;"><%= (d.bytes / 1024 / 1024).toFixed(1) %> MB</td>
+          <td class="mono tnum" style="font-size:.72rem; white-space:nowrap;"><%= fmtBytes(d.bytes) %></td>
           <td style="font-size:.85rem;"><%= d.project_title || '' %></td>
           <td>
-            <span class="badge" style="<%= d.visibility === 'public' ? 'border-color: var(--patina); color: var(--patina);' : '' %>"><%= d.visibility %></span>
+            <span class="badge" style="<%= d.visibility === 'public' ? 'border-color: var(--patina); color: var(--patina);' : '' %>"><%= label('visibility', d.visibility).split(',')[0] %></span>
           </td>
           <td>
             <div class="actions">
