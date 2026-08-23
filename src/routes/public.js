@@ -436,7 +436,25 @@ router.get('/documents/:slug/view', (req, res, next) => {
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  /*
+   * SAMEORIGIN, not the DENY the middleware sets for every other response.
+   *
+   * This is what makes the inline viewer work at all. Chrome does not paint a
+   * PDF <object> itself: it hands the bytes to its internal viewer, which is an
+   * embedded frame, and X-Frame-Options: DENY refuses that even when the
+   * embedding page is this same site. The object then fails silently and the
+   * page shows its fallback children, which is the reported symptom — "this
+   * browser will not render a PDF in the page" on a browser that renders PDFs
+   * perfectly well.
+   *
+   * frame-ancestors says the same thing to browsers that read CSP, which
+   * supersedes X-Frame-Options where both are present. Framing is still limited
+   * to this origin, so nothing else on the internet can put the resume in a
+   * frame of its own, and the sandbox plus default-src 'none' still leave a PDF
+   * carrying script with no origin to reach and nothing to load.
+   */
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox; frame-ancestors 'self'");
   res.setHeader('Content-Disposition', `inline; filename="${documents.slugify(doc.title)}.pdf"`);
   mw.publicAsset(res, 3600);
   fs.createReadStream(abs).pipe(res);

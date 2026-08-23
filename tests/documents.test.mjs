@@ -164,3 +164,29 @@ test('deleting a document removes its pages, its file, and its search row', { sk
   assert.equal(db.get('SELECT COUNT(*) AS n FROM document_page WHERE document_id = ?', id).n, 0, 'pages survived');
   assert.equal(db.get("SELECT id FROM search_index WHERE kind = 'document' AND ref_id = ?", id), undefined, 'search row survived');
 });
+
+test('documents can be reordered, and the order is what the public page reads', () => {
+  /*
+   * The admin had no way to say which document comes first. doc_role decides
+   * which one is the resume and which is the CV; this decides the order of
+   * everything below them, and listDocuments has always ordered by sort_key —
+   * there was simply no control that wrote one.
+   *
+   * Reordering rewrites the whole scope from an array rather than patching one
+   * row, so a double click cannot interleave two half-applied orders.
+   */
+  const before = db.all('SELECT id FROM document ORDER BY sort_key').map((r) => r.id);
+  if (before.length < 2) return;   // nothing to prove on a one-document database
+
+  const reversed = [...before].reverse();
+  repo.reorderDocuments(reversed);
+  assert.deepEqual(db.all('SELECT id FROM document ORDER BY sort_key').map((r) => r.id), reversed);
+
+  /* Every key is distinct, which is what stops two rows tying and the order
+     falling back to whatever SQLite happens to return. */
+  const keys = db.all('SELECT sort_key FROM document').map((r) => r.sort_key);
+  assert.equal(new Set(keys).size, keys.length);
+
+  repo.reorderDocuments(before);
+  assert.deepEqual(db.all('SELECT id FROM document ORDER BY sort_key').map((r) => r.id), before);
+});

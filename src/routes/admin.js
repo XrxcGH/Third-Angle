@@ -726,6 +726,28 @@ router.post('/documents/:id/role', form, requireCsrf, (req, res) => {
   res.redirect(303, '/admin/documents');
 });
 
+/*
+ * Order on the public documents page.
+ *
+ * Same shape as the project move: the whole order is rewritten from an array,
+ * not patched per row, so a double click or a retried POST cannot interleave
+ * two half-applied orders. doc_role decides which document is the resume and
+ * which is the CV; this decides the order everything appears in below them.
+ */
+router.post('/documents/:id/move', form, requireCsrf, (req, res) => {
+  const id = Number(req.params.id);
+  const dir = req.body.dir === 'up' ? -1 : 1;
+  const ordered = all('SELECT id FROM document ORDER BY sort_key').map((r) => r.id);
+  const i = ordered.indexOf(id);
+  const j = i + dir;
+  if (i >= 0 && j >= 0 && j < ordered.length) {
+    [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
+    repo.reorderDocuments(ordered);
+    repo.logChange(req.session.email, 'document', id, 'update', { moved: req.body.dir });
+  }
+  res.redirect(303, '/admin/documents');
+});
+
 router.get('/documents', (req, res) => {
   res.render('admin/documents', view('documents', {
     title: 'Documents',

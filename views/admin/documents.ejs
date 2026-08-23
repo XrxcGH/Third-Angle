@@ -101,6 +101,16 @@
           </td>
           <td>
             <div class="actions">
+              <form method="post" action="/admin/documents/<%= d.id %>/move">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <input type="hidden" name="dir" value="up">
+                <button class="btn btn-quiet btn-sm" type="submit" aria-label="Move <%= d.title %> up">up</button>
+              </form>
+              <form method="post" action="/admin/documents/<%= d.id %>/move">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <input type="hidden" name="dir" value="down">
+                <button class="btn btn-quiet btn-sm" type="submit" aria-label="Move <%= d.title %> down">down</button>
+              </form>
               <a class="btn btn-quiet btn-sm" href="/documents/<%= d.slug %>">View</a>
               <form method="post" action="/admin/documents/<%= d.id %>/delete">
                 <input type="hidden" name="_csrf" value="<%= csrf %>">
