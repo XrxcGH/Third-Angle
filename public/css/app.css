@@ -1360,10 +1360,27 @@ code {
   background: var(--surface);
   color: var(--text-body);
   width: 100%;
-  max-width: 100%;
+  /*
+   * A control is as wide as the text it holds, not as wide as the window.
+   *
+   * This was max-width: 100%, which meant "fill the column" — correct while
+   * .wrap capped the column at 1180px. With the page running the window, a
+   * single line input measured 1478px at 1600 and 2438px at 2560: a title of
+   * forty characters floating in two thirds of a metre of empty box, with the
+   * caret too far from the label to associate the two. The form stopped
+   * reading as a column at all.
+   *
+   * So the cap moves onto the control. Everything else about the layout is
+   * unchanged: the field still fills a narrow column, a two-up row still
+   * splits, and nothing is centred.
+   */
+  max-width: var(--field-max, 38rem);
   min-width: 0;
   transition: border-color var(--t-hover) var(--ease);
 }
+/* An editing surface earns more room than a one-line answer, and a body of
+   markdown is genuinely easier to write wide. Still bounded. */
+.field textarea, textarea.input { --field-max: 60rem; }
 .input:hover,
 .field input:hover, .field textarea:hover, .field select:hover { border-color: var(--rule); }
 .input:focus-visible,
