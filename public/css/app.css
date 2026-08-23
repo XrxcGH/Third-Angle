@@ -64,7 +64,23 @@ h4 { font-size: 1.0625rem; line-height: 1.35; letter-spacing: -.004em; }
 .display-1 {
   font-family: var(--f-display);
   font-weight: var(--w-strong);
-  font-size: clamp(2.625rem, 1.2rem + 6.2vw, 5rem);
+  /*
+   * The cap has to clear the window, not the old measure.
+   *
+   * At 5rem the headline stopped growing at about a 1000px window, so on a
+   * 2560px screen its longest line filled 63% of the page and simply stopped,
+   * with the title block sitting under the empty right end of it. 7rem keeps
+   * the line between 90% and 98% of the page across every width from 1100 to
+   * 2560, which is what "the title is the width of the page" means.
+   */
+  font-size: clamp(2.625rem, 1.2rem + 6.2vw, 7rem);
+  /*
+   * pretty, not balance. Balance evens the lines out, which is right for a
+   * heading sitting in a column and wrong for one that is supposed to reach
+   * both edges: it held the first line back to match the second and cost about
+   * ten points of fill at every width.
+   */
+  text-wrap: pretty;
   line-height: .94;
   letter-spacing: -.036em;
   color: var(--text-strong);
@@ -745,6 +761,42 @@ code {
 .badge[data-status="specification"] { border-color: var(--copper); color: var(--copper); }
 .badge[data-status="shipped"], .badge[data-status="competed"] { border-color: var(--patina); color: var(--patina); }
 .badge[data-status="in-progress"] { border-color: var(--accent); color: var(--accent-ink); }
+/*
+ * Whether a row is on the public site is a state like any other on that row, so
+ * it is a chip like any other. It was the one plain lowercase word in a table
+ * of chips, which made the most consequential column the easiest to skim past.
+ */
+.badge[data-live="yes"] { border-color: var(--patina); color: var(--patina); }
+.badge[data-live="draft"] { border-color: var(--rule); color: var(--text-muted); }
+
+/* ---- the operator's bar --------------------------------------------------
+ * Shown on the public site to whoever is signed in to the admin, and to nobody
+ * else. Deliberately unlike the site: a working tool sitting on top of the
+ * page, not part of the design being looked at.
+ *
+ * Sticky, because the reason it exists is to be reachable without scrolling
+ * back to anything. It sits above .site-header, which is sticky at top: 0, so
+ * this takes that spot and the header is pushed under it by --op-bar-h.
+ */
+.op-bar {
+  position: sticky; top: 0; z-index: 70;
+  display: flex; align-items: center; gap: var(--s-4);
+  padding: 6px clamp(18px, 4vw, 48px);
+  background: var(--text-strong); color: var(--surface);
+  font-family: var(--f-mono); font-size: .62rem; font-stretch: 80%;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.op-who { opacity: .72; margin-right: auto; text-transform: none; letter-spacing: .04em; }
+.op-link { color: var(--surface); text-decoration: none; border-bottom: 1px solid transparent; }
+.op-link:hover, .op-link:focus-visible { border-bottom-color: currentColor; }
+/* The header stops being the topmost sticky element while the bar is there. */
+.op-bar ~ .site-header { top: var(--op-bar-h, 29px); }
+
+@media (max-width: 700px) {
+  /* The address is the first thing to go: the two links are the point. */
+  .op-who { display: none; }
+}
+@media print { .op-bar { display: none; } }
 
 .rail { border-left: 2px solid var(--accent); padding-left: var(--s-4); }
 
@@ -1337,10 +1389,38 @@ code {
   background: var(--surface);
   color: var(--text-body);
   width: 100%;
-  max-width: 100%;
+  /*
+   * A control is as wide as the text it holds, not as wide as the window.
+   *
+   * This was max-width: 100%, which meant "fill the column" — correct while
+   * .wrap capped the column at 1180px. With the page running the window, a
+   * single line input measured 1478px at 1600 and 2438px at 2560: a title of
+   * forty characters floating in two thirds of a metre of empty box, with the
+   * caret too far from the label to associate the two. The form stopped
+   * reading as a column at all.
+   *
+   * So the cap moves onto the control. Everything else about the layout is
+   * unchanged: the field still fills a narrow column, a two-up row still
+   * splits, and nothing is centred.
+   */
+  max-width: var(--field-max, 38rem);
   min-width: 0;
   transition: border-color var(--t-hover) var(--ease);
 }
+/* An editing surface earns more room than a one-line answer, and a body of
+   markdown is genuinely easier to write wide. Still bounded. */
+.field textarea, textarea.input { --field-max: 60rem; }
+/*
+ * A textarea that is the whole point of its form runs the whole width of it.
+ *
+ * 60rem is the right cap for a field sitting among others; it is the wrong one
+ * for the field the form exists to collect. On the contact form the three short
+ * fields span 1462px at a 1600px window and the message box stopped at 960 —
+ * two thirds — so it read as two columns under a row of three. Set on the
+ * textarea, not the field, because the rule above declares the property on the
+ * element and an inherited value would lose to it.
+ */
+.field.field-full textarea { --field-max: none; }
 .input:hover,
 .field input:hover, .field textarea:hover, .field select:hover { border-color: var(--rule); }
 .input:focus-visible,

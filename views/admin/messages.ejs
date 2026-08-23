@@ -12,7 +12,7 @@
 
 <% if (notice) { %><p class="flash" role="status" style="margin-top: var(--s-4);"><%= notice %></p><% } %>
 
-<div class="titleblock" style="margin-top: var(--s-4); max-width: 34rem;">
+<div class="titleblock" style="margin-top: var(--s-4);">
   <div>
     <span class="k">Forwarding</span>
     <span class="v">
@@ -33,7 +33,7 @@
 <div class="panel table-wrap" tabindex="0" role="region" aria-label="Table, scrolls sideways" style="padding:0; margin-top: var(--s-4);">
   <table class="admin-table">
     <thead>
-      <tr><th style="width:7rem;">When</th><th>From</th><th>Message</th><th>Mail</th><th style="text-align:right;">Actions</th></tr>
+      <tr><th style="width:8rem;">When</th><th class="wide" style="width:16rem;">From</th><th class="wide">Message</th><th style="width:10rem;">Mail</th><th style="text-align:right; width:14rem;">Actions</th></tr>
     </thead>
     <tbody>
       <% if (!messages.length) { %>
@@ -44,12 +44,12 @@
           <td class="mono" style="font-size:.7rem; white-space:nowrap;">
             <%= m.created_at.slice(0,10) %><br><%= m.created_at.slice(11,16) %>
           </td>
-          <td>
+          <td class="wide">
             <strong><%= m.name %></strong>
             <div><a href="mailto:<%= m.email %>" style="font-size:.82rem;"><%= m.email %></a></div>
             <% if (!m.read) { %><span class="badge" style="border-color: var(--accent); color: var(--accent-ink);">new</span><% } %>
           </td>
-          <td>
+          <td class="wide">
             <% if (m.subject) { %><strong style="display:block;"><%= m.subject %></strong><% } %>
             <span style="font-size:.9rem; white-space:pre-wrap;"><%= m.body %></span>
           </td>
@@ -68,8 +68,12 @@
             <% if (m.mailed_at) { %>
               <div class="mono" style="font-size:.62rem; color: var(--text-muted);"><%= m.mailed_at.slice(0,16).replace('T',' ') %></div>
             <% } %>
-            <% if (m.mail_error) { %>
-              <div style="font-size:.72rem; color: var(--text-muted); max-width:22ch;"><%= m.mail_error %></div>
+            <%# Only a failure that belongs to THIS message. unconfigured and off
+                are states of the whole site: the badge says which, the block at
+                the top of the page says it once, and repeating the same sentence
+                down every row in a 22ch box was three ragged lines per message. %>
+            <% if (m.mail_error && m.mail_status === 'failed') { %>
+              <div style="font-size:.72rem; color: var(--ch-business);"><%= m.mail_error %></div>
             <% } %>
           </td>
           <td>

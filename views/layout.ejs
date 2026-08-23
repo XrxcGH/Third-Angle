@@ -53,6 +53,15 @@
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 
+<% if (typeof operator !== 'undefined' && operator) { %>
+  <%# Only ever rendered for the signed-in operator. See mw.operatorBar. %>
+  <div class="op-bar">
+    <span class="op-who">Signed in as <%= operator.email %></span>
+    <a class="op-link" href="/admin">Back to Admin</a>
+    <a class="op-link" href="/admin/content">Edit Page Content</a>
+  </div>
+<% } %>
+
 <%- include('partials/header') %>
 
 <main id="main">

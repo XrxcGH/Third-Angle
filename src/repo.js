@@ -138,26 +138,34 @@ function listProjectsByFacet(slug) {
  * Keys are always generated on the server from neighbours; a key supplied by
  * the client would let a buggy or compromised session collide the index.
  */
-const reorderProjects = transaction((orderedIds) => {
+/*
+ * The table name is interpolated, so it comes from this fixed list and never
+ * from a request. Adding a table here is a deliberate edit; there is no path
+ * from a parameter to this string.
+ */
+const reorderIn = (table) => transaction((orderedIds) => {
   const keys = generateNKeysBetween(null, null, orderedIds.length);
   const now = nowIso();
 
   /*
-   * Two phases, because sort_key carries a UNIQUE index and the rows are
-   * updated one at a time. A single pass collides the moment a new key equals
-   * the key a not-yet-updated row still holds, which is the common case when
-   * reversing an order. The parking values are unique by construction (the id
-   * is), and '~' sorts above every base62 character so they cannot be mistaken
-   * for real keys if a crash somehow lands between the phases.
+   * Two phases, because sort_key carries a UNIQUE index on project and the rows
+   * are updated one at a time. A single pass collides the moment a new key
+   * equals the key a not-yet-updated row still holds, which is the common case
+   * when reversing an order. The parking values are unique by construction (the
+   * id is), and '~' sorts above every base62 character so they cannot be
+   * mistaken for real keys if a crash somehow lands between the phases.
    */
   for (const id of orderedIds) {
-    run('UPDATE project SET sort_key = ? WHERE id = ?', `~${id}`, id);
+    run(`UPDATE ${table} SET sort_key = ? WHERE id = ?`, `~${id}`, id);
   }
   orderedIds.forEach((id, i) => {
-    run('UPDATE project SET sort_key = ?, updated_at = ? WHERE id = ?', keys[i], now, id);
+    run(`UPDATE ${table} SET sort_key = ?, updated_at = ? WHERE id = ?`, keys[i], now, id);
   });
   return orderedIds.length;
 });
+
+const reorderProjects = reorderIn('project');
+const reorderDocuments = reorderIn('document');
 
 /** Next key for an append. null, null on an empty table is correct. */
 function nextProjectKey() {
@@ -809,7 +817,7 @@ function setOnWall(mediaId, on) {
 module.exports = {
   listFacets, getFacet, facetCounts,
   listProjects, getProjectBySlug, listProjectsByFacet,
-  reorderProjects, nextProjectKey, nextKeyFor,
+  reorderProjects, reorderDocuments, nextProjectKey, nextKeyFor,
   listNotes, latestNoteDate, getNow,
   search, toMatchQuery, queryTerms, editDistance, correctTerms, upsertSearchRow, reindexProject, reindexAll, plain,
   getPage, getPageForEdit, savePage, PAGE_SLUGS,

@@ -188,3 +188,53 @@ test('reading is never refused', () => {
       `${m} is not a write and must not be judged as one`);
   }
 });
+
+test('the inline PDF is framable by this site and by nobody else', () => {
+  /*
+   * Chrome does not paint a PDF <object> itself. It hands the bytes to its
+   * internal viewer, which is an embedded frame, so the DENY that every other
+   * response carries refuses it even when the embedding page is this same site.
+   * The object then fails silently and the page shows its fallback children:
+   * "this browser will not render a PDF in the page", on a browser that renders
+   * PDFs perfectly well.
+   *
+   * SAMEORIGIN is the narrowest thing that works. This test exists because the
+   * global middleware sets DENY for good reasons and a later edit that tidies
+   * this route back to the default would reintroduce the bug with no test
+   * failing anywhere.
+   */
+  const src = read('src', 'routes', 'public.js');
+  const route = src.slice(src.indexOf("'/documents/:slug/view'"), src.indexOf("'/documents/:slug/download'"));
+
+  assert.match(route, /X-Frame-Options'\s*,\s*'SAMEORIGIN'/,
+    'the inline PDF must be framable by its own site or the viewer cannot open it');
+  assert.doesNotMatch(route, /X-Frame-Options'\s*,\s*'DENY'/);
+
+  // And still refused to everybody else, on both channels.
+  assert.match(route, /frame-ancestors 'self'/,
+    "CSP supersedes X-Frame-Options where both are present, so it has to say so too");
+  assert.match(route, /default-src 'none'; sandbox/,
+    'a PDF carrying script keeps no origin to reach and nothing to load');
+});
+
+test('the operator bar is rendered for a session and for nothing else', () => {
+  /*
+   * The bar puts a link back to the admin on every public page, which is only
+   * correct while it is invisible to everybody who is not signed in. It is
+   * gated on a session the server looked up, never on a cookie's presence: a
+   * visitor can set a cookie called `session` to any value they like, and a
+   * check that trusted that would advertise the admin to the whole internet.
+   */
+  const mwSrc = read('src', 'middleware.js');
+  const fn = mwSrc.slice(mwSrc.indexOf('function operatorBar'), mwSrc.indexOf('/* ---- view locals'));
+
+  assert.match(fn, /getSession\(/, 'the session must be looked up, not inferred from a cookie existing');
+  assert.match(fn, /res\.locals\.operator = null/, 'it must default to absent, so a thrown lookup cannot leave it set');
+  assert.match(fn, /if \(!id\) return next\(\)/, 'no cookie is the common case and must cost nothing');
+
+  /* And the template must ask for the resolved operator, not for the cookie. */
+  const layout = read('views', 'layout.ejs');
+  assert.match(layout, /typeof operator !== 'undefined' && operator/);
+  assert.doesNotMatch(layout, /op-bar[\s\S]{0,400}cookies/,
+    'the bar must not be driven by req.cookies in the template');
+});

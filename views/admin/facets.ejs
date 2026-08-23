@@ -1,6 +1,6 @@
 <p class="eyebrow">Admin</p>
 <h1>Disciplines</h1>
-<p style="color: var(--text-muted); max-width: 62ch;">
+<p style="color: var(--text-muted);">
   The colour list is closed on purpose. An admin panel with a free colour field is how a
   carefully built palette dies six months later, so you can add and rename disciplines
   freely but can only choose from the eight vetted tokens.
@@ -37,26 +37,27 @@
 </div>
 
 <h2 style="font-size:1.15rem; margin-top: var(--s-6);">Add or Rename</h2>
-<p style="color: var(--text-muted); max-width: 62ch; font-size:.92rem;">
+<p style="color: var(--text-muted); font-size:.92rem;">
   Saving a name that already exists updates it. Names that differ only by case are rejected
   by the database, which is what stops Electrical and electrical becoming two separate chips.
 </p>
 
-<form method="post" action="/admin/facets/save" class="panel" style="margin-top: var(--s-3); max-width: 42rem;">
+<form method="post" action="/admin/facets/save" class="panel cols" style="margin-top: var(--s-3);">
   <input type="hidden" name="_csrf" value="<%= csrf %>">
-  <div class="row2">
-    <div class="field">
-      <label for="label">Name</label>
-      <input id="label" name="label" type="text" required>
-    </div>
-    <div class="field">
-      <label for="color_token">Colour</label>
-      <select id="color_token" name="color_token">
-        <% for (const t of tokens) { %>
-          <option value="<%= t %>"><%= titleCase(t.replace('ch-', '')) %></option>
-        <% } %>
-      </select>
-    </div>
+  <%# Direct children of .panel.cols, not wrapped in a .row2: a wrapper is one
+      grid item, so the two fields shared a single column and the rest of the
+      panel stayed empty. %>
+  <div class="field">
+    <label for="label">Name</label>
+    <input id="label" name="label" type="text" required>
+  </div>
+  <div class="field">
+    <label for="color_token">Colour</label>
+    <select id="color_token" name="color_token">
+      <% for (const t of tokens) { %>
+        <option value="<%= t %>"><%= titleCase(t.replace('ch-', '')) %></option>
+      <% } %>
+    </select>
   </div>
   <div class="field">
     <label for="blurb">One Paragraph, for the Discipline Landing Page</label>

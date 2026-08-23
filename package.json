@@ -9,8 +9,8 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch server.js",
     "admin": "node scripts/create-admin.js",
     "seed": "node scripts/seed.js",
     "seed:pages": "node scripts/seed-pages.js",
@@ -18,10 +18,15 @@
     "preview": "node scripts/snapshot.mjs",
     "reset-db": "node scripts/seed.js --reset",
     "fonts": "node scripts/fetch-fonts.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "test": "DATA_DIR=.test-data node --disable-warning=ExperimentalWarning --test \"tests/*.test.mjs\"",
     "check:scope": "node scripts/scope-guard.mjs",
     "check:contrast": "node --test tests/contrast.test.mjs",
     "check:costs": "node scripts/check-costs.mjs",
-    "test": "node --test \"tests/*.test.mjs\""
+    "check:links": "node scripts/check-links.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check:doc-facts": "node scripts/check-doc-facts.mjs",
+    "pretest": "node scripts/test-db.mjs"
   },
   "dependencies": {
     "ejs": "^3.1.10",
@@ -31,9 +36,5 @@
     "multer": "^2.2.0",
     "pdfjs-dist": "^4.10.38",
     "sharp": "^0.35.3"
-  },
-  "devDependencies": {
-    "@cloudflare/containers": "^0.3.7",
-    "wrangler": "^4.125.0"
   }
 }

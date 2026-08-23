@@ -294,6 +294,37 @@ function redirects(req, res, next) {
   next();
 }
 
+/* ---- the operator's own bar ---------------------------------------------
+ * A signed-in operator looking at the public site gets a thin bar above the
+ * page with the way back to the admin in it.
+ *
+ * Without it, "View Site" is a one-way door: the admin bar is gone, and getting
+ * back means scrolling to the footer, finding the sign in link, and landing on
+ * a screen that is not the one you left. That is a small tax paid on every
+ * single edit, which is the kind of tax that stops you making small edits.
+ *
+ * The session is read here rather than in every route. It costs one indexed
+ * lookup on a page that is already rendering a database's worth of content, and
+ * it is skipped entirely when there is no cookie, which is every request from
+ * every visitor who is not the operator.
+ *
+ * Nothing here is secret: /admin is in robots.txt and discoverable regardless,
+ * and the bar renders no data beyond the address already signed in. What it must
+ * not do is reach a shared cache, and it cannot: every HTML response on this
+ * site is already Cache-Control: private, Vary: Cookie, for the theme.
+ */
+function operatorBar(req, res, next) {
+  res.locals.operator = null;
+  const name = process.env.NODE_ENV === 'production' ? '__Host-session' : 'session';
+  const id = req.cookies && req.cookies[name];
+  if (!id) return next();
+  try {
+    const session = require('./auth').getSession(id);
+    if (session) res.locals.operator = { email: session.email };
+  } catch { /* a cold start before the session table exists is not an error here */ }
+  return next();
+}
+
 /* ---- view locals -------------------------------------------------------- */
 function locals(req, res, next) {
   /* EJS templates have no `require`, so anything a view needs has to arrive
@@ -363,5 +394,5 @@ function locals(req, res, next) {
 
 module.exports = {
   theme, setTheme, securityHeaders, redirects, locals, parseCookies,
-  cacheHeaders, publicAsset, clientIp, sameOrigin,
+  cacheHeaders, publicAsset, clientIp, sameOrigin, operatorBar,
 };

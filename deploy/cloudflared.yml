@@ -1,6 +1,6 @@
 # Cloudflare Tunnel. Install to /etc/cloudflared/config.yml
 #
-# Replace TUNNEL_ID in both places and example.com in both hostnames, then:
+# Replace TUNNEL_ID in both places, then:
 #   sudo systemctl restart cloudflared
 #
 # This is the only thing on the machine that talks to the internet, and it
@@ -18,8 +18,8 @@
 # To create the tunnel, on any machine signed in to the account:
 #   cloudflared tunnel login
 #   cloudflared tunnel create third-angle          # prints the TUNNEL_ID
-#   cloudflared tunnel route dns third-angle example.com
-#   cloudflared tunnel route dns third-angle www.example.com
+#   cloudflared tunnel route dns third-angle ericjdean.com
+#   cloudflared tunnel route dns third-angle www.ericjdean.com
 # then copy ~/.cloudflared/<TUNNEL_ID>.json to /etc/cloudflared/ on the origin.
 
 tunnel: TUNNEL_ID
@@ -43,9 +43,9 @@ originRequest:
 ingress:
   # The Host header is passed through untouched, which is what lets Caddy be a
   # catch-all on a port instead of a file that has to name the domain.
-  - hostname: example.com
+  - hostname: ericjdean.com
     service: http://127.0.0.1:8080
-  - hostname: www.example.com
+  - hostname: www.ericjdean.com
     service: http://127.0.0.1:8080
   # Required: cloudflared refuses to start without a catch-all rule.
   - service: http_status:404

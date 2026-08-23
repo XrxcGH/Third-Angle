@@ -9,11 +9,19 @@ are there because of it.
 
 ## What you need
 
-- A domain, added to a Cloudflare account as a zone, using Cloudflare's
-  nameservers.
-- An Oracle Cloud account, and one **VM.Standard.A1.Flex** instance, arm64,
-  Ubuntu 24.04. The Always Free shape is 2 OCPU and 12 GB as of June 2026.
-- SSH to that machine.
+- **ericjdean.com**, registered at Squarespace Domains. Its nameservers move to
+  Cloudflare in step 0.
+- A Cloudflare account, free plan.
+- An Oracle Cloud account. The machine itself is step 1.
+- An SSH keypair. If you do not have one:
+
+  ```sh
+  ssh-keygen -t ed25519 -C "ericjdean.com deploy"
+  ```
+
+  Take the default path, set a passphrase. The **public** half — the file ending
+  `.pub` — is what Oracle asks for. The other file never leaves your machine and
+  never goes in the repository.
 
 ## The shape of it
 
@@ -53,7 +61,80 @@ of the app and no blue/green. See DESIGN.md risk R6.
 
 ## Steps
 
-### 1. Provision the machine
+### 0. Move DNS to Cloudflare
+
+The domain is registered at Squarespace, and it stays there. What has to move is
+the **DNS**, because everything in this document depends on Cloudflare answering
+for the zone: the tunnel creates proxied CNAME records, the WAF and the cache
+rules only apply to traffic Cloudflare receives, and Email Routing requires
+Cloudflare nameservers. A domain that merely points an A record at Cloudflare
+gets none of it.
+
+1. **Turn DNSSEC off at Squarespace first**, under the domain's security or
+   advanced settings, if it is on. This is the one step here that can take the
+   domain completely off the internet rather than merely leaving it unreachable.
+   DNSSEC signs the answers a nameserver gives; the registry holds a DS record
+   saying which key to trust. Move the nameservers without clearing it and every
+   resolver gets an answer signed by Cloudflare's key, checks it against
+   Squarespace's, finds a mismatch, and returns SERVFAIL — which is not "site
+   down", it is "this domain does not resolve at all", including its mail.
+   Cloudflare's own DNSSEC can be switched on later, once the zone is active.
+2. In Cloudflare, **Add a site**, enter `ericjdean.com`, choose the **Free**
+   plan. It scans the existing records and shows two nameservers, of the form
+   `xxx.ns.cloudflare.com`.
+3. **Delete the records it imported**, unless you recognise one. A domain fresh
+   from a registrar carries parking records pointing at the registrar's "coming
+   soon" page, and carrying those across means Cloudflare faithfully serves
+   Squarespace's placeholder. Add nothing by hand: the tunnel creates the records
+   it needs in step 4.
+4. In Squarespace: **Domains → ericjdean.com → DNS → Nameservers**, switch from
+   Squarespace's defaults to **Custom nameservers**, and enter exactly those
+   two. Remove any others. Squarespace will warn that its own DNS features stop
+   working, which is the point. The registration stays with Squarespace; only
+   the answering moves.
+5. Wait for Cloudflare to report the zone **Active** — it emails you. Usually
+   minutes; the registrar is allowed 48 hours. **Check nameservers now** on the
+   Cloudflare overview page prompts it to re-check rather than waiting.
+
+Until the tunnel exists in step 4, the domain will answer with a Cloudflare
+error page rather than the site. That is correct: DNS is pointing at Cloudflare
+and Cloudflare has nothing behind it yet.
+
+Do this first. The tunnel step below creates DNS records through the Cloudflare
+API, and it cannot until Cloudflare is authoritative for the zone.
+
+Squarespace will keep trying to sell you a site on this domain. Ignore it: it
+serves nothing here, and the parking page disappears the moment the nameservers
+change.
+
+### 1. Create the machine
+
+Oracle's console, not a command. What matters:
+
+| Field | Value | Why |
+|---|---|---|
+| Region | your **home region** | Always Free resources exist only there. It cannot be changed later. |
+| Shape | **VM.Standard.A1.Flex**, Ampere, arm64 | The free one. The x86 micro shapes are too small for the image pipeline. |
+| OCPU / memory | **2 / 12 GB** | The whole Always Free A1 allowance as of June 2026. Taking less does not bank it. |
+| Image | **Canonical Ubuntu 24.04**, aarch64 build | Node 24 needs a current distribution; the arm64 build must match the shape. |
+| Boot volume | 50 GB default is fine | Always Free includes 200 GB of block storage in total. |
+| Public IPv4 | **assign one** | The tunnel dials out over it. Nothing dials in. |
+| SSH key | paste your public key | Oracle has no password login; without a key you cannot get in at all. |
+
+**Expect "Out of host capacity."** A1 is the most contended shape Oracle sells
+and a free-tier account sits at the back of the queue for it. This is the step
+that stops people, and it is not a mistake you have made. In order of effort:
+try each availability domain in your region; try again at a different hour;
+then upgrade the account to Pay As You Go, which keeps every Always Free
+resource free but moves you out of the free-tier capacity pool. The upgrade is
+what usually works, and it is reversible.
+
+Do not open ports 80 or 443 in the security list. The tunnel makes an outbound
+connection, so the only inbound port this machine ever needs is 22, and every
+port left open is a way around the WAF. `deploy/provision.sh` closes the host
+firewall to match.
+
+### 2. Provision the machine
 
 ```sh
 ssh ubuntu@<the instance>
@@ -68,10 +149,10 @@ source to `/srv/third-angle`, installs the `third-angle`, `cloudflared`,
 `third-angle-backup` and `litestream-alive` units, and closes the firewall. It
 prints what is left to do by hand.
 
-### 2. Set SITE_URL
+### 3. Set SITE_URL
 
 ```sh
-sudo nano /etc/third-angle/env      # SITE_URL=https://your-domain.example
+sudo nano /etc/third-angle/env      # SITE_URL=https://ericjdean.com
 sudo systemctl restart third-angle
 ```
 
@@ -82,20 +163,20 @@ visible in a browser, so getting it wrong looks perfect and publishes a sitemap
 full of the wrong domain to every crawler that asks. The boot check refuses
 `example.com`, `localhost` and anything that is not `https://`.
 
-### 3. Open the tunnel
+### 4. Open the tunnel
 
 On any machine signed in to the Cloudflare account:
 
 ```sh
 cloudflared tunnel login
 cloudflared tunnel create third-angle              # prints the tunnel's ID
-cloudflared tunnel route dns third-angle your-domain.example
-cloudflared tunnel route dns third-angle www.your-domain.example
+cloudflared tunnel route dns third-angle ericjdean.com
+cloudflared tunnel route dns third-angle www.ericjdean.com
 ```
 
 Copy `~/.cloudflared/<ID>.json` to `/etc/cloudflared/` on the origin, then edit
-`/etc/cloudflared/config.yml`: replace `TUNNEL_ID` in both places and
-`example.com` in both hostnames.
+`/etc/cloudflared/config.yml` and replace `TUNNEL_ID` in both places. The
+hostnames are already `ericjdean.com` and `www.ericjdean.com`.
 
 ```sh
 sudo chown root:cloudflared /etc/cloudflared/<ID>.json
@@ -107,14 +188,14 @@ sudo systemctl status cloudflared
 `cloudflared tunnel route dns` creates the DNS records for you, already
 proxied. The site should answer on the domain at this point.
 
-### 4. Set the zone up
+### 5. Set the zone up
 
 Everything here is on the free plan. **SSL/TLS → Overview → Full (strict)**,
 and **Edge Certificates → Always Use HTTPS on**, **Minimum TLS 1.2**.
 
 **A redirect rule, www to apex.** Rules → Redirect Rules. Hostname equals
-`www.your-domain.example`, dynamic redirect to
-`concat("https://your-domain.example", http.request.uri.path)`, status 301.
+`www.ericjdean.com`, dynamic redirect to
+`concat("https://ericjdean.com", http.request.uri.path)`, status 301.
 This is why the Caddyfile names no domain: the redirect never reaches the
 origin.
 
@@ -153,21 +234,68 @@ earlier and off the origin entirely.
 
 **Email Routing**, under the Email tab, forwarding to an inbox you read. Two
 addresses need to exist: whatever the contact page publishes, and
-`security@your-domain.example` — the site serves an RFC 9116
+`security@ericjdean.com` — the site serves an RFC 9116
 `/.well-known/security.txt` that names it, and an address published for
 reporting vulnerabilities that bounces is worse than not publishing one.
 
-### 5. Create the admin account
+That is mail coming **in**. Mail going out is a separate thing and needs a
+relay, because `src/mailer.js` is an SMTP submission client rather than a mail
+server: it hands a message to something that already accepts mail for you.
+
+**Brevo**, free plan. Create an account, verify `ericjdean.com` as a sender, and
+add the DKIM and SPF records it gives you to this zone — Cloudflare is already
+answering for it, so that is three records and a few minutes.
+
+> **One SPF record. Not two.**
+>
+> Email Routing wants `v=spf1 include:_spf.mx.cloudflare.net ~all` and Brevo
+> wants `v=spf1 include:spf.brevo.com ~all`, and a domain is allowed exactly one
+> SPF TXT record. Publish both and the result is not "two policies", it is a
+> permanent error: every receiver that checks SPF treats the domain as
+> misconfigured and the mail is more likely to be junked than if there were no
+> SPF at all.
+>
+> Merge them into a single record at the apex:
+>
+> ```
+> v=spf1 include:spf.brevo.com include:_spf.mx.cloudflare.net ~all
+> ```
+>
+> Whichever service you set up second will tell you to add its own. Edit the
+> existing record instead.
+
+Then, in `/etc/third-angle/env`:
+
+```sh
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_USER=       # the LOGIN from Brevo's SMTP & API page, not your Brevo email
+SMTP_PASS=       # an SMTP KEY from that page, not your Brevo password
+SMTP_FROM=contact@ericjdean.com
+```
+
+`SMTP_USER` catches everybody: Brevo's login is a generated address of the form
+`9xxxxxx@smtp-brevo.com`, and the address you sign in with does not authenticate.
+`SMTP_FROM` has to be a sender Brevo has verified or every send is rejected.
+
+Then `systemctl restart third-angle`, and in the admin under Settings turn
+**Forward contact messages by email** on and set **Forward messages to**.
+
+Nothing here is load-bearing for the site. Every message is stored in the admin
+inbox first and forwarded second, so a relay that is missing or broken costs a
+notification and never a message, and each row has its own retry.
+
+### 6. Create the admin account
 
 ```sh
 cd /srv/third-angle
-sudo -u app npm run admin -- you@your-domain.example "Your Name" "a long passphrase"
+sudo -u app npm run admin -- you@ericjdean.com "Eric J. Dean" "a long passphrase"
 ```
 
 Then enrol TOTP with the printed `otpauth://` URI and confirm it:
 
 ```sh
-sudo -u app npm run admin -- --confirm you@your-domain.example 123456
+sudo -u app npm run admin -- --confirm you@ericjdean.com 123456
 ```
 
 Enrolment is two steps on purpose: the secret is stored unconfirmed until you
@@ -180,10 +308,9 @@ been transmitted somewhere is exempt from the twelve character floor a chosen
 password has to clear, and it is not allowed to quietly become the permanent
 one.
 
-### 6. Turn on replication
+### 7. Turn on replication
 
-The machine has a real disk, so unlike the container route the database
-survives a reboot on its own. Replication is for the other failure: Oracle
+The machine has a real disk, so the database survives a reboot on its own. Replication is for the other failure: Oracle
 changing the free tier again, or closing the account. That has happened once
 already — see the note in `costs.yml`.
 
@@ -213,7 +340,7 @@ S3-compatible bucket works, including Oracle Object Storage — but keeping the
 backup at the same provider as the machine defeats the point of it, so use the
 other account.
 
-### 7. Run the restore drill
+### 8. Run the restore drill
 
 An unrehearsed backup is a belief, not a backup.
 
@@ -231,26 +358,74 @@ and `/var/log/caddy/third-angle.log`. Litestream answers on
 minutes: it asserts the replica index has not gone backwards and that the
 endpoint still answers, which catches the process simply being gone where
 tailing a log would not. The tunnel's own metrics endpoint,
-`127.0.0.1:2100/metrics`, is not scraped by anything yet.
+`127.0.0.1:2100/metrics`, is not scraped by anything.
 
 **Deploying a change.**
 
 ```sh
 cd /srv/third-angle
+sudo -u app third-angle-backup            # always first
 sudo -u app git pull --ff-only
 sudo -u app npm ci --omit=dev
 sudo systemctl restart third-angle
+npm run smoke -- https://ericjdean.com
 ```
 
 Caddy holds connections for up to five seconds while the new process comes up,
 so a restart is invisible from outside.
 
+The last line is the one that matters. `npm run smoke` goes over the wire
+against the deployed site and checks that every public page answers, that every
+admin address still redirects a signed-out visitor to the sign in screen, and
+that the security and cache headers are on the response. It catches what the
+test suite cannot see, because the suite runs in process against a database it
+controls: a proxy that did not reload, a tunnel pointing at the wrong port, an
+origin serving a stale build, a cache rule that strips a header. It exits
+non-zero, so it can be the last line of a deploy and mean something.
+
+Schema changes apply themselves on start. New tables are created when missing
+and new columns are added by the migration helper in `src/db.js`. Nothing is
+ever dropped or rewritten automatically, which is what makes the rollback below
+safe: returning the code does not destroy data written by the newer version.
+
+**Rolling back.** If the smoke check fails and the cause is not obvious in a
+minute, go back first and diagnose afterwards.
+
+```sh
+cd /srv/third-angle
+sudo -u app git log --oneline -5          # find the commit that was working
+sudo -u app git checkout <that commit>
+sudo -u app npm ci --omit=dev
+sudo systemctl restart third-angle
+npm run smoke -- https://ericjdean.com
+```
+
+That returns the code and nothing else. If the deploy also corrupted data,
+restoring is a separate operation and [RESTORE.md](RESTORE.md) is the runbook
+for it: the database is not rolled back by checking out an older commit, and
+you would not want it to be, because the two failures are rarely the same
+failure.
+
+To come back to the branch afterwards, `sudo -u app git checkout main`.
+
 **Cost.** Nothing here has a bill attached. The one number to re-read is in
 `costs.yml`, which `npm run check:costs` fails on when it goes stale.
 
-## The other route
+## Why the origin is a machine
 
-[DEPLOY-containers.md](DEPLOY-containers.md) is the Cloudflare Containers
-version of this, which needs the $5/month Workers Paid plan. Its files —
-`Dockerfile`, `worker/index.js`, `wrangler.jsonc`, `src/backup.js` — are still
-in the tree and still work. Nothing in this document uses them.
+Worth writing down, because "put it on Workers and stop paying for a server" is
+a reasonable thing to suggest and the answer is not obvious.
+
+Workers are V8 isolates, not machines. This application opens a SQLite file
+with `node:sqlite`, writes uploads to a directory and reads them back, and
+re-encodes every image with `sharp`, which is a native binary. None of those
+three has an equivalent in an isolate: the database becomes D1 and every query
+becomes `await`, the uploads become R2, and the re-encode has to move to a paid
+image service or into the browser.
+
+That re-encode is not a convenience. It is what proves an uploaded file is
+actually an image rather than a payload wearing an image's extension, and it is
+what strips the GPS coordinates a phone writes into a photograph.
+
+The machine costs nothing and does all of it today. Cloudflare is in front,
+where it is very good and also free.

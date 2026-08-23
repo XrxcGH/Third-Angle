@@ -48,8 +48,12 @@
     <button class="btn" type="submit">Save This Page</button>
   </div>
 
+  <%# A grid, not a stack. Forty short strings down the left of a wide screen is
+      a lot of scrolling to change one word; the column count comes from the
+      window. A slot edited as prose takes two columns, see admin.css. %>
+  <div class="admin-cols">
   <% for (const s of slots) { %>
-    <div class="panel" style="margin-bottom: var(--s-3);">
+    <div class="panel">
       <div style="display:flex; gap: var(--s-3); align-items:baseline; flex-wrap:wrap;">
         <label for="f-<%= s.key %>" style="font-family: var(--f-display); font-weight: var(--w-med); color: var(--text-strong);">
           <%= s.label %>
@@ -123,6 +127,7 @@
       <% } %>
     </div>
   <% } %>
+  </div>
 
   <div class="btn-row" style="margin-top: var(--s-4);">
     <button class="btn" type="submit">Save This Page</button>

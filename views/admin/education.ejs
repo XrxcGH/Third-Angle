@@ -97,7 +97,7 @@
            style="margin-top: var(--s-2);">
         <table class="admin-table">
           <thead>
-            <tr><th>Code</th><th>Title</th><th>Term</th><th>Units</th><th>Status</th><th style="text-align:right;">Actions</th></tr>
+            <tr><th>Code</th><th class="wide">Title</th><th>Term</th><th>Units</th><th>Status</th><th style="text-align:right;">Actions</th></tr>
           </thead>
           <tbody>
             <% if (!s.courses.length) { %>
@@ -106,7 +106,7 @@
             <% for (const c of s.courses) { %>
               <tr>
                 <td class="mono" style="font-size:.72rem;"><%= c.code || '' %></td>
-                <td>
+                <td class="wide">
                   <%= c.title %>
                   <% if (c.note) { %><div style="font-size:.78rem; color: var(--text-muted);"><%= c.note %></div><% } %>
                 </td>
@@ -133,7 +133,7 @@
   <%# ----------------------------------------------------- add an institution %>
   <details style="margin-top: var(--s-4);">
     <summary style="cursor:pointer;">Add an Institution</summary>
-    <form class="panel" method="post" action="/admin/education/school" style="margin-top: var(--s-3); max-width: 44rem;">
+    <form class="panel" method="post" action="/admin/education/school" class="cols" style="margin-top: var(--s-3);">
       <input type="hidden" name="_csrf" value="<%= csrf %>">
       <div class="row2">
         <div class="field">
@@ -171,7 +171,7 @@
     an invented term is worse than a missing one.
   </p>
 
-  <form class="panel" method="post" action="/admin/education/course" style="margin-top: var(--s-3); max-width: 44rem;">
+  <form class="panel" method="post" action="/admin/education/course" class="cols" style="margin-top: var(--s-3);">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <% if (editCourse) { %><input type="hidden" name="id" value="<%= editCourse.id %>"><% } %>
 
@@ -275,7 +275,7 @@
     </table>
   </div>
 
-  <form class="panel" method="post" action="/admin/education/activity" style="margin-top: var(--s-4); max-width: 44rem;">
+  <form class="panel" method="post" action="/admin/education/activity" class="cols" style="margin-top: var(--s-4);">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <% if (editActivity) { %><input type="hidden" name="id" value="<%= editActivity.id %>"><% } %>
 

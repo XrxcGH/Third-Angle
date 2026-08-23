@@ -121,7 +121,7 @@ if [ ! -f "$ENV_DIR/env" ]; then
   cat > "$ENV_DIR/env" <<EOF
 NODE_ENV=production
 PORT=3000
-SITE_URL=https://example.com
+SITE_URL=https://ericjdean.com
 SESSION_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
 DATA_DIR=$DATA_DIR
 
@@ -131,6 +131,16 @@ DATA_DIR=$DATA_DIR
 #R2_ACCOUNT_ID=
 #R2_ACCESS_KEY_ID=
 #R2_SECRET_ACCESS_KEY=
+
+# Outbound mail. A relay, not a mailbox: src/mailer.js hands the message to
+# something that already accepts mail for you. Brevo's login is a generated
+# address from its SMTP & API page, not the address you sign in with, and
+# SMTP_FROM has to be a sender Brevo has verified. See DEPLOY.md step 5.
+#SMTP_HOST=smtp-relay.brevo.com
+#SMTP_PORT=587
+#SMTP_USER=
+#SMTP_PASS=
+#SMTP_FROM=contact@ericjdean.com
 
 # Dead man's switches. Each script pings its URL on success and /fail on
 # failure, so a MISSING ping is what alerts. Without these a backup can fail

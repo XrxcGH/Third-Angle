@@ -1,8 +1,8 @@
 # Single source of truth for every price in this project. Risk R9.
 #
-# Prices age, and a number quoted in prose ages invisibly. Every figure the
-# proposal or the site shows renders from this file, so a number cannot exist
-# in two places and disagree.
+# Prices age, and a number quoted in prose ages invisibly. Every price in this
+# project lives here and nowhere else, so a number cannot exist in two places
+# and disagree.
 #
 # `evidence` must be the exact string as it appears on the vendor page.
 # `volatile: true` shortens the staleness window from 180 days to 90.
@@ -36,25 +36,32 @@ items:
     note: >
       The front half of the stack: proxied DNS, a universal certificate, edge
       caching, the free managed WAF ruleset, one rate-limiting rule, and the
-      tunnel that removes every inbound port from the origin. Workers Paid at
-      5/month is NOT used; see CLOUDFLARE.md. Cloudflare Tunnel is free and
-      unmetered on this plan.
+      tunnel that removes every inbound port from the origin. Cloudflare Tunnel
+      is free and unmetered on this plan.
 
   - name: Domain
-    vendor: Cloudflare Registrar
-    product: one .com, at registry cost
-    amount_usd: 10.46
+    vendor: Squarespace Domains
+    product: ericjdean.com, registered 23 August 2026
+    amount_usd: 20.00
     period: year
-    source_url: https://developers.cloudflare.com/registrar/
-    verified_on: 2026-08-21
+    source_url: https://whatsquare.space/blog/squarespace-domain-renewal-cost
+    verified_on: 2026-08-23
     volatile: true
-    evidence: "you only pay what is charged by registries and ICANN"
+    evidence: ".com $20/year"
     note: >
-      Derived, not read: Cloudflare publishes the at-cost commitment but no .com
-      figure. 10.26 Verisign registry fee plus 0.20 ICANN transaction fee. The
-      registry fee rises to 10.97 on 1 November 2026 at 04:00 UTC. Register, then
-      immediately renew nine more years before that timestamp, which locks about
-      104.60 once. Confirm the quoted total at checkout.
+      NOT read from the vendor. Squarespace publishes no public price sheet for
+      any TLD, so the figure is confirmed only at checkout and at renewal, and
+      this line is a third party reading rather than a quotation. Check the
+      renewal notice against it.
+
+      WHOIS privacy and SSL are included, so there is nothing to add.
+
+      Worth revisiting after 25 October 2026, when the 60 day ICANN transfer
+      lock from registration lifts: Cloudflare Registrar sells at registry cost,
+      which is about 10.46 for a .com, so a transfer roughly halves this. The
+      zone is already on Cloudflare's nameservers for the tunnel, the WAF and
+      Email Routing, so a transfer moves the billing and nothing else. Note that
+      the Verisign registry fee rises to 10.97 on 1 November 2026 at 04:00 UTC.
 
   - name: Media storage
     vendor: Cloudflare
@@ -94,20 +101,31 @@ items:
     note: Requires the zone to use Cloudflare nameservers, which the registrar choice already satisfies.
 
   - name: Email, outbound
-    vendor: Zoho
-    product: Mail Forever Free
+    vendor: Brevo
+    product: Free plan, SMTP relay
     amount_usd: 0
     period: year
-    source_url: https://www.zoho.com/mail/zohomail-pricing.html
-    verified_on: 2026-08-21
+    source_url: https://www.brevo.com/pricing/
+    verified_on: 2026-08-23
     volatile: true
-    evidence: "IMAP/POP/Active Sync not included"
+    evidence: "Free"
     note: >
-      No desktop client and no SMTP relay, from day one rather than as a later
-      upgrade. Also offered only in select data centres, so confirm at signup
-      before publishing the address. Do NOT architect around Gmail Send-as: Google
-      removes third-party Send as in January 2027. Pre-approved escape hatch is
-      Purelymail at about 10/year or Migadu Micro at 19/year.
+      An SMTP relay rather than a mailbox, which is the only thing the site
+      needs: src/mailer.js is a submission client, not a mail server. It speaks
+      STARTTLS on 587 and AUTH PLAIN or LOGIN, which is what Brevo offers.
+
+      NOT read from the vendor: the daily send allowance on the free plan was
+      not verifiable at the time of writing and is believed to be about 300 a
+      day, which a contact form does not approach. Confirm it, and confirm that
+      the free plan appends nothing to TRANSACTIONAL mail, before relying on it.
+
+      Chosen over Zoho Mail Forever Free, which ships with no SMTP relay at all,
+      and over Gmail, which cannot send as this domain and whose third-party
+      Send as Google removes in January 2027. Brevo authenticates ericjdean.com
+      with DKIM and SPF records added at Cloudflare, so mail comes from the
+      domain rather than from a personal account. Pre-approved escape hatch if
+      the free plan changes: Purelymail at about 10/year or Migadu Micro at
+      19/year.
 
   - name: Analytics
     vendor: Cloudflare
@@ -152,11 +170,10 @@ items:
     volatile: false
     evidence: "2,000 minutes per month"
     note: >
-      The repository is public. Nothing runs in Actions yet: there is no .github
-      directory in the tree. Backup verification never depended on it either way —
-      it runs on the box from deploy/third-angle-backup.timer, which is why the
-      60-day auto-disable rule for scheduled workflows on public repositories
-      does not reach it.
+      The repository is public. Nothing runs in Actions: there is no .github
+      directory in the tree. Backup verification runs on the box from
+      deploy/third-angle-backup.timer, so the 60-day auto-disable rule for
+      scheduled workflows on public repositories does not reach it.
 
 fallback_host:
   name: Hetzner CAX11

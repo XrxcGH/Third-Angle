@@ -161,8 +161,30 @@ router.post('/login', form, loadSession, (req, res) => {
    */
   repo.logChange(user.email, 'session', user.id, 'insert',
     { event: 'signed in', ip, agent: String(req.get('user-agent') || '').slice(0, 120) });
+  /*
+   * A session cookie: no Max-Age and no Expires, so the browser discards it when
+   * it closes and the next visit starts signed out.
+   *
+   * It used to carry Max-Age of fourteen days, which meant an admin session
+   * survived on disk for a fortnight on whatever machine last signed in. For a
+   * single operator admin that is a long time for a laptop to be quietly
+   * authenticated.
+   *
+   * The server row still expires on its own fourteen day schedule (auth.js
+   * SESSION_DAYS), and that stays: the cookie's lifetime is a convenience, the
+   * row's lifetime is the actual limit, and a stolen cookie is useless once the
+   * row is gone. Dropping Max-Age narrows the window at the client without
+   * touching the guarantee at the server.
+   *
+   * Worth being exact about what this does and does not promise. A session
+   * cookie dies when the BROWSER closes, not when the tab does — cookies are not
+   * scoped to a tab in any browser. And a browser set to reopen its last
+   * session, which Chrome offers as "Continue where you left off", restores
+   * session cookies with it. Sign Out is still the only thing that ends a
+   * session on demand, and it destroys the row rather than just the cookie.
+   */
   res.setHeader('Set-Cookie',
-    `${COOKIE}=${session.id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${14 * 86400}${PROD ? '; Secure' : ''}`);
+    `${COOKIE}=${session.id}; Path=/; HttpOnly; SameSite=Lax${PROD ? '; Secure' : ''}`);
   res.redirect(303, nextUrl);
 });
 
@@ -723,6 +745,28 @@ router.post('/documents/:id/role', form, requireCsrf, (req, res) => {
   if (role !== 'other') run("UPDATE document SET doc_role = 'other' WHERE doc_role = ?", role);
   run('UPDATE document SET doc_role = ? WHERE id = ?', role, Number(req.params.id));
   repo.logChange(req.session.email, 'document', Number(req.params.id), 'update', { doc_role: role });
+  res.redirect(303, '/admin/documents');
+});
+
+/*
+ * Order on the public documents page.
+ *
+ * Same shape as the project move: the whole order is rewritten from an array,
+ * not patched per row, so a double click or a retried POST cannot interleave
+ * two half-applied orders. doc_role decides which document is the resume and
+ * which is the CV; this decides the order everything appears in below them.
+ */
+router.post('/documents/:id/move', form, requireCsrf, (req, res) => {
+  const id = Number(req.params.id);
+  const dir = req.body.dir === 'up' ? -1 : 1;
+  const ordered = all('SELECT id FROM document ORDER BY sort_key').map((r) => r.id);
+  const i = ordered.indexOf(id);
+  const j = i + dir;
+  if (i >= 0 && j >= 0 && j < ordered.length) {
+    [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
+    repo.reorderDocuments(ordered);
+    repo.logChange(req.session.email, 'document', id, 'update', { moved: req.body.dir });
+  }
   res.redirect(303, '/admin/documents');
 });
 

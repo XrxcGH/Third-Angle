@@ -9,11 +9,6 @@ framework, and one native dependency: `sharp`, which installs as a prebuilt
 binary. Runs on a free Oracle Always Free ARM instance for the price of a
 domain name.
 
-**Status: phases 02 to 09 done.** The public site, facet model, search, design
-system, admin panel, media pipeline, document library, feeds, and deploy tooling
-are built and tested. The restore drill and the launch are not. See
-[Roadmap](#roadmap).
-
 ## Run it
 
 Requires **Node 24 or newer**. Older builds ship without FTS5, and the app
@@ -33,7 +28,7 @@ npm start          # http://localhost:3000
 ## Checks
 
 ```bash
-npm test              # 239 tests across 22 suites
+npm test              # 223 tests across 20 suites
 npm run check:scope   # fails when prose outruns code
 npm run check:costs   # fails when a quoted price goes stale
 ```
@@ -90,9 +85,9 @@ views/                 EJS, layout plus pages plus partials
 public/css/tokens.css  the design system. Nothing else defines a colour.
 public/css/app.css     the component layer, including every form control
 public/css/admin.css   admin density only. The public layout never loads it.
-scripts/               seed, fonts, admin, db-tool, scope guard, cost check
-deploy/                provision, systemd, Caddy, Litestream, backup, verify
-tests/                 routes, contrast, layout, markup, account, search, schema, security, auth, media, backup
+scripts/               seed, fonts, admin, db-tool, smoke, and the checks
+deploy/                provision, systemd, Caddy, cloudflared, Litestream, backup, verify
+tests/                 twenty suites, one per concern, run against .test-data
 DESIGN.md              the rules, and what will bite you
 costs.yml              every price, dated, and sourced
 ```
@@ -196,25 +191,6 @@ ends every other session. `scripts/create-admin.js --temp` hands over a short
 password for exactly this page to replace; while that flag is set, every admin
 page carries a warning. It is a lock, not just a warning: every admin address except the account page
 and sign out redirects there until the password is replaced.
-
-## Roadmap
-
-| Phase | | |
-|---|---|---|
-| 00 | Decide, claim long-lead assets | design system done; domain and VM are yours to claim |
-| 01 | Content capture | ongoing, and the real critical path |
-| 02 | Walking skeleton and schema | **done** |
-| 03 | Design system in code | **done** |
-| 04 | Admin CRUD, reorder, media | **done** |
-| 05 | Public site | **done**, tier-gated project pages |
-| 06 | Search, documents, feeds | **done**, including per-page PDF indexing |
-| 07 | Icons, structured data, social cards | **done** |
-| 08 | Deploy and rehearse the restore | tooling **done**; the drill is yours to run |
-| 09 | Professional, education, and personal pages | **done** |
-| 10 | GitHub cleanup, then launch | pending |
-
-The content, not the software, is the critical path. Photographs of the physical
-work and a short video of a robot moving outrank everything on this list.
 
 ## Deploying
 

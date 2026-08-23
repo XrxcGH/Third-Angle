@@ -42,6 +42,7 @@ app.use(mw.securityHeaders);
  */
 app.use(mw.cacheHeaders);
 app.use(mw.theme);
+app.use(mw.operatorBar);
 app.use(mw.locals);
 
 /*

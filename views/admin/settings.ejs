@@ -14,11 +14,11 @@
   </p>
 <% } %>
 
-<div class="stack-lg" style="margin-top: var(--s-5); max-width: 46rem;">
+<div class="stack-lg" style="margin-top: var(--s-5);">
 
   <section>
     <h2>Public Site</h2>
-    <form class="panel" method="post" action="/admin/settings" style="margin-top: var(--s-3);">
+    <form class="panel cols-2" method="post" action="/admin/settings" style="margin-top: var(--s-3);">
       <input type="hidden" name="_csrf" value="<%= csrf %>">
 
       <% for (const [key, def] of Object.entries(definitions)) { %>
@@ -40,7 +40,14 @@
         <% } %>
       <% } %>
 
-      <button class="btn" type="submit">Save Settings</button>
+      <%# The button sits in the grid cell beside the last field, so it needs the
+          same label-height spacer above it or it rides up level with the label
+          instead of level with the input it belongs to. Hidden from assistive
+          technology, which reads the button's own text. %>
+      <div class="field save-inline">
+        <span class="field-spacer" aria-hidden="true"></span>
+        <button class="btn" type="submit">Save Settings</button>
+      </div>
     </form>
   </section>
 
