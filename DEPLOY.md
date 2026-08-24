@@ -193,22 +193,61 @@ proxied. The site should answer on the domain at this point.
 Everything here is on the free plan. **SSL/TLS → Overview → Full (strict)**,
 and **Edge Certificates → Always Use HTTPS on**, **Minimum TLS 1.2**.
 
-**A redirect rule, www to apex.** Rules → Redirect Rules. Hostname equals
-`www.ericjdean.com`, dynamic redirect to
-`concat("https://ericjdean.com", http.request.uri.path)`, status 301.
+**A redirect rule, www to apex.** Rules → Redirect Rules → Create Single
+Redirect. The wildcard template does this with no expression to write:
+
+| Field | Value |
+| --- | --- |
+| Request URL | `https://www.ericjdean.com/*` |
+| Target URL | `https://ericjdean.com/${1}` |
+| Status code | 301 |
+| Preserve query string | on |
+| Redirect POST requests | off |
+
+The `*` captures the path and `${1}` puts it back, so `www.ericjdean.com/projects`
+arrives at `ericjdean.com/projects` rather than at the home page.
+
+Leave POST redirects off. A 301 turns a POST into a GET, which would matter if a
+form were ever served from `www` -- but this rule is what stops that happening,
+so nothing on `www` ever renders a form to submit.
+
+The older custom filter expression still works if you prefer it: hostname equals
+`www.ericjdean.com`, dynamic target `concat("https://ericjdean.com", http.request.uri.path)`.
+
 This is why the Caddyfile names no domain: the redirect never reaches the
 origin.
 
 **Cache rules.** Two of them, and the second one matters more than it looks.
 
-1. Cache `/static/*`, `/media/*` and `/og/*`, Edge TTL **"Use cache-control
-   header from origin"**. The `/media/*` and `/og/*` responses are content addressed;
-   `/static/*` is not, so a stylesheet or font edit needs a cache purge. All
-   three already say `public, max-age=31536000, immutable` in production.
-2. Bypass cache for `/admin*`.
+Both want a custom filter expression. Use "Edit expression" and paste these
+rather than fighting the field/operator/value builder, which takes one path at a
+time.
 
-Do **not** add a "Cache Everything" rule with an Edge TTL that ignores origin
-headers. Every HTML page on this site says `Cache-Control: private`, and it
+1. **Static assets.** Cache eligibility **Eligible for cache**, Edge TTL **"Use
+   cache-control header from origin"**, everything else left alone.
+
+   ```
+   starts_with(http.request.uri.path, "/static/") or starts_with(http.request.uri.path, "/media/") or starts_with(http.request.uri.path, "/og/")
+   ```
+
+   The `/media/*` and `/og/*` responses are content addressed; `/static/*` is
+   not, so a stylesheet or font edit needs a cache purge. All three already say
+   `public, max-age=31536000, immutable` in production, and `publicAsset()` in
+   `src/middleware.js` strips `Vary` from them so the edge will actually store
+   them -- the free plan only varies on `Accept-Encoding`.
+
+2. **Bypass the admin.** Cache eligibility **Bypass cache**.
+
+   ```
+   starts_with(http.request.uri.path, "/admin")
+   ```
+
+Put the bypass rule first. The two expressions do not overlap, so order is not
+load bearing today, but a rule that protects something belongs above the rules
+it protects it from.
+
+Do **not** use the **Cache everything** template the dashboard offers at the top
+of the New Cache Rule page, or any Edge TTL that ignores origin headers. Every HTML page on this site says `Cache-Control: private`, and it
 means it: the theme is a cookie the server reads to emit
 `<html data-theme="dark">` in the first byte, so one stored copy of the home
 page serves one visitor's theme to the next person behind it. The admin renders
