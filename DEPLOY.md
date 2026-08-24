@@ -285,23 +285,36 @@ server: it hands a message to something that already accepts mail for you.
 add the DKIM and SPF records it gives you to this zone — Cloudflare is already
 answering for it, so that is three records and a few minutes.
 
+Brevo's domain authentication asks for six records, and none of them is SPF: a
+`brevo-code:` TXT at the apex, two DKIM CNAMEs at `brevo1._domainkey` and
+`brevo2._domainkey`, a DMARC TXT at `_dmarc`, and three optional branding CNAMEs
+under `mail`. Add them as given; its dashboard verifies each one.
+
 > **One SPF record. Not two.**
 >
-> Email Routing wants `v=spf1 include:_spf.mx.cloudflare.net ~all` and Brevo
-> wants `v=spf1 include:spf.brevo.com ~all`, and a domain is allowed exactly one
-> SPF TXT record. Publish both and the result is not "two policies", it is a
-> permanent error: every receiver that checks SPF treats the domain as
-> misconfigured and the mail is more likely to be junked than if there were no
-> SPF at all.
+> Brevo does not currently ask for an SPF include, but Email Routing publishes
+> `v=spf1 include:_spf.mx.cloudflare.net ~all` at the apex, so a record is
+> already there. A domain is allowed exactly one SPF TXT record per name.
+> Publish a second and the result is not "two policies", it is a permanent
+> error: every receiver that checks SPF treats the domain as misconfigured, and
+> the mail is more likely to be junked than if there were no SPF at all.
 >
-> Merge them into a single record at the apex:
+> So if any service ever tells you to add one, edit the existing record instead
+> of adding another, merging the includes into a single policy:
 >
 > ```
-> v=spf1 include:spf.brevo.com include:_spf.mx.cloudflare.net ~all
+> v=spf1 include:_spf.mx.cloudflare.net include:whatever.example ~all
 > ```
 >
-> Whichever service you set up second will tell you to add its own. Edit the
-> existing record instead.
+> To check what is actually published, from anywhere with `curl`:
+>
+> ```sh
+> curl -s -H 'accept: application/dns-json' \
+>   'https://cloudflare-dns.com/dns-query?name=ericjdean.com&type=TXT' \
+>   | grep -o '"data":"[^"]*"'
+> ```
+>
+> Exactly one line should begin `v=spf1`.
 
 Then, in `/etc/third-angle/env`:
 
@@ -317,8 +330,10 @@ SMTP_FROM=contact@ericjdean.com
 `9xxxxxx@smtp-brevo.com`, and the address you sign in with does not authenticate.
 `SMTP_FROM` has to be a sender Brevo has verified or every send is rejected.
 
-Then `systemctl restart third-angle`, and in the admin under Settings turn
-**Forward contact messages by email** on and set **Forward messages to**.
+Then `systemctl restart third-angle`. In the admin under Settings, **Forward
+contact messages by email** defaults to on, so confirm rather than enable it,
+and set **Forward messages to** if you want somewhere other than the admin
+account's own address.
 
 Nothing here is load-bearing for the site. Every message is stored in the admin
 inbox first and forwarded second, so a relay that is missing or broken costs a
