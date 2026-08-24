@@ -89,6 +89,7 @@ scripts/               seed, fonts, admin, db-tool, smoke, and the checks
 deploy/                provision, systemd, Caddy, cloudflared, Litestream, backup, verify
 tests/                 twenty suites, one per concern, run against .test-data
 DESIGN.md              the rules, and what will bite you
+FIELD-NOTES.md         what went wrong deploying this, and why
 costs.yml              every price, dated, and sourced
 ```
 
