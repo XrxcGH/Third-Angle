@@ -24,6 +24,25 @@ items:
       box as disposable and the backup as the system of record. Re-read this page
       every 15 June.
 
+      The tenancy was upgraded from Free Tier to PAY AS YOU GO on 24 August 2026.
+      Always Free resources stay free on a Pay As You Go account, so this line
+      remains 0, but two things changed and only one of them is good.
+
+      The good one: Free Tier tenancies can have idle Always Free compute
+      reclaimed, and Pay As You Go tenancies cannot. A1.Flex capacity is also
+      materially easier to obtain, which is the reason for the upgrade -- every
+      attempt to launch the instance before it returned "Out of host capacity"
+      in the only availability domain the region offers.
+
+      The bad one: anything outside the Always Free allowance now bills to a
+      card instead of failing to launch. OCI budgets are ALERT ONLY and never
+      cap spend, whatever the name suggests. The only hard stop is a compartment
+      quota policy, so the allowance is enforced by not exceeding it rather than
+      by anything Oracle will enforce.
+
+      Deployed as 1 OCPU / 6 GB, inside the allowance above rather than at it.
+      The machine reports 5.8 GiB.
+
   - name: DNS, TLS, cache, and WAF
     vendor: Cloudflare
     product: Free plan
@@ -189,6 +208,18 @@ fallback_host:
     emergency.
 
 totals:
-  year_one_usd: 10.46
-  subsequent_years_usd: 0
-  note: Zero after year one only if the ten-year domain renewal is prepaid before 1 November 2026.
+  year_one_usd: 20.00
+  subsequent_years_usd: 10.46
+  note: >
+    Year one is the Squarespace registration, paid on 23 August 2026. Every
+    other line on this list is a free tier, so the domain is the whole bill.
+
+    Subsequent years assume the domain moves to Cloudflare Registrar, which
+    sells at registry cost. That is 10.46 for a .com until the Verisign registry
+    fee rises to 10.97 on 1 November 2026. The 60 day ICANN transfer lock from
+    registration lifts on 25 October 2026, so the week between those two dates
+    is the cheapest moment to move it, and prepaying ten years there fixes the
+    lower figure for a decade.
+
+    Staying at Squarespace instead is 20.00 a year, which is the number to
+    compare against rather than 0.
