@@ -234,6 +234,11 @@ else
   echo "    /etc/cloudflared/config.yml exists, left alone."
 fi
 install -m 644 "$APP_DIR/deploy/litestream.yml" /etc/litestream.yml
+# litestream.service comes from Litestream's .deb and does not read our env
+# file, so the R2 credentials in /etc/litestream.yml would expand to nothing.
+# A drop-in leaves the packaged unit alone and survives its upgrades.
+install -d -m 755 /etc/systemd/system/litestream.service.d
+install -m 644 "$APP_DIR/deploy/litestream-env.conf" /etc/systemd/system/litestream.service.d/env.conf
 install -m 755 "$APP_DIR/deploy/backup.sh" /usr/local/bin/third-angle-backup
 install -m 755 "$APP_DIR/deploy/restore-verify.sh" /usr/local/bin/third-angle-verify
 install -m 755 "$APP_DIR/deploy/alive.sh" /usr/local/bin/third-angle-alive
