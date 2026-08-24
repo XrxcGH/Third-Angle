@@ -426,12 +426,43 @@ The machine has a real disk, so the database survives a reboot on its own. Repli
 changing the free tier again, or closing the account. That has happened once
 already — see the note in `costs.yml`.
 
-Put the R2 credentials in `/etc/third-angle/env`, then:
+Create the bucket at Cloudflare → R2 → **Create bucket**, named `third-angle`,
+location Automatic. Then **Manage R2 API Tokens → Create API token**, with
+**Object Read & Write** scoped to that one bucket. It shows the access key and
+secret **once**; the account ID is the hex string in the R2 sidebar and in the
+S3 endpoint it prints.
+
+Put all four in `/etc/third-angle/env` (`sudo nano`, `^O`, `Enter`, `^X`),
+uncommenting the lines provisioning left ready:
+
+```sh
+R2_BUCKET=third-angle
+R2_ACCOUNT_ID=<the hex account id>
+R2_ACCESS_KEY_ID=<from the token>
+R2_SECRET_ACCESS_KEY=<from the token>
+```
+
+`/etc/litestream.yml` reads all four by name. Litestream's service gets them
+through the drop-in provisioning installs at
+`/etc/systemd/system/litestream.service.d/env.conf`, because the unit ships in
+Litestream's own `.deb` and knows nothing about this env file. Without it the
+service starts, reports itself active, and replicates nowhere.
 
 ```sh
 sudo systemctl enable --now litestream
 sudo systemctl enable --now litestream-alive.timer
 ```
+
+Confirm it is actually replicating rather than merely running:
+
+```sh
+sudo systemctl status litestream --no-pager
+litestream snapshots /srv/third-angle/data/third-angle.db
+curl -s localhost:9090/metrics | grep litestream_replica_operation_total
+```
+
+`snapshots` listing at least one generation is the proof. An empty list with an
+active service is exactly the failure the drop-in exists to prevent.
 
 Then set the three heartbeat URLs in `/etc/third-angle/env`, where the
 provisioning script left them commented out. Each script pings its URL on
