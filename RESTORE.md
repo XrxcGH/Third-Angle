@@ -34,6 +34,11 @@ Takes about five minutes and needs no outage.
 sudo third-angle-verify
 ```
 
+It loads the R2 credentials itself, so it needs no `EnvironmentFile` and works
+run by hand. It does need a snapshot to exist: on a machine that has never taken
+one, start `third-angle-backup.service` instead, which takes the snapshot and
+then verifies. [DEPLOY.md](DEPLOY.md) step 9 covers that first run.
+
 That restores from the Litestream replica **and** from the newest snapshot, then
 puts each through five assertions: structural integrity, referential integrity,
 FTS5 index consistency, actual content, and recency. Each catches a different way
@@ -94,8 +99,20 @@ cloudflared stopped while `/etc/cloudflared/config.yml` still says `TUNNEL_ID`.
 ```bash
 sudo systemctl stop third-angle
 
+# litestream reads the R2 credentials from its environment. systemd hands them
+# to the service through EnvironmentFile; a command typed by hand gets nothing,
+# and the restore fails on an empty bucket name. Load the four R2 keys, and
+# only those: this file also holds the session secret and the SMTP password.
+while IFS='=' read -r k v; do
+  case "$k" in R2_*) export "$k=$v" ;; esac
+done < <(sudo cat /etc/third-angle/env)
+
 # Preferred: the continuous replica, roughly one second of data loss.
-sudo -u app litestream restore -config /etc/litestream.yml \
+# --preserve-env is required. sudo resets the environment otherwise, and the
+# four variables exported above would not survive the switch to the app user.
+sudo -u app \
+  --preserve-env=R2_BUCKET,R2_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY \
+  litestream restore -config /etc/litestream.yml \
   -o /srv/third-angle/data/third-angle.db \
   /srv/third-angle/data/third-angle.db
 

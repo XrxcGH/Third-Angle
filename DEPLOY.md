@@ -7,6 +7,11 @@ domain is the only thing with a price on it.
 Read [SECURITY.md](SECURITY.md) before the first deploy. Two of the steps below
 are there because of it.
 
+Every failure hit while bringing this up on a real machine is written down in
+[FIELD-NOTES.md](FIELD-NOTES.md), with the cause and the fix. The procedure
+below already has those fixes in it; read the notes if a step does not behave,
+or before putting anything else on this stack.
+
 ## What you need
 
 - **ericjdean.com**, registered at Squarespace Domains. Its nameservers move to
