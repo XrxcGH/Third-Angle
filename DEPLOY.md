@@ -487,17 +487,36 @@ other account.
 
 An unrehearsed backup is a belief, not a backup.
 
-Run it inside `tmux`, which provisioning installs. This step restores a whole
-database and times itself, and it is long enough that an SSH connection dropping
-partway would cost you the measurement:
+`third-angle-verify` restores from two independent places and interrogates each
+result with `scripts/db-tool.mjs verify`: the Litestream replica in R2, and the
+newest nightly snapshot in `data/backups`. On a machine provisioned an hour ago
+there is no snapshot yet, so the verifier alone would stop at `no snapshot found`.
+
+Run the real nightly path first. It takes the snapshot and then runs the
+verification as `ExecStartPost`, which is exactly what
+`third-angle-backup.timer` does at 03:17 every night -- so the drill rehearses
+the actual procedure rather than an approximation of it.
+
+Inside `tmux`, because this restores a whole database and a dropped connection
+partway through costs the measurement:
 
 ```sh
 tmux new -s drill
-sudo third-angle-verify
+sudo systemctl start third-angle-backup.service
+journalctl -u third-angle-backup -n 40 --no-pager
 ```
 
-If the connection does drop, reconnect and `tmux attach -t drill` returns you to
-it still running.
+`Both restores verified.` is the line to look for. Anything else is the drill
+doing its job.
+
+A snapshot now exists, so from here the verifier stands alone. Time this one:
+
+```sh
+time sudo third-angle-verify
+```
+
+Record the measured time in [RESTORE.md](RESTORE.md). If the connection drops,
+reconnect and `tmux attach -t drill` returns you to it still running.
 
 Record the measured time in [RESTORE.md](RESTORE.md).
 

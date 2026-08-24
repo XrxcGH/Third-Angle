@@ -28,6 +28,23 @@ WORK="$(mktemp -d)"
 MODE="${1:-all}"
 HEALTHCHECK_URL="${VERIFY_HEALTHCHECK_URL:-}"
 
+# The nightly run gets the R2 credentials from systemd, which reads
+# EnvironmentFile on third-angle-backup.service. A hand run -- which is how the
+# drill and any real recovery start -- gets nothing, so the replica restore
+# below would fail on an empty bucket name. That is the half most worth
+# rehearsing, so load the four keys here when they are not already set.
+# Only R2_*: this file also holds the session secret and the SMTP password, and
+# neither belongs in this process.
+if [ -z "${R2_BUCKET:-}" ] && [ -r /etc/third-angle/env ]; then
+  while IFS='=' read -r _k _v; do
+    case "$_k" in
+      R2_BUCKET|R2_ACCOUNT_ID|R2_ACCESS_KEY_ID|R2_SECRET_ACCESS_KEY)
+        export "$_k=$_v" ;;
+    esac
+  done < /etc/third-angle/env
+  unset _k _v
+fi
+
 cleanup() { rm -rf "$WORK"; }
 trap cleanup EXIT
 
