@@ -316,7 +316,9 @@ under `mail`. Add them as given; its dashboard verifies each one.
 >
 > Exactly one line should begin `v=spf1`.
 
-Then, in `/etc/third-angle/env`:
+Then, in `/etc/third-angle/env` (`sudo nano /etc/third-angle/env` -- `^O`,
+`Enter`, `^X` to save and leave). Use an editor rather than `sed` or `echo` so
+the SMTP key never reaches `~/.bash_history`, and uncomment all five lines:
 
 ```sh
 SMTP_HOST=smtp-relay.brevo.com

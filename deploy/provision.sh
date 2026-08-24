@@ -44,8 +44,10 @@ apt-get update -qq
 # SSH connection dropping mid-operation would matter. The Oracle image is
 # minimized and ships no multiplexer at all. qrencode draws the TOTP enrolment
 # QR in the terminal, so the secret never leaves the machine to become one.
+# nano is here because the deploy steps ask the operator to hand edit
+# /etc/third-angle/env, and ne's keybindings are not the ones anybody guesses.
 apt-get install -y -qq curl ca-certificates gnupg git ufw ripgrep ne rclone tmux \
-  qrencode >/dev/null
+  qrencode nano >/dev/null
 
 log "Node ${NODE_MAJOR}"
 if ! command -v node >/dev/null || [ "$(node -p 'process.versions.node.split(".")[0]')" -lt "$NODE_MAJOR" ]; then
